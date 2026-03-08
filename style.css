@@ -1,0 +1,122 @@
+:root{
+  --bg:#0b0c10;
+  --card:#14161d;
+  --muted:#aeb5c3;
+  --text:#eef2ff;
+  --accent:#6ee7b7;
+  --danger:#fb7185;
+  --line:#24283a;
+}
+
+*{box-sizing:border-box;max-width:100%}
+html,body{max-width:100%;overflow-x:hidden}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+a{text-decoration:none;color:inherit}
+
+header{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:rgba(11,12,16,.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+
+h1{font-size:20px;margin:0 0 10px}
+h2{margin:0 0 10px;font-size:16px}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:980px){.grid{grid-template-columns:1fr 1fr}}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px;
+  width:100%;
+}
+
+.menu{
+  display:grid;
+  gap:14px;
+}
+
+.menu-card{
+  display:block;
+  background:#10131b;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px;
+}
+
+.menu-card:hover{
+  border-color:rgba(110,231,183,.45);
+  background:#151925;
+}
+
+.label{
+  font-size:12px;
+  color:var(--muted);
+  margin:0 0 6px 2px;
+}
+
+input,textarea,select,button{
+  font:inherit;
+  color:var(--text);
+  background:#0f1117;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+}
+
+input,textarea,select{
+  width:100%;
+}
+
+textarea{
+  min-height:120px;
+  resize:vertical;
+}
+
+button{
+  cursor:pointer;
+  width:auto;
+}
+
+button.primary{
+  border-color:rgba(110,231,183,.35);
+  background:rgba(110,231,183,.12);
+}
+
+button.danger{
+  border-color:rgba(251,113,133,.35);
+  background:rgba(251,113,133,.12);
+}
+
+.small{font-size:12px;color:var(--muted)}
+.back{
+  display:inline-block;
+  margin-bottom:14px;
+  color:#93c5fd;
+}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.six{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+
+@media(max-width:720px){
+  .two,.three{grid-template-columns:1fr}
+  .six{grid-template-columns:repeat(3,1fr)}
+}
+
+@media(max-width:420px){
+  .six{grid-template-columns:repeat(2,1fr)}
+}
