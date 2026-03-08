@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ポケモンパーティ管理</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #1e3a8a;
+      color: #fff;
+      padding: 24px 16px 48px;
+    }
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    a {
+      color: #dbeafe;
+      text-decoration: none;
+    }
+    .box {
+      margin-top: 18px;
+      background: rgba(255,255,255,0.10);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      margin-top: 10px;
+      resize: vertical;
+    }
+    .note {
+      color: #dbeafe;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p><a href="../">← ポケモンメニューへ戻る</a></p>
+    <h1>ポケモンパーティ管理</h1>
+
+    <div class="box">
+      <label for="party">パーティメモ（仮）</label>
+      <textarea id="party" placeholder="6体の候補や役割などを書けます"></textarea>
+      <p class="note">あとから保存機能、タイプ相性表示、持ち物管理などを追加できます。</p>
+    </div>
+  </div>
+</body>
+</html>
