@@ -708,6 +708,13 @@ partyAddStatus.textContent = "";
 
       searchBtn.addEventListener("click", searchPokemon);
       clearBtn.addEventListener("click", clearResult);
+      addToPartyBtn.addEventListener("click", () => {
+  if (!currentPokemonData) {
+    partyAddStatus.textContent = "先にポケモンを検索してください";
+    return;
+  }
+  savePartyCandidate(currentPokemonData);
+});
       searchInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") searchPokemon();
       });
