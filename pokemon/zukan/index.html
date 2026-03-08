@@ -675,6 +675,16 @@ function renderTypeEffectiveness(typeNames) {
           renderGameData(customRecord);
           renderCustomMemo(customRecord);
 
+          currentPokemonData = {
+  name: nameJa,
+  types: (pokemon.types || []).map(t => TYPE_JA[t.type.name] || t.type.name),
+  abilities: Array.from(abilityList.querySelectorAll(".badge")).map(x => x.textContent),
+  memo: [
+    `全国図鑑: ${customRecord?.nationalDex || species.id}`,
+    customRecord?.memo ? `補完メモ: ${customRecord.memo}` : ""
+  ].filter(Boolean).join("\n")
+};
+
           resultCard.classList.add("show");
           loadingText.textContent = "";
         } catch (e) {
