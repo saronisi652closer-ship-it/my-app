@@ -519,6 +519,32 @@ const partyAddStatus = el("partyAddStatus");
       function renderCustomMemo(customRecord) {
         customMemoBox.textContent = customRecord?.memo || "補完メモなし";
       }
+      function savePartyCandidate(data) {
+  try {
+    const raw = localStorage.getItem(PARTY_CANDIDATE_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+
+    const candidate = {
+      id: "candidate_" + Date.now(),
+      name: data.name || "",
+      types: data.types || [],
+      abilities: data.abilities || [],
+      memo: data.memo || "",
+      addedAt: new Date().toISOString()
+    };
+
+    list.unshift(candidate);
+    localStorage.setItem(PARTY_CANDIDATE_KEY, JSON.stringify(list));
+    partyAddStatus.textContent = "パーティ候補に追加しました";
+    setTimeout(() => {
+      if (partyAddStatus.textContent === "パーティ候補に追加しました") {
+        partyAddStatus.textContent = "";
+      }
+    }, 2500);
+  } catch (e) {
+    partyAddStatus.textContent = "保存に失敗しました";
+  }
+      }
       async function fetchEvolutionNames(species) {
   if (!species.evolution_chain || !species.evolution_chain.url) return [];
 
