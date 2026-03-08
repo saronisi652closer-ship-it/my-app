@@ -498,6 +498,7 @@ function renderEvolution(names) {
           const customRecord = findCustomRecord(nameJa, species.id);
           const apiLocalDex = await getLocalDexNumbers(species.name);
           const mergedLocalDex = mergeLocalDex(apiLocalDex, customRecord);
+          const evolutionNames = await fetchEvolutionNames(species);
 
           pokeTitle.textContent = `No.${species.id} ${nameJa}`;
           pokeImage.src =
