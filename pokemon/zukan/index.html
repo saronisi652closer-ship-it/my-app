@@ -243,6 +243,31 @@
       }
 
       function normalizeQuery(value) {
+        async function buildJaNameMap() {
+  if (jaNameMap) return jaNameMap;
+
+  jaNameMap = {};
+
+  const listData = await cachedFetchJson(`${API_BASE}/pokemon-species?limit=2000`);
+
+  for (const item of listData.results || []) {
+    try {
+      const speciesData = await cachedFetchJson(item.url);
+
+      const jaName =
+        speciesData.names?.find(n => n.language.name === "ja-Hrkt")?.name ||
+        speciesData.names?.find(n => n.language.name === "ja")?.name;
+
+      if (jaName) {
+        jaNameMap[jaName] = speciesData.name;
+      }
+    } catch (e) {
+      // 個別失敗は無視
+    }
+  }
+
+  return jaNameMap;
+        }
         const raw = value.trim();
         if (!raw) return "";
         if (/^\d+$/.test(raw)) return raw;
