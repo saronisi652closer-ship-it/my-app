@@ -345,11 +345,33 @@
         );
       }
 
-      function renderAbilities(abilities) {
-        renderBadgeList(abilityList, abilities
-          .sort((a, b) => a.slot - b.slot)
-          .map(a => a.is_hidden ? `${a.ability.name}（隠れ特性）` : a.ability.name)
-        );
+      async function renderAbilities(abilities) {
+
+  abilityList.innerHTML = "";
+
+  for (const a of abilities.sort((a,b)=>a.slot-b.slot)) {
+
+    let name = a.ability.name;
+
+    try{
+      const data = await cachedFetchJson(a.ability.url);
+
+      const ja = data.names.find(n => 
+        n.language.name === "ja" || n.language.name === "ja-Hrkt"
+      );
+
+      if(ja) name = ja.name;
+
+    }catch(e){}
+
+    const span = document.createElement("span");
+    span.className = "badge";
+    span.textContent = a.is_hidden
+      ? `${name}（隠れ特性）`
+      : name;
+
+    abilityList.appendChild(span);
+  }
       }
 
       function renderStats(stats) {
