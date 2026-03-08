@@ -10,47 +10,159 @@
   <header>
     <div class="wrap">
       <h1>ポケモン図鑑</h1>
-      <div class="small">ポケモン情報を確認するページ</div>
+      <div class="small">名前・タイプで検索できます</div>
     </div>
   </header>
 
   <main class="wrap">
     <a class="back" href="../">← ポケモンへ戻る</a>
 
-    <section class="card">
-      <h2>検索</h2>
+    <div class="grid">
+      <section class="card">
+        <h2>検索</h2>
 
-      <div class="label">ポケモン名</div>
-      <input type="text" placeholder="例：ピカチュウ">
+        <div class="label">ポケモン名</div>
+        <input id="searchName" type="text" placeholder="例：ピカチュウ">
 
-      <div class="label" style="margin-top:10px;">タイプ</div>
-      <select>
-        <option>すべて</option>
-        <option>ノーマル</option>
-        <option>ほのお</option>
-        <option>みず</option>
-        <option>でんき</option>
-        <option>くさ</option>
-        <option>こおり</option>
-        <option>かくとう</option>
-        <option>どく</option>
-        <option>じめん</option>
-        <option>ひこう</option>
-        <option>エスパー</option>
-        <option>むし</option>
-        <option>いわ</option>
-        <option>ゴースト</option>
-        <option>ドラゴン</option>
-        <option>あく</option>
-        <option>はがね</option>
-        <option>フェアリー</option>
-      </select>
+        <div class="label" style="margin-top:10px;">タイプ</div>
+        <select id="searchType">
+          <option value="">すべて</option>
+          <option value="ノーマル">ノーマル</option>
+          <option value="ほのお">ほのお</option>
+          <option value="みず">みず</option>
+          <option value="でんき">でんき</option>
+          <option value="くさ">くさ</option>
+          <option value="こおり">こおり</option>
+          <option value="かくとう">かくとう</option>
+          <option value="どく">どく</option>
+          <option value="じめん">じめん</option>
+          <option value="ひこう">ひこう</option>
+          <option value="エスパー">エスパー</option>
+          <option value="むし">むし</option>
+          <option value="いわ">いわ</option>
+          <option value="ゴースト">ゴースト</option>
+          <option value="ドラゴン">ドラゴン</option>
+          <option value="あく">あく</option>
+          <option value="はがね">はがね</option>
+          <option value="フェアリー">フェアリー</option>
+        </select>
 
-      <div class="label" style="margin-top:10px;">メモ</div>
-      <div class="card" style="margin-top:6px;">
-        ここにあとから図鑑データや画像表示を追加できます。
-      </div>
-    </section>
+        <div class="row" style="margin-top:12px;">
+          <button class="primary" id="searchBtn" type="button">検索</button>
+          <button id="clearBtn" type="button">クリア</button>
+        </div>
+
+        <div class="small" id="resultCount" style="margin-top:12px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>検索結果</h2>
+        <div id="pokemonList" class="menu"></div>
+        <div id="emptyMessage" class="small">該当するポケモンがいません。</div>
+      </section>
+    </div>
   </main>
+
+  <script>
+    (() => {
+      const pokemonData = [
+        { no: "001", name: "フシギダネ", type1: "くさ", type2: "どく", memo: "くさ・どくの御三家" },
+        { no: "004", name: "ヒトカゲ", type1: "ほのお", type2: "", memo: "ほのおの御三家" },
+        { no: "007", name: "ゼニガメ", type1: "みず", type2: "", memo: "みずの御三家" },
+        { no: "025", name: "ピカチュウ", type1: "でんき", type2: "", memo: "でんきタイプの代表格" },
+        { no: "037", name: "ロコン", type1: "ほのお", type2: "", memo: "進化するとキュウコン" },
+        { no: "052", name: "ニャース", type1: "ノーマル", type2: "", memo: "作品によって姿違いあり" },
+        { no: "058", name: "ガーディ", type1: "ほのお", type2: "", memo: "しんかいのいしではなくほのおのいしで進化" },
+        { no: "092", name: "ゴース", type1: "ゴースト", type2: "どく", memo: "ゴースト・どくタイプ" },
+        { no: "133", name: "イーブイ", type1: "ノーマル", type2: "", memo: "多くの進化先を持つ" },
+        { no: "143", name: "カビゴン", type1: "ノーマル", type2: "", memo: "高耐久で有名" },
+        { no: "149", name: "カイリュー", type1: "ドラゴン", type2: "ひこう", memo: "600族の代表格" },
+        { no: "150", name: "ミュウツー", type1: "エスパー", type2: "", memo: "伝説のポケモン" },
+        { no: "197", name: "ブラッキー", type1: "あく", type2: "", memo: "イーブイの進化系" },
+        { no: "212", name: "ハッサム", type1: "むし", type2: "はがね", memo: "優秀な複合タイプ" },
+        { no: "248", name: "バンギラス", type1: "いわ", type2: "あく", memo: "砂嵐要員として有名" },
+        { no: "257", name: "バシャーモ", type1: "ほのお", type2: "かくとう", memo: "加速が有名" },
+        { no: "282", name: "サーナイト", type1: "エスパー", type2: "フェアリー", memo: "特殊アタッカーとして人気" },
+        { no: "330", name: "フライゴン", type1: "じめん", type2: "ドラゴン", memo: "じめん・ドラゴン複合" },
+        { no: "376", name: "メタグロス", type1: "はがね", type2: "エスパー", memo: "高種族値で人気" },
+        { no: "448", name: "ルカリオ", type1: "かくとう", type2: "はがね", memo: "物理・特殊どちらも可能" },
+        { no: "445", name: "ガブリアス", type1: "ドラゴン", type2: "じめん", memo: "対戦で非常に有名" },
+        { no: "448", name: "ルカリオ", type1: "かくとう", type2: "はがね", memo: "メガ進化経験あり" },
+        { no: "470", name: "リーフィア", type1: "くさ", type2: "", memo: "イーブイの進化系" },
+        { no: "471", name: "グレイシア", type1: "こおり", type2: "", memo: "イーブイの進化系" },
+        { no: "635", name: "サザンドラ", type1: "あく", type2: "ドラゴン", memo: "特殊アタッカーとして強力" },
+        { no: "658", name: "ゲッコウガ", type1: "みず", type2: "あく", memo: "高い素早さが魅力" },
+        { no: "700", name: "ニンフィア", type1: "フェアリー", type2: "", memo: "イーブイの進化系" },
+        { no: "778", name: "ミミッキュ", type1: "ゴースト", type2: "フェアリー", memo: "ばけのかわが特徴" },
+        { no: "815", name: "エースバーン", type1: "ほのお", type2: "", memo: "ガラル御三家の最終進化" },
+        { no: "887", name: "ドラパルト", type1: "ドラゴン", type2: "ゴースト", memo: "高速高火力で人気" }
+      ];
+
+      const searchName = document.getElementById("searchName");
+      const searchType = document.getElementById("searchType");
+      const searchBtn = document.getElementById("searchBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const pokemonList = document.getElementById("pokemonList");
+      const emptyMessage = document.getElementById("emptyMessage");
+      const resultCount = document.getElementById("resultCount");
+
+      function escapeHtml(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function getFilteredData() {
+        const nameKeyword = searchName.value.trim().toLowerCase();
+        const typeKeyword = searchType.value;
+
+        return pokemonData.filter(pokemon => {
+          const matchName = !nameKeyword || pokemon.name.toLowerCase().includes(nameKeyword);
+          const matchType = !typeKeyword || pokemon.type1 === typeKeyword || pokemon.type2 === typeKeyword;
+          return matchName && matchType;
+        });
+      }
+
+      function renderList() {
+        const items = getFilteredData();
+        pokemonList.innerHTML = "";
+        emptyMessage.style.display = items.length ? "none" : "block";
+        resultCount.textContent = `検索結果：${items.length}件`;
+
+        items.forEach((pokemon) => {
+          const card = document.createElement("div");
+          card.className = "menu-card";
+
+          const typeText = pokemon.type2
+            ? `${pokemon.type1} / ${pokemon.type2}`
+            : pokemon.type1;
+
+          card.innerHTML = `
+            <h2>No.${escapeHtml(pokemon.no)} ${escapeHtml(pokemon.name)}</h2>
+            <div class="small">タイプ：${escapeHtml(typeText)}</div>
+            <div class="small" style="margin-top:8px;">${escapeHtml(pokemon.memo || "")}</div>
+          `;
+
+          pokemonList.appendChild(card);
+        });
+      }
+
+      searchBtn.addEventListener("click", renderList);
+
+      clearBtn.addEventListener("click", () => {
+        searchName.value = "";
+        searchType.value = "";
+        renderList();
+      });
+
+      searchName.addEventListener("input", renderList);
+      searchType.addEventListener("change", renderList);
+
+      renderList();
+    })();
+  </script>
 </body>
 </html>
