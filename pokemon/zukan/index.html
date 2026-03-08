@@ -553,7 +553,52 @@ function renderEvolution(names) {
   }
   evolutionBox.textContent = names.join(" → ");
 }
+function calculateTypeEffectiveness(typeNames) {
+  const attackTypes = Object.keys(TYPE_CHART);
+  const result = [];
 
+  for (const attackType of attackTypes) {
+    let multiplier = 1;
+
+    for (const defendType of typeNames) {
+      const chart = TYPE_CHART[defendType];
+      if (!chart) continue;
+
+      if (chart.immune.includes(attackType)) {
+        multiplier *= 0;
+      } else if (chart.weak.includes(attackType)) {
+        multiplier *= 2;
+      } else if (chart.resist.includes(attackType)) {
+        multiplier *= 0.5;
+      }
+    }
+
+    result.push({ type: attackType, multiplier });
+  }
+
+  return result;
+}
+
+function renderTypeEffectiveness(typeNames) {
+  const data = calculateTypeEffectiveness(typeNames);
+
+  const weak = data
+    .filter(x => x.multiplier > 1)
+    .map(x => `${TYPE_JA[x.type] || x.type} x${x.multiplier}`);
+
+  const resist = data
+    .filter(x => x.multiplier > 0 && x.multiplier < 1)
+    .map(x => `${TYPE_JA[x.type] || x.type} x${x.multiplier}`);
+
+  const immune = data
+    .filter(x => x.multiplier === 0)
+    .map(x => TYPE_JA[x.type] || x.type);
+
+  renderBadgeList(weaknessList, weak);
+  renderBadgeList(resistList, resist);
+  renderBadgeList(immuneList, immune);
+}
+      
       async function searchPokemon() {
         const query = await normalizeQuery(searchInput.value);
         errorText.textContent = "";
