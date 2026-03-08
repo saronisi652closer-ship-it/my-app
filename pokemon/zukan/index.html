@@ -516,6 +516,7 @@ function renderEvolution(names) {
           await renderAbilities(pokemon.abilities || []);
           renderStats(pokemon.stats || []);
           renderLocalDex(mergedLocalDex);
+          renderEvolution(evolutionNames);
           renderGameData(customRecord);
           renderCustomMemo(customRecord);
 
