@@ -465,7 +465,7 @@
           weightText.textContent = `${pokemon.weight / 10} kg`;
 
           renderTypes(pokemon.types || []);
-          renderAbilities(pokemon.abilities || []);
+          await renderAbilities(pokemon.abilities || []);
           renderStats(pokemon.stats || []);
           renderLocalDex(mergedLocalDex);
           renderGameData(customRecord);
