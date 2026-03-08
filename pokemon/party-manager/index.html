@@ -4,54 +4,383 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ポケモンパーティ管理</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #1e3a8a;
-      color: #fff;
-      padding: 24px 16px 48px;
-    }
-    .wrap {
-      max-width: 860px;
-      margin: 0 auto;
-    }
-    a {
-      color: #dbeafe;
-      text-decoration: none;
-    }
-    .box {
-      margin-top: 18px;
-      background: rgba(255,255,255,0.10);
-      border-radius: 16px;
-      padding: 20px;
-    }
-    textarea {
-      width: 100%;
-      min-height: 220px;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 15px;
-      margin-top: 10px;
-      resize: vertical;
-    }
-    .note {
-      color: #dbeafe;
-      margin-top: 12px;
-    }
-  </style>
+  <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
-  <div class="wrap">
-    <p><a href="../">← ポケモンメニューへ戻る</a></p>
-    <h1>ポケモンパーティ管理</h1>
-
-    <div class="box">
-      <label for="party">パーティメモ（仮）</label>
-      <textarea id="party" placeholder="6体の候補や役割などを書けます"></textarea>
-      <p class="note">あとから保存機能、タイプ相性表示、持ち物管理などを追加できます。</p>
+  <header>
+    <div class="wrap">
+      <h1>ポケモンパーティ管理</h1>
+      <div class="small">パーティの保存・編集・削除ができます</div>
     </div>
-  </div>
+  </header>
+
+  <main class="wrap">
+    <a class="back" href="../">← ポケモンへ戻る</a>
+
+    <div class="grid">
+      <section class="card">
+        <h2 id="editorTitle">新規登録</h2>
+
+        <div class="two">
+          <div>
+            <div class="label">パーティ名</div>
+            <input id="partyName" type="text" placeholder="例：HGSS旅パ">
+          </div>
+          <div>
+            <div class="label">作品</div>
+            <select id="partyGame">
+              <option value="">未設定</option>
+              <option value="SV">SV</option>
+              <option value="剣盾">剣盾</option>
+              <option value="BDSP">BDSP</option>
+              <option value="PLA">PLA</option>
+              <option value="SM/USUM">SM/USUM</option>
+              <option value="XY/ORAS">XY/ORAS</option>
+              <option value="BW/BW2">BW/BW2</option>
+              <option value="DPt">DPt</option>
+              <option value="HGSS">HGSS</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">メンバー</div>
+          <div class="two">
+            <input id="member1" type="text" placeholder="1体目">
+            <input id="member2" type="text" placeholder="2体目">
+          </div>
+          <div class="two" style="margin-top:10px;">
+            <input id="member3" type="text" placeholder="3体目">
+            <input id="member4" type="text" placeholder="4体目">
+          </div>
+          <div class="two" style="margin-top:10px;">
+            <input id="member5" type="text" placeholder="5体目">
+            <input id="member6" type="text" placeholder="6体目">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">タグ（カンマ区切り）</div>
+          <input id="partyTags" type="text" placeholder="例：旅パ, ランクマ, 雨">
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">構築メモ</div>
+          <textarea id="partyNotes" placeholder="役割、技候補、持ち物、育成メモなど"></textarea>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button class="primary" id="saveBtn" type="button">保存</button>
+          <button id="clearBtn" type="button">入力クリア</button>
+          <button class="danger" id="deleteBtn" type="button" style="display:none;">削除</button>
+        </div>
+
+        <div class="small" id="status" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>保存済みパーティ一覧</h2>
+
+        <div class="two" style="margin-bottom:12px;">
+          <div>
+            <div class="label">作品で絞り込み</div>
+            <select id="filterGame">
+              <option value="">すべて</option>
+              <option value="SV">SV</option>
+              <option value="剣盾">剣盾</option>
+              <option value="BDSP">BDSP</option>
+              <option value="PLA">PLA</option>
+              <option value="SM/USUM">SM/USUM</option>
+              <option value="XY/ORAS">XY/ORAS</option>
+              <option value="BW/BW2">BW/BW2</option>
+              <option value="DPt">DPt</option>
+              <option value="HGSS">HGSS</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div>
+            <div class="label">検索</div>
+            <input id="searchBox" type="text" placeholder="パーティ名・メンバー・タグ検索">
+          </div>
+        </div>
+
+        <div id="partyList" class="menu"></div>
+        <div id="emptyMessage" class="small">まだパーティがありません。</div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "pokemon_party_manager_v1";
+
+      const $ = (id) => document.getElementById(id);
+
+      const editorTitle = $("editorTitle");
+      const partyName = $("partyName");
+      const partyGame = $("partyGame");
+      const member1 = $("member1");
+      const member2 = $("member2");
+      const member3 = $("member3");
+      const member4 = $("member4");
+      const member5 = $("member5");
+      const member6 = $("member6");
+      const partyTags = $("partyTags");
+      const partyNotes = $("partyNotes");
+
+      const saveBtn = $("saveBtn");
+      const clearBtn = $("clearBtn");
+      const deleteBtn = $("deleteBtn");
+      const status = $("status");
+
+      const filterGame = $("filterGame");
+      const searchBox = $("searchBox");
+      const partyList = $("partyList");
+      const emptyMessage = $("emptyMessage");
+
+      let parties = loadParties();
+      let editingId = null;
+
+      function loadParties() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveParties() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parties));
+      }
+
+      function setStatus(message) {
+        status.textContent = message;
+        if (message) {
+          setTimeout(() => {
+            if (status.textContent === message) status.textContent = "";
+          }, 2500);
+        }
+      }
+
+      function createId() {
+        return "party_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      }
+
+      function parseTags(text) {
+        return text
+          .split(",")
+          .map(tag => tag.trim())
+          .filter(tag => tag);
+      }
+
+      function escapeHtml(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function getFormData() {
+        return {
+          id: editingId || createId(),
+          name: partyName.value.trim(),
+          game: partyGame.value,
+          members: [
+            member1.value.trim(),
+            member2.value.trim(),
+            member3.value.trim(),
+            member4.value.trim(),
+            member5.value.trim(),
+            member6.value.trim()
+          ].filter(Boolean),
+          tags: parseTags(partyTags.value),
+          notes: partyNotes.value.trim(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+
+      function clearForm() {
+        editingId = null;
+        editorTitle.textContent = "新規登録";
+        partyName.value = "";
+        partyGame.value = "";
+        member1.value = "";
+        member2.value = "";
+        member3.value = "";
+        member4.value = "";
+        member5.value = "";
+        member6.value = "";
+        partyTags.value = "";
+        partyNotes.value = "";
+        deleteBtn.style.display = "none";
+      }
+
+      function fillForm(party) {
+        editingId = party.id;
+        editorTitle.textContent = "編集中：" + (party.name || "無名パーティ");
+        partyName.value = party.name || "";
+        partyGame.value = party.game || "";
+        member1.value = party.members?.[0] || "";
+        member2.value = party.members?.[1] || "";
+        member3.value = party.members?.[2] || "";
+        member4.value = party.members?.[3] || "";
+        member5.value = party.members?.[4] || "";
+        member6.value = party.members?.[5] || "";
+        partyTags.value = (party.tags || []).join(", ");
+        partyNotes.value = party.notes || "";
+        deleteBtn.style.display = "inline-block";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function saveCurrentParty() {
+        const data = getFormData();
+
+        if (!data.name) {
+          setStatus("パーティ名を入れてください");
+          return;
+        }
+
+        const existingIndex = parties.findIndex(p => p.id === data.id);
+
+        if (existingIndex >= 0) {
+          data.createdAt = parties[existingIndex].createdAt || data.updatedAt;
+          parties[existingIndex] = data;
+          setStatus("更新しました");
+        } else {
+          data.createdAt = data.updatedAt;
+          parties.unshift(data);
+          setStatus("保存しました");
+        }
+
+        saveParties();
+        renderList();
+        fillForm(data);
+      }
+
+      function deleteCurrentParty() {
+        if (!editingId) return;
+
+        const target = parties.find(p => p.id === editingId);
+        if (!target) return;
+
+        const ok = confirm(`「${target.name || "このパーティ"}」を削除しますか？`);
+        if (!ok) return;
+
+        parties = parties.filter(p => p.id !== editingId);
+        saveParties();
+        clearForm();
+        renderList();
+        setStatus("削除しました");
+      }
+
+      function getFilteredParties() {
+        const game = filterGame.value;
+        const keyword = searchBox.value.trim().toLowerCase();
+
+        let result = [...parties];
+
+        if (game) {
+          result = result.filter(p => p.game === game);
+        }
+
+        if (keyword) {
+          result = result.filter(p => {
+            const text = [
+              p.name,
+              p.game,
+              ...(p.members || []),
+              ...(p.tags || []),
+              p.notes
+            ].join(" ").toLowerCase();
+
+            return text.includes(keyword);
+          });
+        }
+
+        result.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+        return result;
+      }
+
+      function renderList() {
+        const items = getFilteredParties();
+        partyList.innerHTML = "";
+        emptyMessage.style.display = items.length ? "none" : "block";
+
+        items.forEach((party) => {
+          const card = document.createElement("div");
+          card.className = "menu-card";
+
+          const tagsHtml = (party.tags || []).length
+            ? `<div class="small" style="margin-top:8px;">タグ：${escapeHtml((party.tags || []).join(" / "))}</div>`
+            : "";
+
+          const membersHtml = (party.members || []).length
+            ? `<div class="small" style="margin-top:8px;">メンバー：${escapeHtml((party.members || []).join(" / "))}</div>`
+            : `<div class="small" style="margin-top:8px;">メンバー未入力</div>`;
+
+          const notesHtml = party.notes
+            ? `<div class="small" style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(party.notes)}</div>`
+            : "";
+
+          card.innerHTML = `
+            <h2>${escapeHtml(party.name || "無名パーティ")}</h2>
+            <div class="small">作品：${escapeHtml(party.game || "未設定")}</div>
+            ${membersHtml}
+            ${tagsHtml}
+            ${notesHtml}
+            <div class="row" style="margin-top:12px;">
+              <button type="button" data-action="edit" data-id="${escapeHtml(party.id)}">編集</button>
+              <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(party.id)}">削除</button>
+            </div>
+          `;
+
+          partyList.appendChild(card);
+        });
+
+        partyList.querySelectorAll("button[data-action='edit']").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const target = parties.find(p => p.id === id);
+            if (target) fillForm(target);
+          });
+        });
+
+        partyList.querySelectorAll("button[data-action='delete']").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const target = parties.find(p => p.id === id);
+            if (!target) return;
+
+            const ok = confirm(`「${target.name || "このパーティ"}」を削除しますか？`);
+            if (!ok) return;
+
+            parties = parties.filter(p => p.id !== id);
+            saveParties();
+
+            if (editingId === id) clearForm();
+
+            renderList();
+            setStatus("削除しました");
+          });
+        });
+      }
+
+      saveBtn.addEventListener("click", saveCurrentParty);
+      clearBtn.addEventListener("click", () => {
+        clearForm();
+        setStatus("入力をクリアしました");
+      });
+      deleteBtn.addEventListener("click", deleteCurrentParty);
+      filterGame.addEventListener("change", renderList);
+      searchBox.addEventListener("input", renderList);
+
+      clearForm();
+      renderList();
+    })();
+  </script>
 </body>
 </html>
