@@ -282,6 +282,7 @@ const partyAddStatus = el("partyAddStatus");
 
       const dexCache = {};
       const fetchCache = {};
+      let currentPokemonData = null;
 
       function escapeHtml(text) {
         return String(text ?? "")
