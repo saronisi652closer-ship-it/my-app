@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>アプリホーム</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: linear-gradient(180deg, #0f172a, #111827);
+      color: #fff;
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
+    }
+    h1 {
+      margin: 8px 0 12px;
+      text-align: center;
+      font-size: 30px;
+    }
+    .lead {
+      text-align: center;
+      color: #cbd5e1;
+      margin-bottom: 28px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      display: block;
+      text-decoration: none;
+      color: #fff;
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 22px 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      background: rgba(51, 65, 85, 1);
+      border-color: rgba(255,255,255,0.18);
+    }
+    .icon {
+      font-size: 34px;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+    .card p {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    .footer-note {
+      margin-top: 24px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>シリーズ選択</h1>
+    <p class="lead">遊戯王、ポケモン、その他のページへ移動できます</p>
+
+    <div class="grid">
+      <a class="card" href="./yugioh/">
+        <span class="icon">🃏</span>
+        <h2>遊戯王</h2>
+        <p>カード検索、デッキ管理など</p>
+      </a>
+
+      <a class="card" href="./pokemon/">
+        <span class="icon">⚡</span>
+        <h2>ポケモン</h2>
+        <p>ポケモン図鑑、パーティ管理など</p>
+      </a>
+
+      <a class="card" href="./other/">
+        <span class="icon">📦</span>
+        <h2>その他</h2>
+        <p>あとから新しいシリーズや機能を追加するためのページ</p>
+      </a>
+    </div>
+
+    <div class="footer-note">
+      GitHub Pages用のシンプルなホームページ構成
+    </div>
+  </div>
+</body>
+</html>
