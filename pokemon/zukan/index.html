@@ -635,6 +635,7 @@ function renderTypeEffectiveness(typeNames) {
           renderTypes(pokemon.types || []);
           await renderAbilities(pokemon.abilities || []);
           renderStats(pokemon.stats || []);
+          renderTypeEffectiveness((pokemon.types || []).map(t => t.type.name));
           renderLocalDex(mergedLocalDex);
           renderEvolution(evolutionNames);
           renderGameData(customRecord);
