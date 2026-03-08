@@ -242,8 +242,24 @@
           .replaceAll("'", "&#039;");
       }
 
-      function normalizeQuery(value) {
-        async function buildJaNameMap() {
+      async function normalizeQuery(value) {
+  const raw = value.trim();
+  if (!raw) return "";
+
+  if (/^\d+$/.test(raw)) return raw;
+
+  if (JA_TO_EN[raw]) return JA_TO_EN[raw];
+
+  const map = await buildJaNameMap();
+  if (map[raw]) return map[raw];
+
+  return raw.toLowerCase()
+    .replaceAll("♀", "-f")
+    .replaceAll("♂", "-m")
+    .replaceAll("　", " ")
+    .replaceAll(" ", "-");
+      }
+    async function buildJaNameMap() {
   if (jaNameMap) return jaNameMap;
 
   jaNameMap = {};
@@ -267,17 +283,7 @@
   }
 
   return jaNameMap;
-        }
-        const raw = value.trim();
-        if (!raw) return "";
-        if (/^\d+$/.test(raw)) return raw;
-        if (JA_TO_EN[raw]) return JA_TO_EN[raw];
-        return raw.toLowerCase()
-          .replaceAll("♀", "-f")
-          .replaceAll("♂", "-m")
-          .replaceAll("　", " ")
-          .replaceAll(" ", "-");
-      }
+    }
 
       function loadCustomData() {
         try {
