@@ -512,7 +512,7 @@ function renderEvolution(names) {
 }
 
       async function searchPokemon() {
-        const query = normalizeQuery(searchInput.value);
+        const query = await normalizeQuery(searchInput.value);
         errorText.textContent = "";
         loadingText.textContent = "";
         resultCard.classList.remove("show");
