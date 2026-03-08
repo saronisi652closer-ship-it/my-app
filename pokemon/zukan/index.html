@@ -3,14 +3,56 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ポケモン補完データ管理</title>
+  <title>ポケモン図鑑</title>
   <link rel="stylesheet" href="../../style.css">
+  <style>
+    .result-card img{
+      width:180px;
+      max-width:100%;
+      display:block;
+      margin:0 auto 14px;
+    }
+    .stat-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+    }
+    @media(min-width:700px){
+      .stat-grid{grid-template-columns:repeat(3,1fr)}
+    }
+    .mini-card{
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+    }
+    .badge-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
+    }
+    .badge{
+      display:inline-block;
+      padding:6px 10px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:12px;
+      background:#0f1117;
+    }
+    .result-card{display:none}
+    .result-card.show{display:block}
+    .error-box{color:#fda4af;margin-top:10px}
+    .loading{color:var(--muted);margin-top:10px}
+    .section-gap{margin-top:12px}
+    .preline{white-space:pre-wrap}
+  </style>
 </head>
 <body>
   <header>
     <div class="wrap">
-      <h1>ポケモン補完データ管理</h1>
-      <div class="small">APIで足りない情報を追加・編集できます</div>
+      <h1>ポケモン図鑑</h1>
+      <div class="small">API + 補完データ連携版</div>
     </div>
   </header>
 
@@ -19,114 +61,171 @@
 
     <div class="grid">
       <section class="card">
-        <h2 id="editorTitle">新規登録</h2>
+        <h2>検索</h2>
 
-        <div class="two">
-          <div>
-            <div class="label">ポケモン名</div>
-            <input id="pokemonName" type="text" placeholder="例：ピカチュウ">
-          </div>
-          <div>
-            <div class="label">全国図鑑番号</div>
-            <input id="nationalDex" type="text" placeholder="例：25">
-          </div>
-        </div>
-
-        <div style="margin-top:10px;">
-          <div class="label">地方図鑑番号（カンマ区切り）</div>
-          <input id="localDex" type="text" placeholder="例：カントー:25, ジョウト:22, パルデア:74">
-        </div>
-
-        <div style="margin-top:10px;">
-          <div class="label">作品別データ（カンマ区切り）</div>
-          <input id="gameData" type="text" placeholder="例：HGSS:りゅうのあな, SV:南1番エリア">
-        </div>
-
-        <div style="margin-top:10px;">
-          <div class="label">補足メモ</div>
-          <textarea id="memo" placeholder="例：この作品では進化入手のみ / フォルム違いあり"></textarea>
-        </div>
+        <div class="label">ポケモン名 / 全国図鑑番号</div>
+        <input id="searchInput" type="text" placeholder="例：pikachu / ピカチュウ / 25">
 
         <div class="row" style="margin-top:12px;">
-          <button class="primary" id="saveBtn" type="button">保存</button>
-          <button id="clearBtn" type="button">入力クリア</button>
-          <button class="danger" id="deleteBtn" type="button" style="display:none;">削除</button>
+          <button class="primary" id="searchBtn" type="button">検索</button>
+          <button id="clearBtn" type="button">クリア</button>
         </div>
 
-        <div class="small" id="status" style="margin-top:10px;"></div>
+        <div class="loading" id="loadingText"></div>
+        <div class="error-box" id="errorText"></div>
+
+        <div class="small" style="margin-top:12px;">
+          補完データ管理ページで入れた地方図鑑番号・作品別データ・補足メモも表示されます。
+        </div>
+
+        <div class="section-gap">
+          <a class="menu-card" href="../custom-data/" style="display:block;">
+            <h2>補完データ管理へ</h2>
+            <div class="small">APIに足りない情報を追加・編集</div>
+          </a>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>保存済み補完データ</h2>
+      <section class="card result-card" id="resultCard">
+        <h2 id="pokeTitle">検索結果</h2>
 
-        <div class="two" style="margin-bottom:12px;">
-          <div>
-            <div class="label">検索</div>
-            <input id="searchBox" type="text" placeholder="ポケモン名・作品・メモ検索">
-          </div>
-          <div>
-            <div class="label">件数</div>
-            <div class="small" id="countText">0件</div>
+        <img id="pokeImage" alt="pokemon image">
+
+        <div class="small preline" id="pokeFlavor"></div>
+
+        <div class="section-gap">
+          <div class="label">タイプ</div>
+          <div class="badge-list" id="typeList"></div>
+        </div>
+
+        <div class="section-gap">
+          <div class="label">特性</div>
+          <div class="badge-list" id="abilityList"></div>
+        </div>
+
+        <div class="section-gap">
+          <div class="label">基本情報</div>
+          <div class="stat-grid">
+            <div class="mini-card"><strong>全国図鑑</strong><div id="nationalDex"></div></div>
+            <div class="mini-card"><strong>高さ</strong><div id="heightText"></div></div>
+            <div class="mini-card"><strong>重さ</strong><div id="weightText"></div></div>
           </div>
         </div>
 
-        <div id="dataList" class="menu"></div>
-        <div id="emptyMessage" class="small">まだ補完データがありません。</div>
+        <div class="section-gap">
+          <div class="label">種族値</div>
+          <div class="stat-grid" id="baseStats"></div>
+        </div>
+
+        <div class="section-gap">
+          <div class="label">地方図鑑番号</div>
+          <div class="badge-list" id="localDexList"></div>
+        </div>
+
+        <div class="section-gap">
+          <div class="label">作品別データ</div>
+          <div id="gameDataBox" class="small"></div>
+        </div>
+
+        <div class="section-gap">
+          <div class="label">補足メモ</div>
+          <div id="customMemoBox" class="small preline"></div>
+        </div>
       </section>
     </div>
   </main>
 
   <script>
     (() => {
-      const STORAGE_KEY = "pokemon_custom_data_v1";
+      const API_BASE = "https://pokeapi.co/api/v2";
+      const CUSTOM_KEY = "pokemon_custom_data_v1";
 
-      const $ = (id) => document.getElementById(id);
+      const el = (id) => document.getElementById(id);
+      const searchInput = el("searchInput");
+      const searchBtn = el("searchBtn");
+      const clearBtn = el("clearBtn");
+      const loadingText = el("loadingText");
+      const errorText = el("errorText");
+      const resultCard = el("resultCard");
 
-      const editorTitle = $("editorTitle");
-      const pokemonName = $("pokemonName");
-      const nationalDex = $("nationalDex");
-      const localDex = $("localDex");
-      const gameData = $("gameData");
-      const memo = $("memo");
+      const pokeTitle = el("pokeTitle");
+      const pokeImage = el("pokeImage");
+      const pokeFlavor = el("pokeFlavor");
+      const typeList = el("typeList");
+      const abilityList = el("abilityList");
+      const nationalDex = el("nationalDex");
+      const heightText = el("heightText");
+      const weightText = el("weightText");
+      const baseStats = el("baseStats");
+      const localDexList = el("localDexList");
+      const gameDataBox = el("gameDataBox");
+      const customMemoBox = el("customMemoBox");
 
-      const saveBtn = $("saveBtn");
-      const clearBtn = $("clearBtn");
-      const deleteBtn = $("deleteBtn");
-      const status = $("status");
+      const JA_TO_EN = {
+        "フシギダネ":"bulbasaur",
+        "ヒトカゲ":"charmander",
+        "ゼニガメ":"squirtle",
+        "ピカチュウ":"pikachu",
+        "イーブイ":"eevee",
+        "カビゴン":"snorlax",
+        "ミュウツー":"mewtwo",
+        "カイリュー":"dragonite",
+        "バンギラス":"tyranitar",
+        "サーナイト":"gardevoir",
+        "メタグロス":"metagross",
+        "ルカリオ":"lucario",
+        "ガブリアス":"garchomp",
+        "ゲッコウガ":"greninja",
+        "ミミッキュ":"mimikyu",
+        "ドラパルト":"dragapult",
+        "ニャオハ":"sprigatito",
+        "ホゲータ":"fuecoco",
+        "クワッス":"quaxly",
+        "コライドン":"koraidon",
+        "ミライドン":"miraidon"
+      };
 
-      const searchBox = $("searchBox");
-      const countText = $("countText");
-      const dataList = $("dataList");
-      const emptyMessage = $("emptyMessage");
+      const TYPE_JA = {
+        normal:"ノーマル", fire:"ほのお", water:"みず", electric:"でんき", grass:"くさ",
+        ice:"こおり", fighting:"かくとう", poison:"どく", ground:"じめん", flying:"ひこう",
+        psychic:"エスパー", bug:"むし", rock:"いわ", ghost:"ゴースト", dragon:"ドラゴン",
+        dark:"あく", steel:"はがね", fairy:"フェアリー"
+      };
 
-      let records = loadRecords();
-      let editingId = null;
+      const STAT_JA = {
+        hp:"HP",
+        attack:"こうげき",
+        defense:"ぼうぎょ",
+        "special-attack":"とくこう",
+        "special-defense":"とくぼう",
+        speed:"すばやさ"
+      };
 
-      function loadRecords() {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          return raw ? JSON.parse(raw) : [];
-        } catch (e) {
-          return [];
-        }
-      }
+      const POKEDEXES = [
+        { key:"national", label:"全国" },
+        { key:"kanto", label:"カントー" },
+        { key:"original-johto", label:"ジョウト" },
+        { key:"hoenn", label:"ホウエン" },
+        { key:"original-sinnoh", label:"シンオウ" },
+        { key:"extended-sinnoh", label:"シンオウ(拡張)" },
+        { key:"updated-johto", label:"ジョウト(HGSS)" },
+        { key:"updated-unova", label:"イッシュ(更新)" },
+        { key:"kalos-central", label:"カロス中央" },
+        { key:"kalos-coastal", label:"カロス海岸" },
+        { key:"kalos-mountain", label:"カロス山" },
+        { key:"original-alola", label:"アローラ" },
+        { key:"updated-alola", label:"アローラ(USUM)" },
+        { key:"galar", label:"ガラル" },
+        { key:"isle-of-armor", label:"ヨロイ島" },
+        { key:"crown-tundra", label:"カンムリ雪原" },
+        { key:"hisui", label:"ヒスイ" },
+        { key:"paldea", label:"パルデア" },
+        { key:"kitakami", label:"キタカミ" },
+        { key:"blueberry", label:"ブルーベリー" }
+      ];
 
-      function saveRecords() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-      }
-
-      function setStatus(message) {
-        status.textContent = message;
-        if (message) {
-          setTimeout(() => {
-            if (status.textContent === message) status.textContent = "";
-          }, 2500);
-        }
-      }
-
-      function createId() {
-        return "custom_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      }
+      const dexCache = {};
+      const fetchCache = {};
 
       function escapeHtml(text) {
         return String(text ?? "")
@@ -137,200 +236,239 @@
           .replaceAll("'", "&#039;");
       }
 
-      function parsePairs(text) {
-        return text
-          .split(",")
-          .map(item => item.trim())
-          .filter(Boolean)
-          .map(item => {
-            const parts = item.split(":");
-            return {
-              key: (parts[0] || "").trim(),
-              value: parts.slice(1).join(":").trim()
-            };
-          })
-          .filter(item => item.key && item.value);
+      function normalizeQuery(value) {
+        const raw = value.trim();
+        if (!raw) return "";
+        if (/^\d+$/.test(raw)) return raw;
+        if (JA_TO_EN[raw]) return JA_TO_EN[raw];
+        return raw.toLowerCase()
+          .replaceAll("♀", "-f")
+          .replaceAll("♂", "-m")
+          .replaceAll("　", " ")
+          .replaceAll(" ", "-");
       }
 
-      function pairsToText(pairs) {
-        return (pairs || [])
-          .map(item => `${item.key}:${item.value}`)
-          .join(", ");
+      function loadCustomData() {
+        try {
+          const raw = localStorage.getItem(CUSTOM_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch {
+          return [];
+        }
       }
 
-      function getFormData() {
-        return {
-          id: editingId || createId(),
-          name: pokemonName.value.trim(),
-          nationalDex: nationalDex.value.trim(),
-          localDex: parsePairs(localDex.value),
-          gameData: parsePairs(gameData.value),
-          memo: memo.value.trim(),
-          updatedAt: new Date().toISOString()
-        };
+      function findCustomRecord(nameJa, nationalNo) {
+        const records = loadCustomData();
+        return records.find(r => {
+          const byName = (r.name || "").trim() === (nameJa || "").trim();
+          const byDex = String(r.nationalDex || "").trim() === String(nationalNo || "").trim();
+          return byName || byDex;
+        }) || null;
       }
 
-      function clearForm() {
-        editingId = null;
-        editorTitle.textContent = "新規登録";
-        pokemonName.value = "";
-        nationalDex.value = "";
-        localDex.value = "";
-        gameData.value = "";
-        memo.value = "";
-        deleteBtn.style.display = "none";
+      async function cachedFetchJson(url) {
+        if (fetchCache[url]) return fetchCache[url];
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("fetch_failed");
+        const data = await res.json();
+        fetchCache[url] = data;
+        return data;
       }
 
-      function fillForm(record) {
-        editingId = record.id;
-        editorTitle.textContent = "編集中：" + (record.name || "無名データ");
-        pokemonName.value = record.name || "";
-        nationalDex.value = record.nationalDex || "";
-        localDex.value = pairsToText(record.localDex || []);
-        gameData.value = pairsToText(record.gameData || []);
-        memo.value = record.memo || "";
-        deleteBtn.style.display = "inline-block";
-        window.scrollTo({ top: 0, behavior: "smooth" });
+      async function fetchPokemon(query) {
+        const pokemon = await cachedFetchJson(`${API_BASE}/pokemon/${query}`);
+        const species = await cachedFetchJson(pokemon.species.url);
+        return { pokemon, species };
       }
 
-      function saveCurrent() {
-        const data = getFormData();
+      async function fetchPokedexEntry(pokedexKey, speciesName) {
+        if (!dexCache[pokedexKey]) {
+          dexCache[pokedexKey] = cachedFetchJson(`${API_BASE}/pokedex/${pokedexKey}`);
+        }
+        const dexData = await dexCache[pokedexKey];
+        const entry = (dexData.pokemon_entries || []).find(
+          e => e.pokemon_species && e.pokemon_species.name === speciesName
+        );
+        return entry ? entry.entry_number : null;
+      }
 
-        if (!data.name) {
-          setStatus("ポケモン名を入れてください");
+      async function getLocalDexNumbers(speciesName) {
+        const results = [];
+        for (const dex of POKEDEXES) {
+          try {
+            const num = await fetchPokedexEntry(dex.key, speciesName);
+            if (num !== null) {
+              results.push({ label: dex.label, number: num, source: "api" });
+            }
+          } catch (_) {}
+        }
+        return results;
+      }
+
+      function getJapaneseName(species) {
+        return species.names?.find(n => n.language.name === "ja-Hrkt")?.name
+          || species.names?.find(n => n.language.name === "ja")?.name
+          || species.name;
+      }
+
+      function getJapaneseFlavor(species) {
+        const entry = (species.flavor_text_entries || []).find(
+          x => x.language && x.language.name === "ja-Hrkt"
+        ) || (species.flavor_text_entries || []).find(
+          x => x.language && x.language.name === "ja"
+        );
+        if (!entry) return "";
+        return entry.flavor_text.replace(/\f|\n|\r/g, " ");
+      }
+
+      function renderBadgeList(container, texts) {
+        container.innerHTML = "";
+        if (!texts.length) {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = "データなし";
+          container.appendChild(span);
+          return;
+        }
+        texts.forEach(text => {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = text;
+          container.appendChild(span);
+        });
+      }
+
+      function renderTypes(types) {
+        renderBadgeList(typeList, types
+          .sort((a, b) => a.slot - b.slot)
+          .map(t => TYPE_JA[t.type.name] || t.type.name)
+        );
+      }
+
+      function renderAbilities(abilities) {
+        renderBadgeList(abilityList, abilities
+          .sort((a, b) => a.slot - b.slot)
+          .map(a => a.is_hidden ? `${a.ability.name}（隠れ特性）` : a.ability.name)
+        );
+      }
+
+      function renderStats(stats) {
+        baseStats.innerHTML = "";
+        stats.forEach(s => {
+          const box = document.createElement("div");
+          box.className = "mini-card";
+          box.innerHTML = `<strong>${escapeHtml(STAT_JA[s.stat.name] || s.stat.name)}</strong><div>${escapeHtml(String(s.base_stat))}</div>`;
+          baseStats.appendChild(box);
+        });
+      }
+
+      function mergeLocalDex(apiEntries, customRecord) {
+        const merged = [...apiEntries];
+        const existingLabels = new Set(apiEntries.map(x => x.label));
+
+        (customRecord?.localDex || []).forEach(item => {
+          if (!existingLabels.has(item.key)) {
+            merged.push({ label: item.key, number: item.value, source: "custom" });
+          }
+        });
+
+        return merged;
+      }
+
+      function renderLocalDex(entries) {
+        localDexList.innerHTML = "";
+        if (!entries.length) {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = "地方図鑑番号なし / 未取得";
+          localDexList.appendChild(span);
           return;
         }
 
-        const existingIndex = records.findIndex(r => r.id === data.id);
+        entries.forEach(e => {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = e.source === "custom"
+            ? `${e.label}: ${e.number}（補完）`
+            : `${e.label}: ${e.number}`;
+          localDexList.appendChild(span);
+        });
+      }
 
-        if (existingIndex >= 0) {
-          data.createdAt = records[existingIndex].createdAt || data.updatedAt;
-          records[existingIndex] = data;
-          setStatus("更新しました");
-        } else {
-          data.createdAt = data.updatedAt;
-          records.unshift(data);
-          setStatus("保存しました");
+      function renderGameData(customRecord) {
+        const list = customRecord?.gameData || [];
+        if (!list.length) {
+          gameDataBox.textContent = "補完データなし";
+          return;
+        }
+        gameDataBox.innerHTML = list.map(item =>
+          `<div style="margin-top:6px;"><strong>${escapeHtml(item.key)}</strong>：${escapeHtml(item.value)}</div>`
+        ).join("");
+      }
+
+      function renderCustomMemo(customRecord) {
+        customMemoBox.textContent = customRecord?.memo || "補完メモなし";
+      }
+
+      async function searchPokemon() {
+        const query = normalizeQuery(searchInput.value);
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        resultCard.classList.remove("show");
+
+        if (!query) {
+          errorText.textContent = "ポケモン名か図鑑番号を入れてください。";
+          return;
         }
 
-        saveRecords();
-        renderList();
-        fillForm(data);
-      }
+        try {
+          loadingText.textContent = "取得中...";
+          const { pokemon, species } = await fetchPokemon(query);
 
-      function deleteCurrent() {
-        if (!editingId) return;
+          const nameJa = getJapaneseName(species);
+          const customRecord = findCustomRecord(nameJa, species.id);
+          const apiLocalDex = await getLocalDexNumbers(species.name);
+          const mergedLocalDex = mergeLocalDex(apiLocalDex, customRecord);
 
-        const target = records.find(r => r.id === editingId);
-        if (!target) return;
+          pokeTitle.textContent = `No.${species.id} ${nameJa}`;
+          pokeImage.src =
+            pokemon.sprites?.other?.["official-artwork"]?.front_default ||
+            pokemon.sprites?.front_default ||
+            "";
+          pokeImage.alt = pokeTitle.textContent;
 
-        const ok = confirm(`「${target.name || "このデータ"}」を削除しますか？`);
-        if (!ok) return;
+          pokeFlavor.textContent = getJapaneseFlavor(species) || "図鑑説明は未取得です。";
+          nationalDex.textContent = customRecord?.nationalDex || species.id;
+          heightText.textContent = `${pokemon.height / 10} m`;
+          weightText.textContent = `${pokemon.weight / 10} kg`;
 
-        records = records.filter(r => r.id !== editingId);
-        saveRecords();
-        clearForm();
-        renderList();
-        setStatus("削除しました");
-      }
+          renderTypes(pokemon.types || []);
+          renderAbilities(pokemon.abilities || []);
+          renderStats(pokemon.stats || []);
+          renderLocalDex(mergedLocalDex);
+          renderGameData(customRecord);
+          renderCustomMemo(customRecord);
 
-      function getFilteredRecords() {
-        const keyword = searchBox.value.trim().toLowerCase();
-        let result = [...records];
-
-        if (keyword) {
-          result = result.filter(r => {
-            const text = [
-              r.name,
-              r.nationalDex,
-              ...(r.localDex || []).map(x => `${x.key} ${x.value}`),
-              ...(r.gameData || []).map(x => `${x.key} ${x.value}`),
-              r.memo
-            ].join(" ").toLowerCase();
-
-            return text.includes(keyword);
-          });
+          resultCard.classList.add("show");
+          loadingText.textContent = "";
+        } catch (e) {
+          loadingText.textContent = "";
+          errorText.textContent = "データが見つかりませんでした。英語名または全国図鑑番号でも試してください。";
         }
-
-        result.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
-        return result;
       }
 
-      function renderList() {
-        const items = getFilteredRecords();
-        dataList.innerHTML = "";
-        emptyMessage.style.display = items.length ? "none" : "block";
-        countText.textContent = `${items.length}件`;
-
-        items.forEach((record) => {
-          const card = document.createElement("div");
-          card.className = "menu-card";
-
-          const localDexHtml = (record.localDex || []).length
-            ? `<div class="small" style="margin-top:8px;">地方図鑑：${escapeHtml((record.localDex || []).map(x => `${x.key}:${x.value}`).join(" / "))}</div>`
-            : "";
-
-          const gameDataHtml = (record.gameData || []).length
-            ? `<div class="small" style="margin-top:8px;">作品別：${escapeHtml((record.gameData || []).map(x => `${x.key}:${x.value}`).join(" / "))}</div>`
-            : "";
-
-          const memoHtml = record.memo
-            ? `<div class="small" style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(record.memo)}</div>`
-            : "";
-
-          card.innerHTML = `
-            <h2>${escapeHtml(record.name || "無名データ")}</h2>
-            <div class="small">全国図鑑：${escapeHtml(record.nationalDex || "未設定")}</div>
-            ${localDexHtml}
-            ${gameDataHtml}
-            ${memoHtml}
-            <div class="row" style="margin-top:12px;">
-              <button type="button" data-action="edit" data-id="${escapeHtml(record.id)}">編集</button>
-              <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(record.id)}">削除</button>
-            </div>
-          `;
-
-          dataList.appendChild(card);
-        });
-
-        dataList.querySelectorAll("button[data-action='edit']").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const target = records.find(r => r.id === id);
-            if (target) fillForm(target);
-          });
-        });
-
-        dataList.querySelectorAll("button[data-action='delete']").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const target = records.find(r => r.id === id);
-            if (!target) return;
-
-            const ok = confirm(`「${target.name || "このデータ"}」を削除しますか？`);
-            if (!ok) return;
-
-            records = records.filter(r => r.id !== id);
-            saveRecords();
-
-            if (editingId === id) clearForm();
-
-            renderList();
-            setStatus("削除しました");
-          });
-        });
+      function clearResult() {
+        searchInput.value = "";
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        resultCard.classList.remove("show");
       }
 
-      saveBtn.addEventListener("click", saveCurrent);
-      clearBtn.addEventListener("click", () => {
-        clearForm();
-        setStatus("入力をクリアしました");
+      searchBtn.addEventListener("click", searchPokemon);
+      clearBtn.addEventListener("click", clearResult);
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchPokemon();
       });
-      deleteBtn.addEventListener("click", deleteCurrent);
-      searchBox.addEventListener("input", renderList);
-
-      clearForm();
-      renderList();
     })();
   </script>
 </body>
