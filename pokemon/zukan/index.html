@@ -5,12 +5,63 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ポケモン図鑑</title>
   <link rel="stylesheet" href="../../style.css">
+  <style>
+    .result-card img{
+      width: 180px;
+      max-width: 100%;
+      display: block;
+      margin: 0 auto 14px;
+    }
+    .stat-grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+    @media(min-width:700px){
+      .stat-grid{ grid-template-columns: repeat(3, 1fr); }
+    }
+    .mini-card{
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+    }
+    .type-badges, .ability-badges, .dex-badges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
+    }
+    .badge{
+      display:inline-block;
+      padding:6px 10px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:12px;
+      color:var(--text);
+      background:#0f1117;
+    }
+    .result-card{
+      display:none;
+    }
+    .result-card.show{
+      display:block;
+    }
+    .error-box{
+      color:#fda4af;
+      margin-top:10px;
+    }
+    .loading{
+      color:var(--muted);
+      margin-top:10px;
+    }
+  </style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <h1>ポケモン図鑑</h1>
-      <div class="small">名前・タイプで検索できます</div>
+      <div class="small">PokéAPI連携版</div>
     </div>
   </header>
 
@@ -21,90 +72,150 @@
       <section class="card">
         <h2>検索</h2>
 
-        <div class="label">ポケモン名</div>
-        <input id="searchName" type="text" placeholder="例：ピカチュウ">
-
-        <div class="label" style="margin-top:10px;">タイプ</div>
-        <select id="searchType">
-          <option value="">すべて</option>
-          <option value="ノーマル">ノーマル</option>
-          <option value="ほのお">ほのお</option>
-          <option value="みず">みず</option>
-          <option value="でんき">でんき</option>
-          <option value="くさ">くさ</option>
-          <option value="こおり">こおり</option>
-          <option value="かくとう">かくとう</option>
-          <option value="どく">どく</option>
-          <option value="じめん">じめん</option>
-          <option value="ひこう">ひこう</option>
-          <option value="エスパー">エスパー</option>
-          <option value="むし">むし</option>
-          <option value="いわ">いわ</option>
-          <option value="ゴースト">ゴースト</option>
-          <option value="ドラゴン">ドラゴン</option>
-          <option value="あく">あく</option>
-          <option value="はがね">はがね</option>
-          <option value="フェアリー">フェアリー</option>
-        </select>
+        <div class="label">ポケモン名 / 全国図鑑番号</div>
+        <input id="searchInput" type="text" placeholder="例：pikachu / ピカチュウ / 25">
 
         <div class="row" style="margin-top:12px;">
           <button class="primary" id="searchBtn" type="button">検索</button>
           <button id="clearBtn" type="button">クリア</button>
         </div>
 
-        <div class="small" id="resultCount" style="margin-top:12px;"></div>
+        <div class="loading" id="loadingText"></div>
+        <div class="error-box" id="errorText"></div>
+
+        <div class="small" style="margin-top:12px;">
+          日本語名は内部で英語名に変換して検索します。<br>
+          まずは主要ポケモンから使える形にしてあります。
+        </div>
       </section>
 
-      <section class="card">
-        <h2>検索結果</h2>
-        <div id="pokemonList" class="menu"></div>
-        <div id="emptyMessage" class="small">該当するポケモンがいません。</div>
+      <section class="card result-card" id="resultCard">
+        <h2 id="pokeTitle">検索結果</h2>
+
+        <img id="pokeImage" alt="pokemon image">
+
+        <div class="small" id="pokeFlavor"></div>
+
+        <div style="margin-top:12px;">
+          <div class="label">タイプ</div>
+          <div class="type-badges" id="typeList"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">特性</div>
+          <div class="ability-badges" id="abilityList"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">基本情報</div>
+          <div class="stat-grid">
+            <div class="mini-card"><strong>全国図鑑</strong><div id="nationalDex"></div></div>
+            <div class="mini-card"><strong>高さ</strong><div id="heightText"></div></div>
+            <div class="mini-card"><strong>重さ</strong><div id="weightText"></div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">種族値</div>
+          <div class="stat-grid" id="baseStats"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">地方図鑑番号</div>
+          <div class="dex-badges" id="localDexList"></div>
+        </div>
       </section>
     </div>
   </main>
 
   <script>
     (() => {
-      const pokemonData = [
-        { no: "001", name: "フシギダネ", type1: "くさ", type2: "どく", memo: "くさ・どくの御三家" },
-        { no: "004", name: "ヒトカゲ", type1: "ほのお", type2: "", memo: "ほのおの御三家" },
-        { no: "007", name: "ゼニガメ", type1: "みず", type2: "", memo: "みずの御三家" },
-        { no: "025", name: "ピカチュウ", type1: "でんき", type2: "", memo: "でんきタイプの代表格" },
-        { no: "037", name: "ロコン", type1: "ほのお", type2: "", memo: "進化するとキュウコン" },
-        { no: "052", name: "ニャース", type1: "ノーマル", type2: "", memo: "作品によって姿違いあり" },
-        { no: "058", name: "ガーディ", type1: "ほのお", type2: "", memo: "しんかいのいしではなくほのおのいしで進化" },
-        { no: "092", name: "ゴース", type1: "ゴースト", type2: "どく", memo: "ゴースト・どくタイプ" },
-        { no: "133", name: "イーブイ", type1: "ノーマル", type2: "", memo: "多くの進化先を持つ" },
-        { no: "143", name: "カビゴン", type1: "ノーマル", type2: "", memo: "高耐久で有名" },
-        { no: "149", name: "カイリュー", type1: "ドラゴン", type2: "ひこう", memo: "600族の代表格" },
-        { no: "150", name: "ミュウツー", type1: "エスパー", type2: "", memo: "伝説のポケモン" },
-        { no: "197", name: "ブラッキー", type1: "あく", type2: "", memo: "イーブイの進化系" },
-        { no: "212", name: "ハッサム", type1: "むし", type2: "はがね", memo: "優秀な複合タイプ" },
-        { no: "248", name: "バンギラス", type1: "いわ", type2: "あく", memo: "砂嵐要員として有名" },
-        { no: "257", name: "バシャーモ", type1: "ほのお", type2: "かくとう", memo: "加速が有名" },
-        { no: "282", name: "サーナイト", type1: "エスパー", type2: "フェアリー", memo: "特殊アタッカーとして人気" },
-        { no: "330", name: "フライゴン", type1: "じめん", type2: "ドラゴン", memo: "じめん・ドラゴン複合" },
-        { no: "376", name: "メタグロス", type1: "はがね", type2: "エスパー", memo: "高種族値で人気" },
-        { no: "448", name: "ルカリオ", type1: "かくとう", type2: "はがね", memo: "物理・特殊どちらも可能" },
-        { no: "445", name: "ガブリアス", type1: "ドラゴン", type2: "じめん", memo: "対戦で非常に有名" },
-        { no: "448", name: "ルカリオ", type1: "かくとう", type2: "はがね", memo: "メガ進化経験あり" },
-        { no: "470", name: "リーフィア", type1: "くさ", type2: "", memo: "イーブイの進化系" },
-        { no: "471", name: "グレイシア", type1: "こおり", type2: "", memo: "イーブイの進化系" },
-        { no: "635", name: "サザンドラ", type1: "あく", type2: "ドラゴン", memo: "特殊アタッカーとして強力" },
-        { no: "658", name: "ゲッコウガ", type1: "みず", type2: "あく", memo: "高い素早さが魅力" },
-        { no: "700", name: "ニンフィア", type1: "フェアリー", type2: "", memo: "イーブイの進化系" },
-        { no: "778", name: "ミミッキュ", type1: "ゴースト", type2: "フェアリー", memo: "ばけのかわが特徴" },
-        { no: "815", name: "エースバーン", type1: "ほのお", type2: "", memo: "ガラル御三家の最終進化" },
-        { no: "887", name: "ドラパルト", type1: "ドラゴン", type2: "ゴースト", memo: "高速高火力で人気" }
+      const API_BASE = "https://pokeapi.co/api/v2";
+
+      const el = (id) => document.getElementById(id);
+      const searchInput = el("searchInput");
+      const searchBtn = el("searchBtn");
+      const clearBtn = el("clearBtn");
+      const loadingText = el("loadingText");
+      const errorText = el("errorText");
+      const resultCard = el("resultCard");
+
+      const pokeTitle = el("pokeTitle");
+      const pokeImage = el("pokeImage");
+      const pokeFlavor = el("pokeFlavor");
+      const typeList = el("typeList");
+      const abilityList = el("abilityList");
+      const nationalDex = el("nationalDex");
+      const heightText = el("heightText");
+      const weightText = el("weightText");
+      const baseStats = el("baseStats");
+      const localDexList = el("localDexList");
+
+      const JA_TO_EN = {
+        "フシギダネ":"bulbasaur",
+        "ヒトカゲ":"charmander",
+        "ゼニガメ":"squirtle",
+        "ピカチュウ":"pikachu",
+        "イーブイ":"eevee",
+        "カビゴン":"snorlax",
+        "ミュウツー":"mewtwo",
+        "カイリュー":"dragonite",
+        "バンギラス":"tyranitar",
+        "サーナイト":"gardevoir",
+        "メタグロス":"metagross",
+        "ルカリオ":"lucario",
+        "ガブリアス":"garchomp",
+        "ゲッコウガ":"greninja",
+        "ミミッキュ":"mimikyu",
+        "ドラパルト":"dragapult",
+        "ニャオハ":"sprigatito",
+        "ホゲータ":"fuecoco",
+        "クワッス":"quaxly",
+        "コライドン":"koraidon",
+        "ミライドン":"miraidon"
+      };
+
+      const TYPE_JA = {
+        normal:"ノーマル", fire:"ほのお", water:"みず", electric:"でんき", grass:"くさ",
+        ice:"こおり", fighting:"かくとう", poison:"どく", ground:"じめん", flying:"ひこう",
+        psychic:"エスパー", bug:"むし", rock:"いわ", ghost:"ゴースト", dragon:"ドラゴン",
+        dark:"あく", steel:"はがね", fairy:"フェアリー"
+      };
+
+      const STAT_JA = {
+        hp:"HP",
+        attack:"こうげき",
+        defense:"ぼうぎょ",
+        "special-attack":"とくこう",
+        "special-defense":"とくぼう",
+        speed:"すばやさ"
+      };
+
+      const POKEDEXES = [
+        { key:"national", label:"全国" },
+        { key:"kanto", label:"カントー" },
+        { key:"original-johto", label:"ジョウト" },
+        { key:"hoenn", label:"ホウエン" },
+        { key:"original-sinnoh", label:"シンオウ" },
+        { key:"extended-sinnoh", label:"シンオウ(拡張)" },
+        { key:"updated-johto", label:"ジョウト(HGSS)" },
+        { key:"updated-unova", label:"イッシュ(更新)" },
+        { key:"kalos-central", label:"カロス中央" },
+        { key:"kalos-coastal", label:"カロス海岸" },
+        { key:"kalos-mountain", label:"カロス山" },
+        { key:"original-alola", label:"アローラ" },
+        { key:"updated-alola", label:"アローラ(USUM)" },
+        { key:"galar", label:"ガラル" },
+        { key:"isle-of-armor", label:"ヨロイ島" },
+        { key:"crown-tundra", label:"カンムリ雪原" },
+        { key:"hisui", label:"ヒスイ" },
+        { key:"paldea", label:"パルデア" },
+        { key:"kitakami", label:"キタカミ" },
+        { key:"blueberry", label:"ブルーベリー" }
       ];
 
-      const searchName = document.getElementById("searchName");
-      const searchType = document.getElementById("searchType");
-      const searchBtn = document.getElementById("searchBtn");
-      const clearBtn = document.getElementById("clearBtn");
-      const pokemonList = document.getElementById("pokemonList");
-      const emptyMessage = document.getElementById("emptyMessage");
-      const resultCount = document.getElementById("resultCount");
+      const dexCache = {};
+      const pokemonCache = {};
 
       function escapeHtml(text) {
         return String(text ?? "")
@@ -115,53 +226,176 @@
           .replaceAll("'", "&#039;");
       }
 
-      function getFilteredData() {
-        const nameKeyword = searchName.value.trim().toLowerCase();
-        const typeKeyword = searchType.value;
+      function normalizeQuery(value) {
+        const raw = value.trim();
+        if (!raw) return "";
+        if (/^\d+$/.test(raw)) return raw;
+        if (JA_TO_EN[raw]) return JA_TO_EN[raw];
+        return raw.toLowerCase()
+          .replaceAll("♀", "-f")
+          .replaceAll("♂", "-m")
+          .replaceAll("　", " ")
+          .replaceAll(" ", "-");
+      }
 
-        return pokemonData.filter(pokemon => {
-          const matchName = !nameKeyword || pokemon.name.toLowerCase().includes(nameKeyword);
-          const matchType = !typeKeyword || pokemon.type1 === typeKeyword || pokemon.type2 === typeKeyword;
-          return matchName && matchType;
+      async function cachedFetchJson(url) {
+        if (pokemonCache[url]) return pokemonCache[url];
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("fetch_failed");
+        const data = await res.json();
+        pokemonCache[url] = data;
+        return data;
+      }
+
+      async function fetchPokemon(query) {
+        const pokemon = await cachedFetchJson(`${API_BASE}/pokemon/${query}`);
+        const species = await cachedFetchJson(pokemon.species.url);
+        return { pokemon, species };
+      }
+
+      async function fetchPokedexEntry(pokedexKey, speciesName) {
+        if (!dexCache[pokedexKey]) {
+          dexCache[pokedexKey] = cachedFetchJson(`${API_BASE}/pokedex/${pokedexKey}`);
+        }
+        const dexData = await dexCache[pokedexKey];
+        const entry = (dexData.pokemon_entries || []).find(
+          e => e.pokemon_species && e.pokemon_species.name === speciesName
+        );
+        return entry ? entry.entry_number : null;
+      }
+
+      async function getLocalDexNumbers(speciesName) {
+        const results = [];
+        for (const dex of POKEDEXES) {
+          try {
+            const num = await fetchPokedexEntry(dex.key, speciesName);
+            if (num !== null) {
+              results.push({ label: dex.label, number: num });
+            }
+          } catch (_) {
+            // 個別図鑑エラーは無視して続行
+          }
+        }
+        return results;
+      }
+
+      function getJapaneseFlavor(species) {
+        const entry = (species.flavor_text_entries || []).find(
+          x => x.language && x.language.name === "ja-Hrkt"
+        ) || (species.flavor_text_entries || []).find(
+          x => x.language && x.language.name === "ja"
+        );
+        if (!entry) return "";
+        return entry.flavor_text.replace(/\f|\n|\r/g, " ");
+      }
+
+      function renderTypes(types) {
+        typeList.innerHTML = "";
+        types
+          .sort((a, b) => a.slot - b.slot)
+          .forEach(t => {
+            const span = document.createElement("span");
+            span.className = "badge";
+            span.textContent = TYPE_JA[t.type.name] || t.type.name;
+            typeList.appendChild(span);
+          });
+      }
+
+      function renderAbilities(abilities) {
+        abilityList.innerHTML = "";
+        abilities
+          .sort((a, b) => a.slot - b.slot)
+          .forEach(a => {
+            const span = document.createElement("span");
+            span.className = "badge";
+            span.textContent = a.is_hidden
+              ? `${a.ability.name}（隠れ特性）`
+              : a.ability.name;
+            abilityList.appendChild(span);
+          });
+      }
+
+      function renderStats(stats) {
+        baseStats.innerHTML = "";
+        stats.forEach(s => {
+          const box = document.createElement("div");
+          box.className = "mini-card";
+          box.innerHTML = `<strong>${escapeHtml(STAT_JA[s.stat.name] || s.stat.name)}</strong><div>${escapeHtml(String(s.base_stat))}</div>`;
+          baseStats.appendChild(box);
         });
       }
 
-      function renderList() {
-        const items = getFilteredData();
-        pokemonList.innerHTML = "";
-        emptyMessage.style.display = items.length ? "none" : "block";
-        resultCount.textContent = `検索結果：${items.length}件`;
-
-        items.forEach((pokemon) => {
-          const card = document.createElement("div");
-          card.className = "menu-card";
-
-          const typeText = pokemon.type2
-            ? `${pokemon.type1} / ${pokemon.type2}`
-            : pokemon.type1;
-
-          card.innerHTML = `
-            <h2>No.${escapeHtml(pokemon.no)} ${escapeHtml(pokemon.name)}</h2>
-            <div class="small">タイプ：${escapeHtml(typeText)}</div>
-            <div class="small" style="margin-top:8px;">${escapeHtml(pokemon.memo || "")}</div>
-          `;
-
-          pokemonList.appendChild(card);
+      function renderLocalDex(entries) {
+        localDexList.innerHTML = "";
+        if (!entries.length) {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = "地方図鑑番号なし / 未取得";
+          localDexList.appendChild(span);
+          return;
+        }
+        entries.forEach(e => {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = `${e.label}: ${e.number}`;
+          localDexList.appendChild(span);
         });
       }
 
-      searchBtn.addEventListener("click", renderList);
+      async function searchPokemon() {
+        const query = normalizeQuery(searchInput.value);
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        resultCard.classList.remove("show");
 
-      clearBtn.addEventListener("click", () => {
-        searchName.value = "";
-        searchType.value = "";
-        renderList();
+        if (!query) {
+          errorText.textContent = "ポケモン名か図鑑番号を入れてください。";
+          return;
+        }
+
+        try {
+          loadingText.textContent = "取得中...";
+          const { pokemon, species } = await fetchPokemon(query);
+          const localDex = await getLocalDexNumbers(species.name);
+
+          pokeTitle.textContent = `No.${species.id} ${species.names?.find(n => n.language.name === "ja-Hrkt")?.name || species.names?.find(n => n.language.name === "ja")?.name || species.name}`;
+          pokeImage.src =
+            pokemon.sprites?.other?.["official-artwork"]?.front_default ||
+            pokemon.sprites?.front_default ||
+            "";
+          pokeImage.alt = pokeTitle.textContent;
+
+          pokeFlavor.textContent = getJapaneseFlavor(species) || "図鑑説明は未取得です。";
+
+          nationalDex.textContent = species.id;
+          heightText.textContent = `${pokemon.height / 10} m`;
+          weightText.textContent = `${pokemon.weight / 10} kg`;
+
+          renderTypes(pokemon.types || []);
+          renderAbilities(pokemon.abilities || []);
+          renderStats(pokemon.stats || []);
+          renderLocalDex(localDex);
+
+          resultCard.classList.add("show");
+          loadingText.textContent = "";
+        } catch (e) {
+          loadingText.textContent = "";
+          errorText.textContent = "データが見つかりませんでした。英語名または全国図鑑番号でも試してください。";
+        }
+      }
+
+      function clearResult() {
+        searchInput.value = "";
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        resultCard.classList.remove("show");
+      }
+
+      searchBtn.addEventListener("click", searchPokemon);
+      clearBtn.addEventListener("click", clearResult);
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchPokemon();
       });
-
-      searchName.addEventListener("input", renderList);
-      searchType.addEventListener("change", renderList);
-
-      renderList();
     })();
   </script>
 </body>
