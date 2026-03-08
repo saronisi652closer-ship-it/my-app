@@ -436,6 +436,48 @@
       function renderCustomMemo(customRecord) {
         customMemoBox.textContent = customRecord?.memo || "補完メモなし";
       }
+      async function fetchEvolutionNames(species) {
+  if (!species.evolution_chain || !species.evolution_chain.url) return [];
+
+  const chainData = await cachedFetchJson(species.evolution_chain.url);
+  const names = [];
+
+  function walkChain(node) {
+    if (!node) return;
+    if (node.species && node.species.name) {
+      names.push(node.species.name);
+    }
+    if (node.evolves_to && node.evolves_to.length) {
+      node.evolves_to.forEach(walkChain);
+    }
+  }
+
+  walkChain(chainData.chain);
+
+  const jaNames = [];
+  for (const enName of names) {
+    try {
+      const speciesData = await cachedFetchJson(`${API_BASE}/pokemon-species/${enName}`);
+      const jaName =
+        speciesData.names?.find(n => n.language.name === "ja-Hrkt")?.name ||
+        speciesData.names?.find(n => n.language.name === "ja")?.name ||
+        enName;
+      jaNames.push(jaName);
+    } catch (e) {
+      jaNames.push(enName);
+    }
+  }
+
+  return jaNames;
+}
+
+function renderEvolution(names) {
+  if (!names.length) {
+    evolutionBox.textContent = "進化系統データなし";
+    return;
+  }
+  evolutionBox.textContent = names.join(" → ");
+}
 
       async function searchPokemon() {
         const query = normalizeQuery(searchInput.value);
