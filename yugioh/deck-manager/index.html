@@ -4,54 +4,379 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>遊戯王デッキ管理</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #111827;
-      color: #fff;
-      padding: 24px 16px 48px;
-    }
-    .wrap {
-      max-width: 860px;
-      margin: 0 auto;
-    }
-    a {
-      color: #93c5fd;
-      text-decoration: none;
-    }
-    .box {
-      margin-top: 18px;
-      background: #1f2937;
-      border-radius: 16px;
-      padding: 20px;
-    }
-    textarea {
-      width: 100%;
-      min-height: 220px;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 15px;
-      margin-top: 10px;
-      resize: vertical;
-    }
-    .note {
-      color: #d1d5db;
-      margin-top: 12px;
-    }
-  </style>
+  <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
-  <div class="wrap">
-    <p><a href="../">← 遊戯王メニューへ戻る</a></p>
-    <h1>遊戯王デッキ管理</h1>
-
-    <div class="box">
-      <label for="deck">デッキメモ（仮）</label>
-      <textarea id="deck" placeholder="カード名を1行ずつ書くなど、あとから管理機能を足せます"></textarea>
-      <p class="note">まずはデッキページの土台です。保存機能や分類機能は後で追加できます。</p>
+  <header>
+    <div class="wrap">
+      <h1>遊戯王デッキ管理</h1>
+      <div class="small">デッキの保存・編集・削除ができます</div>
     </div>
-  </div>
+  </header>
+
+  <main class="wrap">
+    <a class="back" href="../">← 遊戯王へ戻る</a>
+
+    <div class="grid">
+      <section class="card">
+        <h2 id="editorTitle">新規登録</h2>
+
+        <div class="two">
+          <div>
+            <div class="label">分類</div>
+            <select id="deckFormat">
+              <option value="">未設定</option>
+              <option value="OCG">OCG</option>
+              <option value="MD">MD</option>
+              <option value="LOTD">LOTD</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div>
+            <div class="label">デッキ名</div>
+            <input id="deckName" type="text" placeholder="例：獄神 後攻OTK">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">メインデッキ</div>
+          <textarea id="deckMain" placeholder="例：
+灰流うらら x3
+増殖するG x2
+青眼の白龍 x1"></textarea>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">エクストラデッキ</div>
+          <textarea id="deckExtra" placeholder="例：
+アクセスコード・トーカー x1"></textarea>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">サイドデッキ</div>
+          <textarea id="deckSide" placeholder="例：
+原始生命態ニビル x2"></textarea>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">タグ（カンマ区切り）</div>
+          <input id="deckTags" type="text" placeholder="例：後攻, OTK, カジュアル">
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">メモ</div>
+          <textarea id="deckNotes" placeholder="回し方、採用理由、候補カードなど"></textarea>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button class="primary" id="saveBtn" type="button">保存</button>
+          <button id="clearBtn" type="button">入力クリア</button>
+          <button class="danger" id="deleteBtn" type="button" style="display:none;">削除</button>
+        </div>
+
+        <div class="small" id="status" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>保存済みデッキ一覧</h2>
+
+        <div class="two" style="margin-bottom:12px;">
+          <div>
+            <div class="label">分類で絞り込み</div>
+            <select id="filterFormat">
+              <option value="">すべて</option>
+              <option value="OCG">OCG</option>
+              <option value="MD">MD</option>
+              <option value="LOTD">LOTD</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div>
+            <div class="label">検索</div>
+            <input id="searchBox" type="text" placeholder="デッキ名・カード名・タグ検索">
+          </div>
+        </div>
+
+        <div id="deckList" class="menu"></div>
+        <div id="emptyMessage" class="small">まだデッキがありません。</div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "yugioh_deck_manager_v1";
+
+      const $ = (id) => document.getElementById(id);
+
+      const editorTitle = $("editorTitle");
+      const deckFormat = $("deckFormat");
+      const deckName = $("deckName");
+      const deckMain = $("deckMain");
+      const deckExtra = $("deckExtra");
+      const deckSide = $("deckSide");
+      const deckTags = $("deckTags");
+      const deckNotes = $("deckNotes");
+
+      const saveBtn = $("saveBtn");
+      const clearBtn = $("clearBtn");
+      const deleteBtn = $("deleteBtn");
+      const status = $("status");
+
+      const filterFormat = $("filterFormat");
+      const searchBox = $("searchBox");
+      const deckList = $("deckList");
+      const emptyMessage = $("emptyMessage");
+
+      let decks = loadDecks();
+      let editingId = null;
+
+      function loadDecks() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveDecks() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(decks));
+      }
+
+      function setStatus(message) {
+        status.textContent = message;
+        if (message) {
+          setTimeout(() => {
+            if (status.textContent === message) status.textContent = "";
+          }, 2500);
+        }
+      }
+
+      function createId() {
+        return "deck_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      }
+
+      function parseTags(text) {
+        return text
+          .split(",")
+          .map(tag => tag.trim())
+          .filter(tag => tag);
+      }
+
+      function escapeHtml(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function countCards(text) {
+        const lines = text.split("\n").map(line => line.trim()).filter(Boolean);
+        let total = 0;
+
+        for (const line of lines) {
+          const match = line.match(/(?:x|×)?\s*(\d+)$/i);
+          if (match) {
+            total += Number(match[1]);
+          } else {
+            total += 1;
+          }
+        }
+
+        return total;
+      }
+
+      function getFormData() {
+        return {
+          id: editingId || createId(),
+          format: deckFormat.value,
+          name: deckName.value.trim(),
+          main: deckMain.value.trim(),
+          extra: deckExtra.value.trim(),
+          side: deckSide.value.trim(),
+          tags: parseTags(deckTags.value),
+          notes: deckNotes.value.trim(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+
+      function clearForm() {
+        editingId = null;
+        editorTitle.textContent = "新規登録";
+        deckFormat.value = "";
+        deckName.value = "";
+        deckMain.value = "";
+        deckExtra.value = "";
+        deckSide.value = "";
+        deckTags.value = "";
+        deckNotes.value = "";
+        deleteBtn.style.display = "none";
+      }
+
+      function fillForm(deck) {
+        editingId = deck.id;
+        editorTitle.textContent = "編集中：" + (deck.name || "無名デッキ");
+        deckFormat.value = deck.format || "";
+        deckName.value = deck.name || "";
+        deckMain.value = deck.main || "";
+        deckExtra.value = deck.extra || "";
+        deckSide.value = deck.side || "";
+        deckTags.value = (deck.tags || []).join(", ");
+        deckNotes.value = deck.notes || "";
+        deleteBtn.style.display = "inline-block";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function saveCurrentDeck() {
+        const data = getFormData();
+
+        if (!data.name) {
+          setStatus("デッキ名を入れてください");
+          return;
+        }
+
+        const existingIndex = decks.findIndex(d => d.id === data.id);
+
+        if (existingIndex >= 0) {
+          data.createdAt = decks[existingIndex].createdAt || data.updatedAt;
+          decks[existingIndex] = data;
+          setStatus("更新しました");
+        } else {
+          data.createdAt = data.updatedAt;
+          decks.unshift(data);
+          setStatus("保存しました");
+        }
+
+        saveDecks();
+        renderList();
+        fillForm(data);
+      }
+
+      function deleteCurrentDeck() {
+        if (!editingId) return;
+
+        const target = decks.find(d => d.id === editingId);
+        if (!target) return;
+
+        const ok = confirm(`「${target.name || "このデッキ"}」を削除しますか？`);
+        if (!ok) return;
+
+        decks = decks.filter(d => d.id !== editingId);
+        saveDecks();
+        clearForm();
+        renderList();
+        setStatus("削除しました");
+      }
+
+      function getFilteredDecks() {
+        const format = filterFormat.value;
+        const keyword = searchBox.value.trim().toLowerCase();
+
+        let result = [...decks];
+
+        if (format) {
+          result = result.filter(d => d.format === format);
+        }
+
+        if (keyword) {
+          result = result.filter(d => {
+            const text = [
+              d.name,
+              d.format,
+              d.main,
+              d.extra,
+              d.side,
+              ...(d.tags || []),
+              d.notes
+            ].join(" ").toLowerCase();
+
+            return text.includes(keyword);
+          });
+        }
+
+        result.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+        return result;
+      }
+
+      function renderList() {
+        const items = getFilteredDecks();
+        deckList.innerHTML = "";
+        emptyMessage.style.display = items.length ? "none" : "block";
+
+        items.forEach((deck) => {
+          const card = document.createElement("div");
+          card.className = "menu-card";
+
+          const mainCount = countCards(deck.main || "");
+          const extraCount = countCards(deck.extra || "");
+          const sideCount = countCards(deck.side || "");
+
+          const tagsHtml = (deck.tags || []).length
+            ? `<div class="small" style="margin-top:8px;">タグ：${escapeHtml((deck.tags || []).join(" / "))}</div>`
+            : "";
+
+          const notesHtml = deck.notes
+            ? `<div class="small" style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(deck.notes)}</div>`
+            : "";
+
+          card.innerHTML = `
+            <h2>${escapeHtml(deck.name || "無名デッキ")}</h2>
+            <div class="small">分類：${escapeHtml(deck.format || "未設定")}</div>
+            <div class="small" style="margin-top:6px;">メイン ${mainCount}枚 / エクストラ ${extraCount}枚 / サイド ${sideCount}枚</div>
+            ${tagsHtml}
+            ${notesHtml}
+            <div class="row" style="margin-top:12px;">
+              <button type="button" data-action="edit" data-id="${escapeHtml(deck.id)}">編集</button>
+              <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(deck.id)}">削除</button>
+            </div>
+          `;
+
+          deckList.appendChild(card);
+        });
+
+        deckList.querySelectorAll("button[data-action='edit']").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const target = decks.find(d => d.id === id);
+            if (target) fillForm(target);
+          });
+        });
+
+        deckList.querySelectorAll("button[data-action='delete']").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const target = decks.find(d => d.id === id);
+            if (!target) return;
+
+            const ok = confirm(`「${target.name || "このデッキ"}」を削除しますか？`);
+            if (!ok) return;
+
+            decks = decks.filter(d => d.id !== id);
+            saveDecks();
+
+            if (editingId === id) clearForm();
+
+            renderList();
+            setStatus("削除しました");
+          });
+        });
+      }
+
+      saveBtn.addEventListener("click", saveCurrentDeck);
+      clearBtn.addEventListener("click", () => {
+        clearForm();
+        setStatus("入力をクリアしました");
+      });
+      deleteBtn.addEventListener("click", deleteCurrentDeck);
+      filterFormat.addEventListener("change", renderList);
+      searchBox.addEventListener("input", renderList);
+
+      clearForm();
+      renderList();
+    })();
+  </script>
 </body>
 </html>
