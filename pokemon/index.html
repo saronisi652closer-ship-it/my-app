@@ -11,30 +11,71 @@
       font-family: sans-serif;
       background: #172554;
       color: #fff;
+      min-height: 100vh;
     }
     .wrap {
-      max-width: 800px;
+      max-width: 860px;
       margin: 0 auto;
-      padding: 24px 16px 40px;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
+      padding: 24px 16px 48px;
     }
     .back {
       display: inline-block;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       color: #bfdbfe;
       text-decoration: none;
     }
+    h1 {
+      margin: 0 0 18px;
+      font-size: 28px;
+    }
     .menu {
       display: grid;
-      gap: 14px;
+      gap: 16px;
     }
     .card {
       display: block;
       text-decoration: none;
       color: #fff;
+      background: #1d4ed8;
+      border-radius: 18px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: transform .15s ease, background .15s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      background: #2563eb;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+    .card p {
+      margin: 0;
+      color: #dbeafe;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../">← ホームへ戻る</a>
+    <h1>ポケモン</h1>
+
+    <div class="menu">
+      <a class="card" href="./zukan/">
+        <h2>ポケモン図鑑</h2>
+        <p>ポケモン情報の確認ページ</p>
+      </a>
+
+      <a class="card" href="./party-manager/">
+        <h2>パーティ管理</h2>
+        <p>手持ちや構築メモの管理ページ</p>
+      </a>
+    </div>
+  </div>
+</body>
+</html>      color: #fff;
       background: #1d4ed8;
       border-radius: 16px;
       padding: 18px;
