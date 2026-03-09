@@ -243,6 +243,18 @@ const candidateEmpty = $("candidateEmpty");
         deleteBtn.style.display = "inline-block";
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
+      
+      function applyCandidate(candidate) {
+  partyName.value = candidate.name || "";
+  member1.value = candidate.name || "";
+  partyNotes.value = [
+    candidate.types?.length ? `タイプ: ${candidate.types.join(" / ")}` : "",
+    candidate.abilities?.length ? `特性: ${candidate.abilities.join(" / ")}` : "",
+    candidate.memo || ""
+  ].filter(Boolean).join("\n");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+      }
 
       function saveCurrentParty() {
         const data = getFormData();
