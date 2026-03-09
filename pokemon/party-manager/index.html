@@ -402,6 +402,66 @@ function setStatus(message) {
         });
       }
 
+      function renderCandidates() {
+  const candidates = loadCandidates();
+  candidateList.innerHTML = "";
+  candidateEmpty.style.display = candidates.length ? "none" : "block";
+
+  candidates.forEach((candidate) => {
+    const card = document.createElement("div");
+    card.className = "menu-card";
+
+    const typeText = candidate.types?.length
+      ? `タイプ：${candidate.types.join(" / ")}`
+      : "タイプ未設定";
+
+    const abilityText = candidate.abilities?.length
+      ? `特性：${candidate.abilities.join(" / ")}`
+      : "特性未設定";
+
+    card.innerHTML = `
+      <h2>${escapeHtml(candidate.name || "無名候補")}</h2>
+      <div class="small">${escapeHtml(typeText)}</div>
+      <div class="small" style="margin-top:6px;">${escapeHtml(abilityText)}</div>
+      <div class="row" style="margin-top:12px;">
+        <button type="button" data-action="use" data-id="${escapeHtml(candidate.id)}">フォームに反映</button>
+        <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(candidate.id)}">削除</button>
+      </div>
+    `;
+
+    candidateList.appendChild(card);
+  });
+
+  candidateList.querySelectorAll("button[data-action='use']").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const candidates = loadCandidates();
+      const target = candidates.find(c => c.id === id);
+      if (target) {
+        applyCandidate(target);
+        setStatus("候補をフォームに反映しました");
+      }
+    });
+  });
+
+  candidateList.querySelectorAll("button[data-action='delete']").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      let candidates = loadCandidates();
+      const target = candidates.find(c => c.id === id);
+      if (!target) return;
+
+      const ok = confirm(`「${target.name || "この候補"}」を削除しますか？`);
+      if (!ok) return;
+
+      candidates = candidates.filter(c => c.id !== id);
+      saveCandidates(candidates);
+      renderCandidates();
+      setStatus("候補を削除しました");
+    });
+  });
+      }
+
       saveBtn.addEventListener("click", saveCurrentParty);
       clearBtn.addEventListener("click", () => {
         clearForm();
