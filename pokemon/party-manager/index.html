@@ -160,17 +160,30 @@ const candidateEmpty = $("candidateEmpty");
       }
 
       function saveParties() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(parties));
-      }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(parties));
+}
 
-      function setStatus(message) {
-        status.textContent = message;
-        if (message) {
-          setTimeout(() => {
-            if (status.textContent === message) status.textContent = "";
-          }, 2500);
-        }
-      }
+function loadCandidates() {
+  try {
+    const raw = localStorage.getItem(CANDIDATE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveCandidates(candidates) {
+  localStorage.setItem(CANDIDATE_KEY, JSON.stringify(candidates));
+}
+
+function setStatus(message) {
+  status.textContent = message;
+  if (message) {
+    setTimeout(() => {
+      if (status.textContent === message) status.textContent = "";
+    }, 2500);
+  }
+}
 
       function createId() {
         return "party_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
