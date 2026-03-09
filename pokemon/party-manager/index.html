@@ -81,28 +81,29 @@
 
       <section class="card">
         <h2>保存済みパーティ一覧</h2>
+
         <div class="card" style="margin-bottom:12px;">
-  <h2>図鑑から追加した候補</h2>
-  <div id="candidateList" class="menu"></div>
-  <div id="candidateEmpty" class="small">候補はまだありません。</div>
+          <h2>図鑑から追加した候補</h2>
+          <div id="candidateList" class="menu"></div>
+          <div id="candidateEmpty" class="small">候補はまだありません。</div>
         </div>
 
         <div class="card" style="margin-bottom:12px;">
-  <h2>パーティ分析</h2>
+          <h2>パーティ分析</h2>
 
-  <div style="margin-top:8px;">
-    <div class="label">タイプバランス</div>
-    <div id="typeBalanceBox" class="small">まだ分析結果がありません。</div>
-  </div>
+          <div style="margin-top:8px;">
+            <div class="label">タイプバランス</div>
+            <div id="typeBalanceBox" class="small">まだ分析結果がありません。</div>
+          </div>
 
-  <div style="margin-top:12px;">
-    <div class="label">弱点まとめ</div>
-    <div id="weaknessSummaryBox" class="small">まだ分析結果がありません。</div>
-  </div>
+          <div style="margin-top:12px;">
+            <div class="label">弱点まとめ</div>
+            <div id="weaknessSummaryBox" class="small">まだ分析結果がありません。</div>
+          </div>
 
-  <div class="row" style="margin-top:12px;">
-    <button type="button" id="analyzeBtn">今の入力内容を分析</button>
-  </div>
+          <div class="row" style="margin-top:12px;">
+            <button type="button" id="analyzeBtn">今の入力内容を分析</button>
+          </div>
         </div>
 
         <div class="two" style="margin-bottom:12px;">
@@ -139,6 +140,71 @@
       const STORAGE_KEY = "pokemon_party_manager_v1";
       const CANDIDATE_KEY = "pokemon_party_candidates_v1";
 
+      const TYPE_CHART = {
+        normal:   { weak:["fighting"], resist:[], immune:["ghost"] },
+        fire:     { weak:["water","ground","rock"], resist:["fire","grass","ice","bug","steel","fairy"], immune:[] },
+        water:    { weak:["electric","grass"], resist:["fire","water","ice","steel"], immune:[] },
+        electric: { weak:["ground"], resist:["electric","flying","steel"], immune:[] },
+        grass:    { weak:["fire","ice","poison","flying","bug"], resist:["water","electric","grass","ground"], immune:[] },
+        ice:      { weak:["fire","fighting","rock","steel"], resist:["ice"], immune:[] },
+        fighting: { weak:["flying","psychic","fairy"], resist:["bug","rock","dark"], immune:[] },
+        poison:   { weak:["ground","psychic"], resist:["grass","fighting","poison","bug","fairy"], immune:[] },
+        ground:   { weak:["water","grass","ice"], resist:["poison","rock"], immune:["electric"] },
+        flying:   { weak:["electric","ice","rock"], resist:["grass","fighting","bug"], immune:["ground"] },
+        psychic:  { weak:["bug","ghost","dark"], resist:["fighting","psychic"], immune:[] },
+        bug:      { weak:["fire","flying","rock"], resist:["grass","fighting","ground"], immune:[] },
+        rock:     { weak:["water","grass","fighting","ground","steel"], resist:["normal","fire","poison","flying"], immune:[] },
+        ghost:    { weak:["ghost","dark"], resist:["poison","bug"], immune:["normal","fighting"] },
+        dragon:   { weak:["ice","dragon","fairy"], resist:["fire","water","electric","grass"], immune:[] },
+        dark:     { weak:["fighting","bug","fairy"], resist:["ghost","dark"], immune:["psychic"] },
+        steel:    { weak:["fire","fighting","ground"], resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"], immune:["poison"] },
+        fairy:    { weak:["poison","steel"], resist:["fighting","bug","dark"], immune:["dragon"] }
+      };
+
+      const TYPE_JA = {
+        normal:"ノーマル", fire:"ほのお", water:"みず", electric:"でんき", grass:"くさ",
+        ice:"こおり", fighting:"かくとう", poison:"どく", ground:"じめん", flying:"ひこう",
+        psychic:"エスパー", bug:"むし", rock:"いわ", ghost:"ゴースト", dragon:"ドラゴン",
+        dark:"あく", steel:"はがね", fairy:"フェアリー"
+      };
+
+      const POKEMON_TYPE_MAP = {
+        "ピカチュウ":["electric"],
+        "ライチュウ":["electric"],
+        "フシギダネ":["grass","poison"],
+        "フシギソウ":["grass","poison"],
+        "フシギバナ":["grass","poison"],
+        "ヒトカゲ":["fire"],
+        "リザード":["fire"],
+        "リザードン":["fire","flying"],
+        "ゼニガメ":["water"],
+        "カメール":["water"],
+        "カメックス":["water"],
+        "ミニリュウ":["dragon"],
+        "ハクリュー":["dragon"],
+        "カイリュー":["dragon","flying"],
+        "イーブイ":["normal"],
+        "シャワーズ":["water"],
+        "サンダース":["electric"],
+        "ブースター":["fire"],
+        "エーフィ":["psychic"],
+        "ブラッキー":["dark"],
+        "リーフィア":["grass"],
+        "グレイシア":["ice"],
+        "ニンフィア":["fairy"],
+        "ガブリアス":["dragon","ground"],
+        "ルカリオ":["fighting","steel"],
+        "ゲンガー":["ghost","poison"],
+        "カビゴン":["normal"],
+        "ミミッキュ":["ghost","fairy"],
+        "ドラパルト":["dragon","ghost"],
+        "サーナイト":["psychic","fairy"],
+        "メタグロス":["steel","psychic"],
+        "バンギラス":["rock","dark"],
+        "ゲッコウガ":["water","dark"],
+        "エースバーン":["fire"]
+      };
+
       const $ = (id) => document.getElementById(id);
 
       const editorTitle = $("editorTitle");
@@ -159,11 +225,14 @@
       const status = $("status");
 
       const filterGame = $("filterGame");
-const searchBox = $("searchBox");
-const partyList = $("partyList");
-const emptyMessage = $("emptyMessage");
-const candidateList = $("candidateList");
-const candidateEmpty = $("candidateEmpty");
+      const searchBox = $("searchBox");
+      const partyList = $("partyList");
+      const emptyMessage = $("emptyMessage");
+      const candidateList = $("candidateList");
+      const candidateEmpty = $("candidateEmpty");
+      const typeBalanceBox = $("typeBalanceBox");
+      const weaknessSummaryBox = $("weaknessSummaryBox");
+      const analyzeBtn = $("analyzeBtn");
 
       let parties = loadParties();
       let editingId = null;
@@ -178,30 +247,30 @@ const candidateEmpty = $("candidateEmpty");
       }
 
       function saveParties() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(parties));
-}
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parties));
+      }
 
-function loadCandidates() {
-  try {
-    const raw = localStorage.getItem(CANDIDATE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
-}
+      function loadCandidates() {
+        try {
+          const raw = localStorage.getItem(CANDIDATE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
 
-function saveCandidates(candidates) {
-  localStorage.setItem(CANDIDATE_KEY, JSON.stringify(candidates));
-}
+      function saveCandidates(candidates) {
+        localStorage.setItem(CANDIDATE_KEY, JSON.stringify(candidates));
+      }
 
-function setStatus(message) {
-  status.textContent = message;
-  if (message) {
-    setTimeout(() => {
-      if (status.textContent === message) status.textContent = "";
-    }, 2500);
-  }
-}
+      function setStatus(message) {
+        status.textContent = message;
+        if (message) {
+          setTimeout(() => {
+            if (status.textContent === message) status.textContent = "";
+          }, 2500);
+        }
+      }
 
       function createId() {
         return "party_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
@@ -256,6 +325,8 @@ function setStatus(message) {
         partyTags.value = "";
         partyNotes.value = "";
         deleteBtn.style.display = "none";
+        typeBalanceBox.textContent = "まだ分析結果がありません。";
+        weaknessSummaryBox.textContent = "まだ分析結果がありません。";
       }
 
       function fillForm(party) {
@@ -274,17 +345,18 @@ function setStatus(message) {
         deleteBtn.style.display = "inline-block";
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
-      
-      function applyCandidate(candidate) {
-  partyName.value = candidate.name || "";
-  member1.value = candidate.name || "";
-  partyNotes.value = [
-    candidate.types?.length ? `タイプ: ${candidate.types.join(" / ")}` : "",
-    candidate.abilities?.length ? `特性: ${candidate.abilities.join(" / ")}` : "",
-    candidate.memo || ""
-  ].filter(Boolean).join("\n");
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+      function applyCandidate(candidate) {
+        partyName.value = candidate.name || "";
+        member1.value = candidate.name || "";
+        partyNotes.value = [
+          candidate.types?.length ? `タイプ: ${candidate.types.join(" / ")}` : "",
+          candidate.abilities?.length ? `特性: ${candidate.abilities.join(" / ")}` : "",
+          candidate.memo || ""
+        ].filter(Boolean).join("\n");
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        analyzeCurrentParty();
       }
 
       function saveCurrentParty() {
@@ -421,63 +493,152 @@ function setStatus(message) {
       }
 
       function renderCandidates() {
-  const candidates = loadCandidates();
-  candidateList.innerHTML = "";
-  candidateEmpty.style.display = candidates.length ? "none" : "block";
+        const candidates = loadCandidates();
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = candidates.length ? "none" : "block";
 
-  candidates.forEach((candidate) => {
-    const card = document.createElement("div");
-    card.className = "menu-card";
+        candidates.forEach((candidate) => {
+          const card = document.createElement("div");
+          card.className = "menu-card";
 
-    const typeText = candidate.types?.length
-      ? `タイプ：${candidate.types.join(" / ")}`
-      : "タイプ未設定";
+          const typeText = candidate.types?.length
+            ? `タイプ：${candidate.types.join(" / ")}`
+            : "タイプ未設定";
 
-    const abilityText = candidate.abilities?.length
-      ? `特性：${candidate.abilities.join(" / ")}`
-      : "特性未設定";
+          const abilityText = candidate.abilities?.length
+            ? `特性：${candidate.abilities.join(" / ")}`
+            : "特性未設定";
 
-    card.innerHTML = `
-      <h2>${escapeHtml(candidate.name || "無名候補")}</h2>
-      <div class="small">${escapeHtml(typeText)}</div>
-      <div class="small" style="margin-top:6px;">${escapeHtml(abilityText)}</div>
-      <div class="row" style="margin-top:12px;">
-        <button type="button" data-action="use" data-id="${escapeHtml(candidate.id)}">フォームに反映</button>
-        <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(candidate.id)}">削除</button>
-      </div>
-    `;
+          card.innerHTML = `
+            <h2>${escapeHtml(candidate.name || "無名候補")}</h2>
+            <div class="small">${escapeHtml(typeText)}</div>
+            <div class="small" style="margin-top:6px;">${escapeHtml(abilityText)}</div>
+            <div class="row" style="margin-top:12px;">
+              <button type="button" data-action="use" data-id="${escapeHtml(candidate.id)}">フォームに反映</button>
+              <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(candidate.id)}">削除</button>
+            </div>
+          `;
 
-    candidateList.appendChild(card);
-  });
+          candidateList.appendChild(card);
+        });
 
-  candidateList.querySelectorAll("button[data-action='use']").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const candidates = loadCandidates();
-      const target = candidates.find(c => c.id === id);
-      if (target) {
-        applyCandidate(target);
-        setStatus("候補をフォームに反映しました");
+        candidateList.querySelectorAll("button[data-action='use']").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const candidates = loadCandidates();
+            const target = candidates.find(c => c.id === id);
+            if (target) {
+              applyCandidate(target);
+              setStatus("候補をフォームに反映しました");
+            }
+          });
+        });
+
+        candidateList.querySelectorAll("button[data-action='delete']").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            let candidates = loadCandidates();
+            const target = candidates.find(c => c.id === id);
+            if (!target) return;
+
+            const ok = confirm(`「${target.name || "この候補"}」を削除しますか？`);
+            if (!ok) return;
+
+            candidates = candidates.filter(c => c.id !== id);
+            saveCandidates(candidates);
+            renderCandidates();
+            setStatus("候補を削除しました");
+          });
+        });
       }
-    });
-  });
 
-  candidateList.querySelectorAll("button[data-action='delete']").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      let candidates = loadCandidates();
-      const target = candidates.find(c => c.id === id);
-      if (!target) return;
+      function getCurrentMembers() {
+        return [
+          member1.value.trim(),
+          member2.value.trim(),
+          member3.value.trim(),
+          member4.value.trim(),
+          member5.value.trim(),
+          member6.value.trim()
+        ].filter(Boolean);
+      }
 
-      const ok = confirm(`「${target.name || "この候補"}」を削除しますか？`);
-      if (!ok) return;
+      function calculateTypeMultiplier(defTypes, attackType) {
+        let multiplier = 1;
 
-      candidates = candidates.filter(c => c.id !== id);
-      saveCandidates(candidates);
-      renderCandidates();
-      setStatus("候補を削除しました");
-    });
-  });
+        for (const defType of defTypes) {
+          const chart = TYPE_CHART[defType];
+          if (!chart) continue;
+
+          if (chart.immune.includes(attackType)) {
+            multiplier *= 0;
+          } else if (chart.weak.includes(attackType)) {
+            multiplier *= 2;
+          } else if (chart.resist.includes(attackType)) {
+            multiplier *= 0.5;
+          }
+        }
+
+        return multiplier;
+      }
+
+      function analyzeCurrentParty() {
+        const members = getCurrentMembers();
+
+        if (!members.length) {
+          typeBalanceBox.textContent = "メンバーを入力してください。";
+          weaknessSummaryBox.textContent = "メンバーを入力してください。";
+          return;
+        }
+
+        const typeCount = {};
+        const weaknessCount = {};
+
+        Object.keys(TYPE_JA).forEach(type => {
+          typeCount[type] = 0;
+          weaknessCount[type] = 0;
+        });
+
+        const unknownMembers = [];
+
+        for (const member of members) {
+          const types = POKEMON_TYPE_MAP[member];
+
+          if (!types) {
+            unknownMembers.push(member);
+            continue;
+          }
+
+          types.forEach(type => {
+            typeCount[type] += 1;
+          });
+
+          Object.keys(TYPE_JA).forEach(attackType => {
+            const mult = calculateTypeMultiplier(types, attackType);
+            if (mult > 1) {
+              weaknessCount[attackType] += 1;
+            }
+          });
+        }
+
+        const typeLines = Object.entries(typeCount)
+          .filter(([, count]) => count > 0)
+          .sort((a, b) => b[1] - a[1])
+          .map(([type, count]) => `${TYPE_JA[type]}: ${count}`)
+          .join(" / ");
+
+        const weaknessLines = Object.entries(weaknessCount)
+          .filter(([, count]) => count > 0)
+          .sort((a, b) => b[1] - a[1])
+          .map(([type, count]) => `${TYPE_JA[type]}に弱いポケモン ${count}体`)
+          .join(" / ");
+
+        typeBalanceBox.textContent = typeLines || "タイプデータなし";
+        weaknessSummaryBox.textContent = weaknessLines || "大きな弱点なし";
+
+        if (unknownMembers.length) {
+          weaknessSummaryBox.textContent += ` / タイプ未登録: ${unknownMembers.join("、")}`;
+        }
       }
 
       saveBtn.addEventListener("click", saveCurrentParty);
@@ -488,6 +649,7 @@ function setStatus(message) {
       deleteBtn.addEventListener("click", deleteCurrentParty);
       filterGame.addEventListener("change", renderList);
       searchBox.addEventListener("input", renderList);
+      analyzeBtn.addEventListener("click", analyzeCurrentParty);
 
       clearForm();
       renderList();
