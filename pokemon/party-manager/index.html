@@ -237,6 +237,16 @@
       let parties = loadParties();
       let editingId = null;
 
+      // フォームに反映した候補由来のタイプ情報を保持
+      let memberTypeOverrides = {
+        1: null,
+        2: null,
+        3: null,
+        4: null,
+        5: null,
+        6: null
+      };
+
       function loadParties() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
@@ -311,6 +321,17 @@
         };
       }
 
+      function resetMemberOverrides() {
+        memberTypeOverrides = {
+          1: null,
+          2: null,
+          3: null,
+          4: null,
+          5: null,
+          6: null
+        };
+      }
+
       function clearForm() {
         editingId = null;
         editorTitle.textContent = "新規登録";
@@ -327,6 +348,7 @@
         deleteBtn.style.display = "none";
         typeBalanceBox.textContent = "まだ分析結果がありません。";
         weaknessSummaryBox.textContent = "まだ分析結果がありません。";
+        resetMemberOverrides();
       }
 
       function fillForm(party) {
@@ -343,17 +365,39 @@
         partyTags.value = (party.tags || []).join(", ");
         partyNotes.value = party.notes || "";
         deleteBtn.style.display = "inline-block";
+        resetMemberOverrides();
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
       function applyCandidate(candidate) {
-        partyName.value = candidate.name || "";
-        member1.value = candidate.name || "";
-        partyNotes.value = [
-          candidate.types?.length ? `タイプ: ${candidate.types.join(" / ")}` : "",
-          candidate.abilities?.length ? `特性: ${candidate.abilities.join(" / ")}` : "",
-          candidate.memo || ""
-        ].filter(Boolean).join("\n");
+        // 最初に空いている枠へ入れる
+        const slots = [member1, member2, member3, member4, member5, member6];
+        let targetIndex = slots.findIndex(input => !input.value.trim());
+
+        if (targetIndex === -1) {
+          targetIndex = 0; // 全部埋まっていたら1体目を上書き
+        }
+
+        slots[targetIndex].value = candidate.name || "";
+        memberTypeOverrides[targetIndex + 1] = candidate.types || null;
+
+        if (!partyName.value.trim()) {
+          partyName.value = candidate.name || "";
+        }
+
+        const lines = [];
+        if (candidate.types?.length) lines.push(`タイプ: ${candidate.types.join(" / ")}`);
+        if (candidate.abilities?.length) lines.push(`特性: ${candidate.abilities.join(" / ")}`);
+        if (candidate.memo) lines.push(candidate.memo);
+
+        const currentNotes = partyNotes.value.trim();
+        const addText = lines.join("\n");
+
+        if (addText) {
+          partyNotes.value = currentNotes
+            ? `${currentNotes}\n\n【${candidate.name || "候補"}】\n${addText}`
+            : `【${candidate.name || "候補"}】\n${addText}`;
+        }
 
         window.scrollTo({ top: 0, behavior: "smooth" });
         analyzeCurrentParty();
@@ -563,6 +607,20 @@
         ].filter(Boolean);
       }
 
+      function getMemberTypes(memberName, slotNumber) {
+        // まず候補由来のタイプ情報
+        const overrideTypes = memberTypeOverrides[slotNumber];
+        if (overrideTypes && overrideTypes.length) {
+          return overrideTypes.map(typeJa => {
+            const found = Object.entries(TYPE_JA).find(([, ja]) => ja === typeJa);
+            return found ? found[0] : null;
+          }).filter(Boolean);
+        }
+
+        // 次に固定辞書
+        return POKEMON_TYPE_MAP[memberName] || null;
+      }
+
       function calculateTypeMultiplier(defTypes, attackType) {
         let multiplier = 1;
 
@@ -583,7 +641,16 @@
       }
 
       function analyzeCurrentParty() {
-        const members = getCurrentMembers();
+        const rawMembers = [
+          member1.value.trim(),
+          member2.value.trim(),
+          member3.value.trim(),
+          member4.value.trim(),
+          member5.value.trim(),
+          member6.value.trim()
+        ];
+
+        const members = rawMembers.filter(Boolean);
 
         if (!members.length) {
           typeBalanceBox.textContent = "メンバーを入力してください。";
@@ -601,12 +668,15 @@
 
         const unknownMembers = [];
 
-        for (const member of members) {
-          const types = POKEMON_TYPE_MAP[member];
+        rawMembers.forEach((member, index) => {
+          if (!member) return;
+
+          const slotNumber = index + 1;
+          const types = getMemberTypes(member, slotNumber);
 
           if (!types) {
             unknownMembers.push(member);
-            continue;
+            return;
           }
 
           types.forEach(type => {
@@ -619,7 +689,7 @@
               weaknessCount[attackType] += 1;
             }
           });
-        }
+        });
 
         const typeLines = Object.entries(typeCount)
           .filter(([, count]) => count > 0)
@@ -640,6 +710,20 @@
           weaknessSummaryBox.textContent += ` / タイプ未登録: ${unknownMembers.join("、")}`;
         }
       }
+
+      // 手入力で名前を書き換えた時は、その枠の候補由来タイプを解除
+      [
+        [member1, 1],
+        [member2, 2],
+        [member3, 3],
+        [member4, 4],
+        [member5, 5],
+        [member6, 6]
+      ].forEach(([input, slot]) => {
+        input.addEventListener("input", () => {
+          memberTypeOverrides[slot] = null;
+        });
+      });
 
       saveBtn.addEventListener("click", saveCurrentParty);
       clearBtn.addEventListener("click", () => {
