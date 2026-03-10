@@ -589,11 +589,17 @@
           const card = document.createElement("div");
           card.className = "menu-card";
           card.innerHTML = `
-            <h2>${escapeHtml(item.name)}</h2>
-            <div class="small">必要枚数：${escapeHtml(item.required)}</div>
-            <div class="small">所持枚数：${escapeHtml(item.owned)}</div>
-            <div class="small" style="margin-top:6px;">不足枚数：${escapeHtml(item.missing)}</div>
-          `;
+  <h2>${escapeHtml(item.name)}</h2>
+  <div class="small">必要枚数：${escapeHtml(item.required)}</div>
+  <div class="small">所持枚数：${escapeHtml(item.owned)}</div>
+  <div class="small" style="margin-top:6px;">不足枚数：${escapeHtml(item.missing)}</div>
+
+  <div class="row" style="margin-top:10px;">
+    <button data-add-owned="${escapeHtml(item.name)}">
+      所持に追加
+    </button>
+  </div>
+`;
           missingList.appendChild(card);
         });
       }
