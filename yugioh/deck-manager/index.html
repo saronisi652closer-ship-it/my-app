@@ -10,7 +10,7 @@
   <header>
     <div class="wrap">
       <h1>遊戯王デッキ管理</h1>
-      <div class="small">デッキの保存・編集・削除ができます</div>
+      <div class="small">デッキ保存・所持カード管理・不足カード確認</div>
     </div>
   </header>
 
@@ -78,27 +78,70 @@
       </section>
 
       <section class="card">
-        <h2>保存済みデッキ一覧</h2>
+        <h2>所持カード管理</h2>
 
-        <div class="two" style="margin-bottom:12px;">
+        <div class="two">
           <div>
-            <div class="label">分類で絞り込み</div>
-            <select id="filterFormat">
-              <option value="">すべて</option>
-              <option value="OCG">OCG</option>
-              <option value="MD">MD</option>
-              <option value="LOTD">LOTD</option>
-              <option value="その他">その他</option>
-            </select>
+            <div class="label">カード名</div>
+            <input id="ownedName" type="text" placeholder="例：灰流うらら">
           </div>
           <div>
-            <div class="label">検索</div>
-            <input id="searchBox" type="text" placeholder="デッキ名・カード名・タグ検索">
+            <div class="label">所持枚数</div>
+            <input id="ownedCount" type="number" min="0" max="99" placeholder="例：2">
           </div>
         </div>
 
-        <div id="deckList" class="menu"></div>
-        <div id="emptyMessage" class="small">まだデッキがありません。</div>
+        <div class="row" style="margin-top:12px;">
+          <button class="primary" id="saveOwnedBtn" type="button">追加 / 更新</button>
+          <button id="clearOwnedBtn" type="button">クリア</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">所持カード一覧</div>
+          <div id="ownedList" class="menu"></div>
+          <div id="ownedEmpty" class="small">まだ所持カードがありません。</div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h2>不足カード確認</h2>
+
+          <div class="label">対象デッキ</div>
+          <select id="missingDeckSelect"></select>
+
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="checkMissingBtn" type="button">不足カードを確認</button>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div class="label">不足カード一覧</div>
+            <div id="missingList" class="menu"></div>
+            <div id="missingEmpty" class="small">不足カードはまだありません。</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h2>保存済みデッキ一覧</h2>
+
+          <div class="two" style="margin-bottom:12px;">
+            <div>
+              <div class="label">分類で絞り込み</div>
+              <select id="filterFormat">
+                <option value="">すべて</option>
+                <option value="OCG">OCG</option>
+                <option value="MD">MD</option>
+                <option value="LOTD">LOTD</option>
+                <option value="その他">その他</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">検索</div>
+              <input id="searchBox" type="text" placeholder="デッキ名・カード名・タグ検索">
+            </div>
+          </div>
+
+          <div id="deckList" class="menu"></div>
+          <div id="emptyMessage" class="small">まだデッキがありません。</div>
+        </div>
       </section>
     </div>
   </main>
@@ -106,6 +149,7 @@
   <script>
     (() => {
       const STORAGE_KEY = "yugioh_deck_manager_v1";
+      const OWNED_KEY = "yugioh_owned_cards_v1";
 
       const $ = (id) => document.getElementById(id);
 
@@ -123,12 +167,25 @@
       const deleteBtn = $("deleteBtn");
       const status = $("status");
 
+      const ownedName = $("ownedName");
+      const ownedCount = $("ownedCount");
+      const saveOwnedBtn = $("saveOwnedBtn");
+      const clearOwnedBtn = $("clearOwnedBtn");
+      const ownedList = $("ownedList");
+      const ownedEmpty = $("ownedEmpty");
+
+      const missingDeckSelect = $("missingDeckSelect");
+      const checkMissingBtn = $("checkMissingBtn");
+      const missingList = $("missingList");
+      const missingEmpty = $("missingEmpty");
+
       const filterFormat = $("filterFormat");
       const searchBox = $("searchBox");
       const deckList = $("deckList");
       const emptyMessage = $("emptyMessage");
 
       let decks = loadDecks();
+      let ownedCards = loadOwnedCards();
       let editingId = null;
 
       function loadDecks() {
@@ -144,6 +201,19 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(decks));
       }
 
+      function loadOwnedCards() {
+        try {
+          const raw = localStorage.getItem(OWNED_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveOwnedCards() {
+        localStorage.setItem(OWNED_KEY, JSON.stringify(ownedCards));
+      }
+
       function setStatus(message) {
         status.textContent = message;
         if (message) {
@@ -153,8 +223,8 @@
         }
       }
 
-      function createId() {
-        return "deck_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      function createId(prefix = "id") {
+        return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       }
 
       function parseTags(text) {
@@ -189,9 +259,20 @@
         return total;
       }
 
+      function parseDeckLines(text) {
+        const lines = text.split("\n").map(line => line.trim()).filter(Boolean);
+
+        return lines.map(line => {
+          const match = line.match(/^(.*?)(?:\s*(?:x|×)\s*(\d+)|\s+(\d+))?$/i);
+          const name = (match?.[1] || line).trim();
+          const count = Number(match?.[2] || match?.[3] || 1);
+          return { name, count };
+        }).filter(item => item.name);
+      }
+
       function getFormData() {
         return {
-          id: editingId || createId(),
+          id: editingId || createId("deck"),
           format: deckFormat.value,
           name: deckName.value.trim(),
           main: deckMain.value.trim(),
@@ -251,7 +332,8 @@
         }
 
         saveDecks();
-        renderList();
+        renderDeckList();
+        renderDeckOptions();
         fillForm(data);
       }
 
@@ -267,8 +349,85 @@
         decks = decks.filter(d => d.id !== editingId);
         saveDecks();
         clearForm();
-        renderList();
+        renderDeckList();
+        renderDeckOptions();
+        renderMissingCards();
         setStatus("削除しました");
+      }
+
+      function saveOwnedCard() {
+        const name = ownedName.value.trim();
+        const count = Number(ownedCount.value || 0);
+
+        if (!name) {
+          setStatus("カード名を入れてください");
+          return;
+        }
+
+        const existingIndex = ownedCards.findIndex(c => c.name === name);
+
+        if (existingIndex >= 0) {
+          ownedCards[existingIndex].count = count;
+        } else {
+          ownedCards.unshift({
+            id: createId("owned"),
+            name,
+            count
+          });
+        }
+
+        saveOwnedCards();
+        renderOwnedList();
+        ownedName.value = "";
+        ownedCount.value = "";
+        setStatus("所持カードを保存しました");
+      }
+
+      function renderOwnedList() {
+        ownedList.innerHTML = "";
+        ownedEmpty.style.display = ownedCards.length ? "none" : "block";
+
+        ownedCards
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name, "ja"))
+          .forEach(card => {
+            const item = document.createElement("div");
+            item.className = "menu-card";
+            item.innerHTML = `
+              <h2>${escapeHtml(card.name)}</h2>
+              <div class="small">所持枚数：${escapeHtml(card.count)}</div>
+              <div class="row" style="margin-top:12px;">
+                <button type="button" data-action="edit-owned" data-id="${escapeHtml(card.id)}">編集</button>
+                <button type="button" class="danger" data-action="delete-owned" data-id="${escapeHtml(card.id)}">削除</button>
+              </div>
+            `;
+            ownedList.appendChild(item);
+          });
+
+        ownedList.querySelectorAll("button[data-action='edit-owned']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = ownedCards.find(c => c.id === btn.dataset.id);
+            if (!target) return;
+            ownedName.value = target.name;
+            ownedCount.value = target.count;
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+        });
+
+        ownedList.querySelectorAll("button[data-action='delete-owned']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = ownedCards.find(c => c.id === btn.dataset.id);
+            if (!target) return;
+            const ok = confirm(`「${target.name}」を削除しますか？`);
+            if (!ok) return;
+
+            ownedCards = ownedCards.filter(c => c.id !== btn.dataset.id);
+            saveOwnedCards();
+            renderOwnedList();
+            renderMissingCards();
+            setStatus("所持カードを削除しました");
+          });
+        });
       }
 
       function getFilteredDecks() {
@@ -301,7 +460,7 @@
         return result;
       }
 
-      function renderList() {
+      function renderDeckList() {
         const items = getFilteredDecks();
         deckList.innerHTML = "";
         emptyMessage.style.display = items.length ? "none" : "block";
@@ -329,39 +488,140 @@
             ${tagsHtml}
             ${notesHtml}
             <div class="row" style="margin-top:12px;">
-              <button type="button" data-action="edit" data-id="${escapeHtml(deck.id)}">編集</button>
-              <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(deck.id)}">削除</button>
+              <button type="button" data-action="edit-deck" data-id="${escapeHtml(deck.id)}">編集</button>
+              <button type="button" class="danger" data-action="delete-deck" data-id="${escapeHtml(deck.id)}">削除</button>
             </div>
           `;
 
           deckList.appendChild(card);
         });
 
-        deckList.querySelectorAll("button[data-action='edit']").forEach((btn) => {
+        deckList.querySelectorAll("button[data-action='edit-deck']").forEach(btn => {
           btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const target = decks.find(d => d.id === id);
+            const target = decks.find(d => d.id === btn.dataset.id);
             if (target) fillForm(target);
           });
         });
 
-        deckList.querySelectorAll("button[data-action='delete']").forEach((btn) => {
+        deckList.querySelectorAll("button[data-action='delete-deck']").forEach(btn => {
           btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const target = decks.find(d => d.id === id);
+            const target = decks.find(d => d.id === btn.dataset.id);
             if (!target) return;
 
             const ok = confirm(`「${target.name || "このデッキ"}」を削除しますか？`);
             if (!ok) return;
 
-            decks = decks.filter(d => d.id !== id);
+            decks = decks.filter(d => d.id !== btn.dataset.id);
             saveDecks();
 
-            if (editingId === id) clearForm();
+            if (editingId === btn.dataset.id) clearForm();
 
-            renderList();
+            renderDeckList();
+            renderDeckOptions();
+            renderMissingCards();
             setStatus("削除しました");
           });
+        });
+      }
+
+      function renderDeckOptions() {
+        const currentValue = missingDeckSelect.value;
+        missingDeckSelect.innerHTML = `<option value="">デッキを選択</option>` +
+          decks.map(deck => `<option value="${escapeHtml(deck.id)}">${escapeHtml(deck.name)}</option>`).join("");
+
+        if (decks.some(deck => deck.id === currentValue)) {
+          missingDeckSelect.value = currentValue;
+        }
+      }
+
+      function aggregateDeckRequirements(deck) {
+        const allCards = [
+          ...parseDeckLines(deck.main || ""),
+          ...parseDeckLines(deck.extra || ""),
+          ...parseDeckLines(deck.side || "")
+        ];
+
+        const map = new Map();
+
+        allCards.forEach(item => {
+          const current = map.get(item.name) || 0;
+          map.set(item.name, current + item.count);
+        });
+
+        return Array.from(map.entries()).map(([name, required]) => ({ name, required }));
+      }
+
+      function renderMissingCards() {
+        const deckId = missingDeckSelect.value;
+        missingList.innerHTML = "";
+
+        if (!deckId) {
+          missingEmpty.style.display = "block";
+          missingEmpty.textContent = "デッキを選んでください。";
+          return;
+        }
+
+        const deck = decks.find(d => d.id === deckId);
+        if (!deck) {
+          missingEmpty.style.display = "block";
+          missingEmpty.textContent = "デッキが見つかりません。";
+          return;
+        }
+
+        const requirements = aggregateDeckRequirements(deck);
+        const missing = requirements
+          .map(req => {
+            const owned = ownedCards.find(card => card.name === req.name)?.count || 0;
+            return {
+              name: req.name,
+              required: req.required,
+              owned,
+              missing: Math.max(req.required - owned, 0)
+            };
+          })
+          .filter(item => item.missing > 0)
+          .sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "ja"));
+
+        missingEmpty.style.display = missing.length ? "none" : "block";
+        missingEmpty.textContent = missing.length ? "" : "不足カードはありません。";
+
+        missing.forEach(item => {
+          const card = document.createElement("div");
+          card.className = "menu-card";
+          card.innerHTML = `
+  <h2>${escapeHtml(item.name)}</h2>
+  <div class="small">必要枚数：${escapeHtml(item.required)}</div>
+  <div class="small">所持枚数：${escapeHtml(item.owned)}</div>
+  <div class="small" style="margin-top:6px;">不足枚数：${escapeHtml(item.missing)}</div>
+
+  <div class="row" style="margin-top:10px;">
+    <button data-add-owned="${escapeHtml(item.name)}">
+      所持に追加
+    </button>
+  </div>
+`;
+          card.querySelector("button").addEventListener("click", () => {
+
+  const name = item.name
+
+  const existing = ownedCards.find(c => c.name === name)
+
+  if(existing){
+    existing.count += 1
+  }else{
+    ownedCards.push({
+      id: createId("owned"),
+      name,
+      count: 1
+    })
+  }
+
+  saveOwnedCards()
+  renderOwnedList()
+  renderMissingCards()
+
+})
+          missingList.appendChild(card);
         });
       }
 
@@ -371,11 +631,22 @@
         setStatus("入力をクリアしました");
       });
       deleteBtn.addEventListener("click", deleteCurrentDeck);
-      filterFormat.addEventListener("change", renderList);
-      searchBox.addEventListener("input", renderList);
+
+      saveOwnedBtn.addEventListener("click", saveOwnedCard);
+      clearOwnedBtn.addEventListener("click", () => {
+        ownedName.value = "";
+        ownedCount.value = "";
+      });
+
+      checkMissingBtn.addEventListener("click", renderMissingCards);
+      filterFormat.addEventListener("change", renderDeckList);
+      searchBox.addEventListener("input", renderDeckList);
 
       clearForm();
-      renderList();
+      renderOwnedList();
+      renderDeckList();
+      renderDeckOptions();
+      renderMissingCards();
     })();
   </script>
 </body>
