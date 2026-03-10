@@ -4,52 +4,260 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>遊戯王カード検索</title>
+  <link rel="stylesheet" href="../../style.css">
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #0f172a;
-      color: #fff;
-      padding: 24px 16px 48px;
+    .result-card{display:none}
+    .result-card.show{display:block}
+    .info-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
     }
-    .wrap {
-      max-width: 860px;
-      margin: 0 auto;
+    @media(min-width:700px){
+      .info-grid{grid-template-columns:repeat(3,1fr)}
     }
-    a {
-      color: #93c5fd;
-      text-decoration: none;
+    .mini-card{
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
     }
-    .box {
-      margin-top: 18px;
-      background: #1e293b;
-      border-radius: 16px;
-      padding: 20px;
+    .loading{color:var(--muted);margin-top:10px}
+    .error-box{color:#fda4af;margin-top:10px}
+    .preline{white-space:pre-wrap}
+    .badge-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
     }
-    input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      margin-top: 10px;
-      font-size: 16px;
-    }
-    .note {
-      color: #cbd5e1;
-      margin-top: 12px;
+    .badge{
+      display:inline-block;
+      padding:6px 10px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:12px;
+      background:#0f1117;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <p><a href="../">← 遊戯王メニューへ戻る</a></p>
-    <h1>遊戯王カード検索</h1>
-
-    <div class="box">
-      <label for="search">カード名検索（仮）</label>
-      <input id="search" type="text" placeholder="ここにカード名を入れる">
-      <p class="note">今は土台だけです。あとから検索機能やカードデータを追加できます。</p>
+  <header>
+    <div class="wrap">
+      <h1>遊戯王カード検索</h1>
+      <div class="small">YGOPRODeck API 連携版</div>
     </div>
-  </div>
+  </header>
+
+  <main class="wrap">
+    <a class="back" href="../">← 遊戯王へ戻る</a>
+
+    <div class="grid">
+      <section class="card">
+        <h2>検索</h2>
+
+        <div class="label">カード名</div>
+        <input id="searchInput" type="text" placeholder="例：青眼の白龍 / 灰流うらら">
+
+        <div class="row" style="margin-top:12px;">
+          <button class="primary" id="searchBtn" type="button">検索</button>
+          <button id="clearBtn" type="button">クリア</button>
+        </div>
+
+        <div class="loading" id="loadingText"></div>
+        <div class="error-box" id="errorText"></div>
+
+        <div class="small" style="margin-top:12px;">
+          名前一致優先で検索します。<br>
+          まずは1枚表示の実用版です。
+        </div>
+      </section>
+
+      <section class="card result-card" id="resultCard">
+        <h2 id="cardTitle">検索結果</h2>
+
+        <div class="badge-list" id="typeBadges"></div>
+
+        <div style="margin-top:12px;">
+          <div class="label">基本情報</div>
+          <div class="info-grid" id="infoGrid"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">カードテキスト</div>
+          <div id="cardDesc" class="small preline"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">収録情報</div>
+          <div id="setInfo" class="small preline"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const API_BASE = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
+
+      const $ = (id) => document.getElementById(id);
+
+      const searchInput = $("searchInput");
+      const searchBtn = $("searchBtn");
+      const clearBtn = $("clearBtn");
+      const loadingText = $("loadingText");
+      const errorText = $("errorText");
+      const resultCard = $("resultCard");
+
+      const cardTitle = $("cardTitle");
+      const typeBadges = $("typeBadges");
+      const infoGrid = $("infoGrid");
+      const cardDesc = $("cardDesc");
+      const setInfo = $("setInfo");
+
+      const cache = {};
+
+      function escapeHtml(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      async function fetchJson(url) {
+        if (cache[url]) return cache[url];
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("fetch_failed");
+        const data = await res.json();
+        cache[url] = data;
+        return data;
+      }
+
+      function createInfoCard(label, value) {
+        return `
+          <div class="mini-card">
+            <strong>${escapeHtml(label)}</strong>
+            <div>${escapeHtml(value || "—")}</div>
+          </div>
+        `;
+      }
+
+      function renderBadges(card) {
+        typeBadges.innerHTML = "";
+
+        const badges = [
+          card.type,
+          card.attribute,
+          card.race,
+          card.archetype
+        ].filter(Boolean);
+
+        badges.forEach(text => {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = text;
+          typeBadges.appendChild(span);
+        });
+      }
+
+      function renderInfo(card) {
+        const isMonster = !!card.atk || !!card.def || !!card.level || !!card.rank || !!card.linkval;
+
+        const rows = [
+          createInfoCard("カードID", card.id),
+          createInfoCard("種別", card.type),
+          createInfoCard("属性", card.attribute),
+          createInfoCard("種族", card.race)
+        ];
+
+        if (card.level) rows.push(createInfoCard("レベル", card.level));
+        if (card.rank) rows.push(createInfoCard("ランク", card.rank));
+        if (card.linkval) rows.push(createInfoCard("LINK", card.linkval));
+        if (card.atk !== undefined) rows.push(createInfoCard("攻撃力", card.atk));
+        if (card.def !== undefined) rows.push(createInfoCard("守備力", card.def));
+
+        if (!isMonster) {
+          rows.push(createInfoCard("攻撃力", "—"));
+          rows.push(createInfoCard("守備力", "—"));
+        }
+
+        infoGrid.innerHTML = rows.join("");
+      }
+
+      function renderSets(card) {
+        if (!card.card_sets || !card.card_sets.length) {
+          setInfo.textContent = "収録情報なし";
+          return;
+        }
+
+        const lines = card.card_sets
+          .slice(0, 12)
+          .map(set => {
+            const name = set.set_name || "";
+            const code = set.set_code || "";
+            const rarity = set.set_rarity || "";
+            return [name, code, rarity].filter(Boolean).join(" / ");
+          });
+
+        setInfo.textContent = lines.join("\n");
+      }
+
+      function renderCard(card) {
+        cardTitle.textContent = card.name || "検索結果";
+        renderBadges(card);
+        renderInfo(card);
+        cardDesc.textContent = card.desc || "テキストなし";
+        renderSets(card);
+        resultCard.classList.add("show");
+      }
+
+      async function searchCard() {
+        const keyword = searchInput.value.trim();
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        resultCard.classList.remove("show");
+
+        if (!keyword) {
+          errorText.textContent = "カード名を入れてください。";
+          return;
+        }
+
+        try {
+          loadingText.textContent = "取得中...";
+          const url = `${API_BASE}?name=${encodeURIComponent(keyword)}`;
+          const data = await fetchJson(url);
+
+          if (!data.data || !data.data.length) {
+            throw new Error("not_found");
+          }
+
+          renderCard(data.data[0]);
+          loadingText.textContent = "";
+        } catch (e) {
+          loadingText.textContent = "";
+          errorText.textContent = "カードが見つかりませんでした。正式名称に近い名前で試してください。";
+        }
+      }
+
+      function clearResult() {
+        searchInput.value = "";
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        resultCard.classList.remove("show");
+        typeBadges.innerHTML = "";
+        infoGrid.innerHTML = "";
+        cardDesc.textContent = "";
+        setInfo.textContent = "";
+      }
+
+      searchBtn.addEventListener("click", searchCard);
+      clearBtn.addEventListener("click", clearResult);
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchCard();
+      });
+    })();
+  </script>
 </body>
 </html>
