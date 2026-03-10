@@ -365,9 +365,9 @@
         partyTags.value = (party.tags || []).join(", ");
         partyNotes.value = party.notes || "";
         deleteBtn.style.display = "inline-block";
-        resetMemberOverrides();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
+resetMemberOverrides();
+analyzeCurrentParty();
+window.scrollTo({ top: 0, behavior: "smooth" });
 
       function applyCandidate(candidate) {
         // 最初に空いている枠へ入れる
