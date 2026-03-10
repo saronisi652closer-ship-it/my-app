@@ -713,17 +713,18 @@ window.scrollTo({ top: 0, behavior: "smooth" });
 
       // 手入力で名前を書き換えた時は、その枠の候補由来タイプを解除
       [
-        [member1, 1],
-        [member2, 2],
-        [member3, 3],
-        [member4, 4],
-        [member5, 5],
-        [member6, 6]
-      ].forEach(([input, slot]) => {
-        input.addEventListener("input", () => {
-          memberTypeOverrides[slot] = null;
-        });
-      });
+  [member1, 1],
+  [member2, 2],
+  [member3, 3],
+  [member4, 4],
+  [member5, 5],
+  [member6, 6]
+].forEach(([input, slot]) => {
+  input.addEventListener("input", () => {
+    memberTypeOverrides[slot] = null;
+    analyzeCurrentParty();
+  });
+});
 
       saveBtn.addEventListener("click", saveCurrentParty);
       clearBtn.addEventListener("click", () => {
