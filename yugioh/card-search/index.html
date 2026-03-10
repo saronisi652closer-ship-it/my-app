@@ -45,7 +45,7 @@
   <header>
     <div class="wrap">
       <h1>遊戯王カード検索</h1>
-      <div class="small">YGOPRODeck API 連携版</div>
+      <div class="small">検索してそのまま所持カードへ追加</div>
     </div>
   </header>
 
@@ -57,7 +57,7 @@
         <h2>検索</h2>
 
         <div class="label">カード名</div>
-        <input id="searchInput" type="text" placeholder="例：青眼の白龍 / 灰流うらら">
+        <input id="searchInput" type="text" placeholder="例：Blue-Eyes White Dragon / Ash Blossom & Joyous Spring">
 
         <div class="row" style="margin-top:12px;">
           <button class="primary" id="searchBtn" type="button">検索</button>
@@ -68,8 +68,8 @@
         <div class="error-box" id="errorText"></div>
 
         <div class="small" style="margin-top:12px;">
-          名前一致優先で検索します。<br>
-          まずは1枚表示の実用版です。
+          英語名検索の方が安定しやすいです。<br>
+          検索結果から所持カードへ追加できます。
         </div>
       </section>
 
@@ -92,6 +92,27 @@
           <div class="label">収録情報</div>
           <div id="setInfo" class="small preline"></div>
         </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h2>所持カードへ追加</h2>
+
+          <div class="two">
+            <div>
+              <div class="label">カード名</div>
+              <input id="ownedName" type="text" readonly>
+            </div>
+            <div>
+              <div class="label">追加枚数</div>
+              <input id="ownedCount" type="number" min="1" max="99" value="1">
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="addOwnedBtn" type="button">所持カードへ追加</button>
+          </div>
+
+          <div class="small" id="ownedStatus" style="margin-top:10px;"></div>
+        </div>
       </section>
     </div>
   </main>
@@ -99,6 +120,7 @@
   <script>
     (() => {
       const API_BASE = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
+      const OWNED_KEY = "yugioh_owned_cards_v1";
 
       const $ = (id) => document.getElementById(id);
 
@@ -115,7 +137,13 @@
       const cardDesc = $("cardDesc");
       const setInfo = $("setInfo");
 
+      const ownedName = $("ownedName");
+      const ownedCount = $("ownedCount");
+      const addOwnedBtn = $("addOwnedBtn");
+      const ownedStatus = $("ownedStatus");
+
       const cache = {};
+      let currentCard = null;
 
       function escapeHtml(text) {
         return String(text ?? "")
@@ -133,6 +161,32 @@
         const data = await res.json();
         cache[url] = data;
         return data;
+      }
+
+      function loadOwnedCards() {
+        try {
+          const raw = localStorage.getItem(OWNED_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveOwnedCards(cards) {
+        localStorage.setItem(OWNED_KEY, JSON.stringify(cards));
+      }
+
+      function setOwnedStatus(message) {
+        ownedStatus.textContent = message;
+        if (message) {
+          setTimeout(() => {
+            if (ownedStatus.textContent === message) ownedStatus.textContent = "";
+          }, 2500);
+        }
+      }
+
+      function createId(prefix = "id") {
+        return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       }
 
       function createInfoCard(label, value) {
@@ -205,11 +259,16 @@
       }
 
       function renderCard(card) {
+        currentCard = card;
         cardTitle.textContent = card.name || "検索結果";
         renderBadges(card);
         renderInfo(card);
         cardDesc.textContent = card.desc || "テキストなし";
         renderSets(card);
+
+        ownedName.value = card.name || "";
+        ownedCount.value = 1;
+
         resultCard.classList.add("show");
       }
 
@@ -217,7 +276,9 @@
         const keyword = searchInput.value.trim();
         errorText.textContent = "";
         loadingText.textContent = "";
+        ownedStatus.textContent = "";
         resultCard.classList.remove("show");
+        currentCard = null;
 
         if (!keyword) {
           errorText.textContent = "カード名を入れてください。";
@@ -237,23 +298,59 @@
           loadingText.textContent = "";
         } catch (e) {
           loadingText.textContent = "";
-          errorText.textContent = "カードが見つかりませんでした。正式名称に近い名前で試してください。";
+          errorText.textContent = "カードが見つかりませんでした。英語名に近い名前で試してください。";
         }
+      }
+
+      function addOwnedCard() {
+        if (!currentCard || !ownedName.value.trim()) {
+          setOwnedStatus("先にカードを検索してください。");
+          return;
+        }
+
+        const name = ownedName.value.trim();
+        const count = Number(ownedCount.value || 1);
+
+        if (count <= 0) {
+          setOwnedStatus("追加枚数は1以上にしてください。");
+          return;
+        }
+
+        const ownedCards = loadOwnedCards();
+        const existing = ownedCards.find(c => c.name === name);
+
+        if (existing) {
+          existing.count += count;
+        } else {
+          ownedCards.unshift({
+            id: createId("owned"),
+            name,
+            count
+          });
+        }
+
+        saveOwnedCards(ownedCards);
+        setOwnedStatus(`「${name}」を ${count} 枚追加しました。`);
       }
 
       function clearResult() {
         searchInput.value = "";
         errorText.textContent = "";
         loadingText.textContent = "";
+        ownedStatus.textContent = "";
         resultCard.classList.remove("show");
         typeBadges.innerHTML = "";
         infoGrid.innerHTML = "";
         cardDesc.textContent = "";
         setInfo.textContent = "";
+        ownedName.value = "";
+        ownedCount.value = 1;
+        currentCard = null;
       }
 
       searchBtn.addEventListener("click", searchCard);
       clearBtn.addEventListener("click", clearResult);
+      addOwnedBtn.addEventListener("click", addOwnedCard);
       searchInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") searchCard();
       });
