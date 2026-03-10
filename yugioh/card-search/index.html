@@ -600,6 +600,27 @@
     </button>
   </div>
 `;
+          card.querySelector("button").addEventListener("click", () => {
+
+  const name = item.name
+
+  const existing = ownedCards.find(c => c.name === name)
+
+  if(existing){
+    existing.count += 1
+  }else{
+    ownedCards.push({
+      id: createId("owned"),
+      name,
+      count: 1
+    })
+  }
+
+  saveOwnedCards()
+  renderOwnedList()
+  renderMissingCards()
+
+})
           missingList.appendChild(card);
         });
       }
