@@ -342,6 +342,7 @@
       function renderCard(card) {
         currentCard = card;
         cardTitle.textContent = card.name || "検索結果";
+        cardImage.src = card.card_images?.[0]?.image_url || "";
         renderBadges(card);
         renderInfo(card);
         cardDesc.textContent = card.desc || "テキストなし";
