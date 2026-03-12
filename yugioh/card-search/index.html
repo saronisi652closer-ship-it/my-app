@@ -318,17 +318,23 @@
           candidateList.appendChild(item);
         });
 
-        candidateList.querySelectorAll("button[data-action='show']").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const id = Number(btn.dataset.id);
-            const target = cards.find((card) => Number(card.id) === id);
-            if (target) {
-              renderCard(target);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }
-          });
-        });
-      }
+        candidateList.onclick = (e) => {
+
+  const btn = e.target.closest("button")
+
+  if(!btn) return
+  if(btn.dataset.action !== "show") return
+
+  const id = Number(btn.dataset.id)
+
+  const target = cards.find(card => Number(card.id) === id)
+
+  if(target){
+    renderCard(target)
+    window.scrollTo({ top:0, behavior:"smooth" })
+  }
+
+        }
 
       async function searchCard() {
         const keyword = searchInput.value.trim();
