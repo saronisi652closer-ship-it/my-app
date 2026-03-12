@@ -330,28 +330,53 @@
       }
 
       async function searchCard() {
-        const keyword = searchInput.value.trim();
-        errorText.textContent = "";
-        loadingText.textContent = "";
-        ownedStatus.textContent = "";
-        resultCard.classList.remove("show");
-        candidateList.innerHTML = "";
-        candidateEmpty.style.display = "block";
-        currentCard = null;
 
-        if (!keyword) {
-          errorText.textContent = "カード名を入れてください。";
-          return;
-        }
+  const keyword = searchInput.value.trim()
 
-        try {
-          loadingText.textContent = "取得中...";
-          const url = `${API_BASE}?fname=${encodeURIComponent(keyword)}&num=20&offset=0`;
-          const data = await fetchJson(url);
+  errorText.textContent = ""
+  loadingText.textContent = ""
+  resultCard.classList.remove("show")
 
-          if (!data.data || !data.data.length) {
-            throw new Error("not_found");
-          }
+  if (!keyword) {
+    errorText.textContent = "カード名を入れてください"
+    return
+  }
+
+  try {
+
+    loadingText.textContent = "検索中..."
+
+    let data
+
+    // ①部分一致検索
+    try{
+      const url = `${API_BASE}?fname=${encodeURIComponent(keyword)}`
+      data = await fetchJson(url)
+    }catch{}
+
+    // ②完全一致検索
+    if(!data || !data.data){
+      const url = `${API_BASE}?name=${encodeURIComponent(keyword)}`
+      data = await fetchJson(url)
+    }
+
+    if(!data || !data.data){
+      throw new Error("not_found")
+    }
+
+    renderCandidates(data.data)
+    renderCard(data.data[0])
+
+    loadingText.textContent = ""
+
+  } catch (e) {
+
+    loadingText.textContent = ""
+    errorText.textContent = "カードが見つかりませんでした"
+
+  }
+
+      }
 
           renderCandidates(data.data);
           renderCard(data.data[0]);
