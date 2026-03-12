@@ -19,6 +19,15 @@
       padding:10px;
       text-align:center;
     }
+    .count-card.warn{
+      border-color:#fb7185;
+      box-shadow:0 0 0 1px rgba(251,113,133,.25) inset;
+    }
+    .count-num{
+      font-size:22px;
+      font-weight:700;
+      margin-top:4px;
+    }
     .deck-section{
       margin-top:16px;
     }
@@ -33,12 +42,31 @@
       margin:0 0 8px;
       font-size:16px;
     }
+    .deck-head{
+      display:grid;
+      grid-template-columns:90px 1fr;
+      gap:12px;
+      align-items:start;
+    }
+    .deck-head img{
+      width:100%;
+      max-width:90px;
+      border-radius:8px;
+      border:1px solid var(--line);
+      background:#0f1117;
+    }
     .output-box{
       white-space:pre-wrap;
       min-height:180px;
     }
+    .warn-text{
+      color:#fda4af;
+      margin-top:10px;
+    }
     @media (max-width:700px){
       .count-box{grid-template-columns:1fr}
+      .deck-head{grid-template-columns:1fr}
+      .deck-head img{max-width:140px}
     }
   </style>
 </head>
@@ -78,9 +106,14 @@
             <input id="cardCount" type="number" min="1" max="3" value="1">
           </div>
           <div>
-            <div class="label">メモ（任意）</div>
-            <input id="cardMemo" type="text" placeholder="例：初動 / 誘発 / EX枠">
+            <div class="label">画像URL（任意）</div>
+            <input id="cardImage" type="text" placeholder="カード検索から追加時は自動">
           </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">メモ（任意）</div>
+          <input id="cardMemo" type="text" placeholder="例：初動 / 誘発 / EX枠">
         </div>
 
         <div class="row" style="margin-top:12px;">
@@ -92,19 +125,21 @@
         <div class="small" id="status" style="margin-top:10px;"></div>
 
         <div class="count-box">
-          <div class="count-card">
+          <div class="count-card" id="mainCountCard">
             <div class="small">メイン</div>
-            <div id="mainCount">0</div>
+            <div class="count-num" id="mainCount">0 / 40</div>
           </div>
-          <div class="count-card">
+          <div class="count-card" id="extraCountCard">
             <div class="small">エクストラ</div>
-            <div id="extraCount">0</div>
+            <div class="count-num" id="extraCount">0 / 15</div>
           </div>
-          <div class="count-card">
+          <div class="count-card" id="sideCountCard">
             <div class="small">サイド</div>
-            <div id="sideCount">0</div>
+            <div class="count-num" id="sideCount">0 / 15</div>
           </div>
         </div>
+
+        <div class="warn-text" id="deckWarn"></div>
       </section>
 
       <section class="card">
@@ -141,12 +176,12 @@
   <script>
     (() => {
       const STORAGE_KEY = "yugioh_deck_builder_v1";
-
       const $ = (id) => document.getElementById(id);
 
       const cardName = $("cardName");
       const cardZone = $("cardZone");
       const cardCount = $("cardCount");
+      const cardImage = $("cardImage");
       const cardMemo = $("cardMemo");
 
       const addBtn = $("addBtn");
@@ -159,6 +194,10 @@
       const mainCount = $("mainCount");
       const extraCount = $("extraCount");
       const sideCount = $("sideCount");
+      const mainCountCard = $("mainCountCard");
+      const extraCountCard = $("extraCountCard");
+      const sideCountCard = $("sideCountCard");
+      const deckWarn = $("deckWarn");
 
       const mainList = $("mainList");
       const extraList = $("extraList");
@@ -213,6 +252,7 @@
         cardName.value = "";
         cardZone.value = "main";
         cardCount.value = 1;
+        cardImage.value = "";
         cardMemo.value = "";
       }
 
@@ -221,15 +261,32 @@
       }
 
       function renderCounts() {
-        mainCount.textContent = totalCount(deck.main);
-        extraCount.textContent = totalCount(deck.extra);
-        sideCount.textContent = totalCount(deck.side);
+        const mainTotal = totalCount(deck.main);
+        const extraTotal = totalCount(deck.extra);
+        const sideTotal = totalCount(deck.side);
+
+        mainCount.textContent = `${mainTotal} / 40`;
+        extraCount.textContent = `${extraTotal} / 15`;
+        sideCount.textContent = `${sideTotal} / 15`;
+
+        mainCountCard.classList.toggle("warn", mainTotal > 40 || (mainTotal > 0 && mainTotal < 40));
+        extraCountCard.classList.toggle("warn", extraTotal > 15);
+        sideCountCard.classList.toggle("warn", sideTotal > 15);
+
+        const warns = [];
+        if (mainTotal > 40) warns.push(`メインが40枚を超えています（${mainTotal}枚）`);
+        if (mainTotal > 0 && mainTotal < 40) warns.push(`メインが40枚未満です（${mainTotal}枚）`);
+        if (extraTotal > 15) warns.push(`エクストラが15枚を超えています（${extraTotal}枚）`);
+        if (sideTotal > 15) warns.push(`サイドが15枚を超えています（${sideTotal}枚）`);
+
+        deckWarn.textContent = warns.join(" / ");
       }
 
       function addCard() {
         const name = cardName.value.trim();
         const zone = cardZone.value;
         const count = Number(cardCount.value || 1);
+        const image = cardImage.value.trim();
         const memo = cardMemo.value.trim();
 
         if (!name) {
@@ -246,11 +303,13 @@
         if (existing) {
           existing.count += count;
           if (memo) existing.memo = memo;
+          if (image) existing.image = image;
         } else {
           deck[zone].push({
             id: createId(),
             name,
             count,
+            image,
             memo
           });
         }
@@ -289,21 +348,31 @@
         deck[zone].forEach(item => {
           const div = document.createElement("div");
           div.className = "deck-item";
+
+          const imageHtml = item.image
+            ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">`
+            : `<div style="width:90px;height:126px;border:1px solid var(--line);border-radius:8px;background:#0f1117;"></div>`;
+
           div.innerHTML = `
-            <h3>${escapeHtml(item.name)}</h3>
-            <div class="two">
+            <div class="deck-head">
+              <div>${imageHtml}</div>
               <div>
-                <div class="label">枚数</div>
-                <input type="number" min="1" max="99" value="${escapeHtml(item.count)}" data-role="count">
+                <h3>${escapeHtml(item.name)}</h3>
+                <div class="two">
+                  <div>
+                    <div class="label">枚数</div>
+                    <input type="number" min="1" max="99" value="${escapeHtml(item.count)}" data-role="count">
+                  </div>
+                  <div>
+                    <div class="label">メモ</div>
+                    <input type="text" value="${escapeHtml(item.memo || "")}" data-role="memo">
+                  </div>
+                </div>
+                <div class="row" style="margin-top:12px;">
+                  <button type="button" data-role="save">更新</button>
+                  <button type="button" class="danger" data-role="delete">削除</button>
+                </div>
               </div>
-              <div>
-                <div class="label">メモ</div>
-                <input type="text" value="${escapeHtml(item.memo || "")}" data-role="memo">
-              </div>
-            </div>
-            <div class="row" style="margin-top:12px;">
-              <button type="button" data-role="save">更新</button>
-              <button type="button" class="danger" data-role="delete">削除</button>
             </div>
           `;
 
