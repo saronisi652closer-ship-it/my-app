@@ -1,438 +1,295 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>遊戯王カード検索</title>
-  <link rel="stylesheet" href="../../style.css">
-  <style>
-    .result-card{display:none}
-    .result-card.show{display:block}
-    .info-grid{
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:10px;
-    }
-    @media(min-width:700px){
-      .info-grid{grid-template-columns:repeat(3,1fr)}
-    }
-    .mini-card{
-      background:#10131b;
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:10px;
-    }
-    .loading{color:var(--muted);margin-top:10px}
-    .error-box{color:#fda4af;margin-top:10px}
-    .preline{white-space:pre-wrap}
-    .badge-list{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:8px;
-    }
-    .badge{
-      display:inline-block;
-      padding:6px 10px;
-      border:1px solid var(--line);
-      border-radius:999px;
-      font-size:12px;
-      background:#0f1117;
-    }
-    .candidate-list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-top:12px;
-    }
-    .candidate-item{
-      background:#10131b;
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="wrap">
-      <h1>遊戯王カード検索</h1>
-      <div class="small">候補一覧つき検索 + 所持カード追加</div>
-    </div>
-  </header>
+<script>
+(() => {
+  const API_BASE = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
+  const OWNED_KEY = "yugioh_owned_cards_v1";
 
-  <main class="wrap">
-    <a class="back" href="../">← 遊戯王へ戻る</a>
+  const $ = (id) => document.getElementById(id);
 
-    <div class="grid">
-      <section class="card">
-        <h2>検索</h2>
+  const searchInput = $("searchInput");
+  const searchBtn = $("searchBtn");
+  const clearBtn = $("clearBtn");
+  const loadingText = $("loadingText");
+  const errorText = $("errorText");
+  const resultCard = $("resultCard");
 
-        <div class="label">カード名</div>
-        <input id="searchInput" type="text" placeholder="例：Blue-Eyes / Ash Blossom / Dark Magician">
+  const candidateList = $("candidateList");
+  const candidateEmpty = $("candidateEmpty");
 
-        <div class="row" style="margin-top:12px;">
-          <button class="primary" id="searchBtn" type="button">検索</button>
-          <button id="clearBtn" type="button">クリア</button>
-        </div>
+  const cardTitle = $("cardTitle");
+  const typeBadges = $("typeBadges");
+  const infoGrid = $("infoGrid");
+  const cardDesc = $("cardDesc");
+  const setInfo = $("setInfo");
 
-        <div class="loading" id="loadingText"></div>
-        <div class="error-box" id="errorText"></div>
+  const ownedName = $("ownedName");
+  const ownedCount = $("ownedCount");
+  const addOwnedBtn = $("addOwnedBtn");
+  const ownedStatus = $("ownedStatus");
 
-        <div class="small" style="margin-top:12px;">
-          まず部分一致で候補一覧を出して、候補を選ぶと詳細を表示します。
-        </div>
+  const cache = {};
+  let currentCard = null;
 
-        <div style="margin-top:12px;">
-          <div class="label">候補一覧</div>
-          <div id="candidateList" class="candidate-list"></div>
-          <div id="candidateEmpty" class="small">候補はまだありません。</div>
-        </div>
-      </section>
-
-      <section class="card result-card" id="resultCard">
-        <h2 id="cardTitle">検索結果</h2>
-
-        <div class="badge-list" id="typeBadges"></div>
-
-        <div style="margin-top:12px;">
-          <div class="label">基本情報</div>
-          <div class="info-grid" id="infoGrid"></div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <div class="label">カードテキスト</div>
-          <div id="cardDesc" class="small preline"></div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <div class="label">収録情報</div>
-          <div id="setInfo" class="small preline"></div>
-        </div>
-
-        <div class="card" style="margin-top:12px;">
-          <h2>所持カードへ追加</h2>
-
-          <div class="two">
-            <div>
-              <div class="label">カード名</div>
-              <input id="ownedName" type="text" readonly>
-            </div>
-            <div>
-              <div class="label">追加枚数</div>
-              <input id="ownedCount" type="number" min="1" max="99" value="1">
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:12px;">
-            <button class="primary" id="addOwnedBtn" type="button">所持カードへ追加</button>
-          </div>
-
-          <div class="small" id="ownedStatus" style="margin-top:10px;"></div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <script>
-    (() => {
-      const API_BASE = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
-      const OWNED_KEY = "yugioh_owned_cards_v1";
-
-      const $ = (id) => document.getElementById(id);
-
-      const searchInput = $("searchInput");
-      const searchBtn = $("searchBtn");
-      const clearBtn = $("clearBtn");
-      const loadingText = $("loadingText");
-      const errorText = $("errorText");
-      const resultCard = $("resultCard");
-
-      const candidateList = $("candidateList");
-      const candidateEmpty = $("candidateEmpty");
-
-      const cardTitle = $("cardTitle");
-      const typeBadges = $("typeBadges");
-      const infoGrid = $("infoGrid");
-      const cardDesc = $("cardDesc");
-      const setInfo = $("setInfo");
-
-      const ownedName = $("ownedName");
-      const ownedCount = $("ownedCount");
-      const addOwnedBtn = $("addOwnedBtn");
-      const ownedStatus = $("ownedStatus");
-
-      const cache = {};
-      let currentCard = null;
-
-      function escapeHtml(text) {
-        return String(text ?? "")
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#039;");
-      }
-
-      async function fetchJson(url) {
-        if (cache[url]) return cache[url];
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("fetch_failed");
-        const data = await res.json();
-        cache[url] = data;
-        return data;
-      }
-
-      function loadOwnedCards() {
-        try {
-          const raw = localStorage.getItem(OWNED_KEY);
-          return raw ? JSON.parse(raw) : [];
-        } catch (e) {
-          return [];
-        }
-      }
-
-      function saveOwnedCards(cards) {
-        localStorage.setItem(OWNED_KEY, JSON.stringify(cards));
-      }
-
-      function setOwnedStatus(message) {
-        ownedStatus.textContent = message;
-        if (message) {
-          setTimeout(() => {
-            if (ownedStatus.textContent === message) ownedStatus.textContent = "";
-          }, 2500);
-        }
-      }
-
-      function createId(prefix = "id") {
-        return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      }
-
-      function createInfoCard(label, value) {
-        return `
-          <div class="mini-card">
-            <strong>${escapeHtml(label)}</strong>
-            <div>${escapeHtml(value || "—")}</div>
-          </div>
-        `;
-      }
-
-      function renderBadges(card) {
-        typeBadges.innerHTML = "";
-
-        const badges = [
-          card.type,
-          card.attribute,
-          card.race,
-          card.archetype
-        ].filter(Boolean);
-
-        badges.forEach(text => {
-          const span = document.createElement("span");
-          span.className = "badge";
-          span.textContent = text;
-          typeBadges.appendChild(span);
-        });
-      }
-
-      function renderInfo(card) {
-        const isMonster = !!card.atk || !!card.def || !!card.level || !!card.rank || !!card.linkval;
-
-        const rows = [
-          createInfoCard("カードID", card.id),
-          createInfoCard("種別", card.type),
-          createInfoCard("属性", card.attribute),
-          createInfoCard("種族", card.race)
-        ];
-
-        if (card.level) rows.push(createInfoCard("レベル", card.level));
-        if (card.rank) rows.push(createInfoCard("ランク", card.rank));
-        if (card.linkval) rows.push(createInfoCard("LINK", card.linkval));
-        if (card.atk !== undefined) rows.push(createInfoCard("攻撃力", card.atk));
-        if (card.def !== undefined) rows.push(createInfoCard("守備力", card.def));
-
-        if (!isMonster) {
-          rows.push(createInfoCard("攻撃力", "—"));
-          rows.push(createInfoCard("守備力", "—"));
-        }
-
-        infoGrid.innerHTML = rows.join("");
-      }
-
-      function renderSets(card) {
-        if (!card.card_sets || !card.card_sets.length) {
-          setInfo.textContent = "収録情報なし";
-          return;
-        }
-
-        const lines = card.card_sets
-          .slice(0, 12)
-          .map(set => {
-            const name = set.set_name || "";
-            const code = set.set_code || "";
-            const rarity = set.set_rarity || "";
-            return [name, code, rarity].filter(Boolean).join(" / ");
-          });
-
-        setInfo.textContent = lines.join("\n");
-      }
-
-      function renderCard(card) {
-        currentCard = card;
-        cardTitle.textContent = card.name || "検索結果";
-        renderBadges(card);
-        renderInfo(card);
-        cardDesc.textContent = card.desc || "テキストなし";
-        renderSets(card);
-
-        ownedName.value = card.name || "";
-        ownedCount.value = 1;
-
-        resultCard.classList.add("show");
-      }
-
-      function renderCandidates(cards) {
-        candidateList.innerHTML = "";
-        candidateEmpty.style.display = cards.length ? "none" : "block";
-
-        cards.forEach(card => {
-          const item = document.createElement("div");
-          item.className = "candidate-item";
-
-          const info = [
-            card.type,
-            card.attribute,
-            card.race
-          ].filter(Boolean).join(" / ");
-
-          item.innerHTML = `
-            <h2>${escapeHtml(card.name || "無名カード")}</h2>
-            <div class="small">${escapeHtml(info || "情報なし")}</div>
-            <div class="row" style="margin-top:12px;">
-              <button type="button" data-action="show" data-id="${escapeHtml(String(card.id))}">詳細表示</button>
-            </div>
-          `;
-
-          candidateList.appendChild(item);
-        });
-
-        candidateList.querySelectorAll("button[data-action='show']").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const id = Number(btn.dataset.id);
-            const target = cards.find(card => Number(card.id) === id);
-            if (target) {
-              renderCard(target);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }
-          });
-        });
-      }
-
-      async function searchCard() {
-
-  const keyword = searchInput.value.trim()
-
-  errorText.textContent = ""
-  loadingText.textContent = ""
-  resultCard.classList.remove("show")
-
-  if (!keyword) {
-    errorText.textContent = "カード名を入れてください"
-    return
+  function escapeHtml(text) {
+    return String(text ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
-  try {
-
-    loadingText.textContent = "検索中..."
-
-    let data
-
-    // ①部分一致検索
-    try{
-      const url = `${API_BASE}?fname=${encodeURIComponent(keyword)}`
-      data = await fetchJson(url)
-    }catch{}
-
-    // ②完全一致検索
-    if(!data || !data.data){
-      const url = `${API_BASE}?name=${encodeURIComponent(keyword)}`
-      data = await fetchJson(url)
-    }
-
-    if(!data || !data.data){
-      throw new Error("not_found")
-    }
-
-    renderCandidates(data.data)
-    renderCard(data.data[0])
-
-    loadingText.textContent = ""
-
-  } catch (e) {
-
-    loadingText.textContent = ""
-    errorText.textContent = "カードが見つかりませんでした"
-
+  async function fetchJson(url) {
+    if (cache[url]) return cache[url];
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("fetch_failed");
+    const data = await res.json();
+    cache[url] = data;
+    return data;
   }
 
-   
+  function loadOwnedCards() {
+    try {
+      const raw = localStorage.getItem(OWNED_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
 
-      function addOwnedCard() {
-        if (!currentCard || !ownedName.value.trim()) {
-          setOwnedStatus("先にカードを検索してください。");
-          return;
-        }
+  function saveOwnedCards(cards) {
+    localStorage.setItem(OWNED_KEY, JSON.stringify(cards));
+  }
 
-        const name = ownedName.value.trim();
-        const count = Number(ownedCount.value || 1);
+  function setOwnedStatus(message) {
+    ownedStatus.textContent = message;
+    if (message) {
+      setTimeout(() => {
+        if (ownedStatus.textContent === message) ownedStatus.textContent = "";
+      }, 2500);
+    }
+  }
 
-        if (count <= 0) {
-          setOwnedStatus("追加枚数は1以上にしてください。");
-          return;
-        }
+  function createId(prefix = "id") {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
 
-        const ownedCards = loadOwnedCards();
-        const existing = ownedCards.find(c => c.name === name);
+  function createInfoCard(label, value) {
+    return `
+      <div class="mini-card">
+        <strong>${escapeHtml(label)}</strong>
+        <div>${escapeHtml(value || "—")}</div>
+      </div>
+    `;
+  }
 
-        if (existing) {
-          existing.count += count;
-        } else {
-          ownedCards.unshift({
-            id: createId("owned"),
-            name,
-            count
-          });
-        }
+  function renderBadges(card) {
+    typeBadges.innerHTML = "";
 
-        saveOwnedCards(ownedCards);
-        setOwnedStatus(`「${name}」を ${count} 枚追加しました。`);
-      }
+    const badges = [
+      card.type,
+      card.attribute,
+      card.race,
+      card.archetype
+    ].filter(Boolean);
 
-      function clearResult() {
-        searchInput.value = "";
-        errorText.textContent = "";
-        loadingText.textContent = "";
-        ownedStatus.textContent = "";
-        resultCard.classList.remove("show");
-        candidateList.innerHTML = "";
-        candidateEmpty.style.display = "block";
-        typeBadges.innerHTML = "";
-        infoGrid.innerHTML = "";
-        cardDesc.textContent = "";
-        setInfo.textContent = "";
-        ownedName.value = "";
-        ownedCount.value = 1;
-        currentCard = null;
-      }
+    badges.forEach(text => {
+      const span = document.createElement("span");
+      span.className = "badge";
+      span.textContent = text;
+      typeBadges.appendChild(span);
+    });
+  }
 
-      searchBtn.addEventListener("click", searchCard);
-      clearBtn.addEventListener("click", clearResult);
-      addOwnedBtn.addEventListener("click", addOwnedCard);
-      searchInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") searchCard();
+  function renderInfo(card) {
+    const isMonster = !!card.atk || !!card.def || !!card.level || !!card.rank || !!card.linkval;
+
+    const rows = [
+      createInfoCard("カードID", card.id),
+      createInfoCard("種別", card.type),
+      createInfoCard("属性", card.attribute),
+      createInfoCard("種族", card.race)
+    ];
+
+    if (card.level) rows.push(createInfoCard("レベル", card.level));
+    if (card.rank) rows.push(createInfoCard("ランク", card.rank));
+    if (card.linkval) rows.push(createInfoCard("LINK", card.linkval));
+    if (card.atk !== undefined) rows.push(createInfoCard("攻撃力", card.atk));
+    if (card.def !== undefined) rows.push(createInfoCard("守備力", card.def));
+
+    if (!isMonster) {
+      rows.push(createInfoCard("攻撃力", "—"));
+      rows.push(createInfoCard("守備力", "—"));
+    }
+
+    infoGrid.innerHTML = rows.join("");
+  }
+
+  function renderSets(card) {
+    if (!card.card_sets || !card.card_sets.length) {
+      setInfo.textContent = "収録情報なし";
+      return;
+    }
+
+    const lines = card.card_sets
+      .slice(0, 12)
+      .map(set => {
+        const name = set.set_name || "";
+        const code = set.set_code || "";
+        const rarity = set.set_rarity || "";
+        return [name, code, rarity].filter(Boolean).join(" / ");
       });
-    })();
-  </script>
-</body>
-</html>
+
+    setInfo.textContent = lines.join("\n");
+  }
+
+  function renderCard(card) {
+    currentCard = card;
+    cardTitle.textContent = card.name || "検索結果";
+    renderBadges(card);
+    renderInfo(card);
+    cardDesc.textContent = card.desc || "テキストなし";
+    renderSets(card);
+
+    ownedName.value = card.name || "";
+    ownedCount.value = 1;
+
+    resultCard.classList.add("show");
+  }
+
+  function renderCandidates(cards) {
+    candidateList.innerHTML = "";
+    candidateEmpty.style.display = cards.length ? "none" : "block";
+
+    cards.forEach(card => {
+      const item = document.createElement("div");
+      item.className = "candidate-item";
+
+      const info = [
+        card.type,
+        card.attribute,
+        card.race
+      ].filter(Boolean).join(" / ");
+
+      item.innerHTML = `
+        <h2>${escapeHtml(card.name || "無名カード")}</h2>
+        <div class="small">${escapeHtml(info || "情報なし")}</div>
+        <div class="row" style="margin-top:12px;">
+          <button type="button" data-action="show" data-id="${escapeHtml(String(card.id))}">詳細表示</button>
+        </div>
+      `;
+
+      candidateList.appendChild(item);
+    });
+
+    candidateList.querySelectorAll("button[data-action='show']").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = Number(btn.dataset.id);
+        const target = cards.find(card => Number(card.id) === id);
+        if (target) {
+          renderCard(target);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+    });
+  }
+
+  async function searchCard() {
+    const keyword = searchInput.value.trim();
+
+    errorText.textContent = "";
+    loadingText.textContent = "";
+    ownedStatus.textContent = "";
+    resultCard.classList.remove("show");
+    candidateList.innerHTML = "";
+    candidateEmpty.style.display = "block";
+    currentCard = null;
+
+    if (!keyword) {
+      errorText.textContent = "カード名を入れてください";
+      return;
+    }
+
+    try {
+      loadingText.textContent = "検索中...";
+
+      let data;
+
+      try {
+        const url = `${API_BASE}?fname=${encodeURIComponent(keyword)}`;
+        data = await fetchJson(url);
+      } catch {}
+
+      if (!data || !data.data) {
+        const url = `${API_BASE}?name=${encodeURIComponent(keyword)}`;
+        data = await fetchJson(url);
+      }
+
+      if (!data || !data.data) {
+        throw new Error("not_found");
+      }
+
+      renderCandidates(data.data);
+      renderCard(data.data[0]);
+      loadingText.textContent = "";
+    } catch (e) {
+      loadingText.textContent = "";
+      errorText.textContent = "カードが見つかりませんでした";
+    }
+  }
+
+  function addOwnedCard() {
+    if (!currentCard || !ownedName.value.trim()) {
+      setOwnedStatus("先にカードを検索してください。");
+      return;
+    }
+
+    const name = ownedName.value.trim();
+    const count = Number(ownedCount.value || 1);
+
+    if (count <= 0) {
+      setOwnedStatus("追加枚数は1以上にしてください。");
+      return;
+    }
+
+    const ownedCards = loadOwnedCards();
+    const existing = ownedCards.find(c => c.name === name);
+
+    if (existing) {
+      existing.count += count;
+    } else {
+      ownedCards.unshift({
+        id: createId("owned"),
+        name,
+        count
+      });
+    }
+
+    saveOwnedCards(ownedCards);
+    setOwnedStatus(`「${name}」を ${count} 枚追加しました。`);
+  }
+
+  function clearResult() {
+    searchInput.value = "";
+    errorText.textContent = "";
+    loadingText.textContent = "";
+    ownedStatus.textContent = "";
+    resultCard.classList.remove("show");
+    candidateList.innerHTML = "";
+    candidateEmpty.style.display = "block";
+    typeBadges.innerHTML = "";
+    infoGrid.innerHTML = "";
+    cardDesc.textContent = "";
+    setInfo.textContent = "";
+    ownedName.value = "";
+    ownedCount.value = 1;
+    currentCard = null;
+  }
+
+  searchBtn.addEventListener("click", searchCard);
+  clearBtn.addEventListener("click", clearResult);
+  addOwnedBtn.addEventListener("click", addOwnedCard);
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") searchCard();
+  });
+})();
+</script>
