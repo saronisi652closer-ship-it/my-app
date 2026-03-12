@@ -39,13 +39,25 @@
       font-size:12px;
       background:#0f1117;
     }
+    .candidate-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:12px;
+    }
+    .candidate-item{
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <h1>遊戯王カード検索</h1>
-      <div class="small">検索してそのまま所持カードへ追加</div>
+      <div class="small">候補一覧つき検索 + 所持カード追加</div>
     </div>
   </header>
 
@@ -57,7 +69,7 @@
         <h2>検索</h2>
 
         <div class="label">カード名</div>
-        <input id="searchInput" type="text" placeholder="例：Blue-Eyes White Dragon / Ash Blossom & Joyous Spring">
+        <input id="searchInput" type="text" placeholder="例：Blue-Eyes / Ash Blossom / Dark Magician">
 
         <div class="row" style="margin-top:12px;">
           <button class="primary" id="searchBtn" type="button">検索</button>
@@ -68,8 +80,13 @@
         <div class="error-box" id="errorText"></div>
 
         <div class="small" style="margin-top:12px;">
-          英語名検索の方が安定しやすいです。<br>
-          検索結果から所持カードへ追加できます。
+          まず部分一致で候補一覧を出して、候補を選ぶと詳細を表示します。
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="label">候補一覧</div>
+          <div id="candidateList" class="candidate-list"></div>
+          <div id="candidateEmpty" class="small">候補はまだありません。</div>
         </div>
       </section>
 
@@ -130,6 +147,9 @@
       const loadingText = $("loadingText");
       const errorText = $("errorText");
       const resultCard = $("resultCard");
+
+      const candidateList = $("candidateList");
+      const candidateEmpty = $("candidateEmpty");
 
       const cardTitle = $("cardTitle");
       const typeBadges = $("typeBadges");
@@ -272,12 +292,51 @@
         resultCard.classList.add("show");
       }
 
+      function renderCandidates(cards) {
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = cards.length ? "none" : "block";
+
+        cards.forEach(card => {
+          const item = document.createElement("div");
+          item.className = "candidate-item";
+
+          const info = [
+            card.type,
+            card.attribute,
+            card.race
+          ].filter(Boolean).join(" / ");
+
+          item.innerHTML = `
+            <h2>${escapeHtml(card.name || "無名カード")}</h2>
+            <div class="small">${escapeHtml(info || "情報なし")}</div>
+            <div class="row" style="margin-top:12px;">
+              <button type="button" data-action="show" data-id="${escapeHtml(String(card.id))}">詳細表示</button>
+            </div>
+          `;
+
+          candidateList.appendChild(item);
+        });
+
+        candidateList.querySelectorAll("button[data-action='show']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = Number(btn.dataset.id);
+            const target = cards.find(card => Number(card.id) === id);
+            if (target) {
+              renderCard(target);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          });
+        });
+      }
+
       async function searchCard() {
         const keyword = searchInput.value.trim();
         errorText.textContent = "";
         loadingText.textContent = "";
         ownedStatus.textContent = "";
         resultCard.classList.remove("show");
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = "block";
         currentCard = null;
 
         if (!keyword) {
@@ -287,18 +346,19 @@
 
         try {
           loadingText.textContent = "取得中...";
-          const url = `${API_BASE}?name=${encodeURIComponent(keyword)}`;
+          const url = `${API_BASE}?fname=${encodeURIComponent(keyword)}&num=20&offset=0`;
           const data = await fetchJson(url);
 
           if (!data.data || !data.data.length) {
             throw new Error("not_found");
           }
 
+          renderCandidates(data.data);
           renderCard(data.data[0]);
           loadingText.textContent = "";
         } catch (e) {
           loadingText.textContent = "";
-          errorText.textContent = "カードが見つかりませんでした。英語名に近い名前で試してください。";
+          errorText.textContent = "カードが見つかりませんでした。別の名前で試してください。";
         }
       }
 
@@ -339,6 +399,8 @@
         loadingText.textContent = "";
         ownedStatus.textContent = "";
         resultCard.classList.remove("show");
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = "block";
         typeBadges.innerHTML = "";
         infoGrid.innerHTML = "";
         cardDesc.textContent = "";
