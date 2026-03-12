@@ -160,4 +160,263 @@
       const ownedName = $("ownedName");
       const ownedCount = $("ownedCount");
       const addOwnedBtn = $("addOwnedBtn");
-      const owned
+      const ownedStatus = $("ownedStatus");
+
+      const cache = {};
+      let currentCard = null;
+
+      function escapeHtml(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      async function fetchJson(url) {
+        if (cache[url]) return cache[url];
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("fetch_failed");
+        const data = await res.json();
+        cache[url] = data;
+        return data;
+      }
+
+      function loadOwnedCards() {
+        try {
+          const raw = localStorage.getItem(OWNED_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveOwnedCards(cards) {
+        localStorage.setItem(OWNED_KEY, JSON.stringify(cards));
+      }
+
+      function setOwnedStatus(message) {
+        ownedStatus.textContent = message;
+        if (message) {
+          setTimeout(() => {
+            if (ownedStatus.textContent === message) ownedStatus.textContent = "";
+          }, 2500);
+        }
+      }
+
+      function createId(prefix = "id") {
+        return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      function createInfoCard(label, value) {
+        return `
+          <div class="mini-card">
+            <strong>${escapeHtml(label)}</strong>
+            <div>${escapeHtml(value || "—")}</div>
+          </div>
+        `;
+      }
+
+      function renderBadges(card) {
+        typeBadges.innerHTML = "";
+
+        const badges = [
+          card.type,
+          card.attribute,
+          card.race,
+          card.archetype
+        ].filter(Boolean);
+
+        badges.forEach(text => {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = text;
+          typeBadges.appendChild(span);
+        });
+      }
+
+      function renderInfo(card) {
+        const isMonster = !!card.atk || !!card.def || !!card.level || !!card.rank || !!card.linkval;
+
+        const rows = [
+          createInfoCard("カードID", card.id),
+          createInfoCard("種別", card.type),
+          createInfoCard("属性", card.attribute),
+          createInfoCard("種族", card.race)
+        ];
+
+        if (card.level) rows.push(createInfoCard("レベル", card.level));
+        if (card.rank) rows.push(createInfoCard("ランク", card.rank));
+        if (card.linkval) rows.push(createInfoCard("LINK", card.linkval));
+        if (card.atk !== undefined) rows.push(createInfoCard("攻撃力", card.atk));
+        if (card.def !== undefined) rows.push(createInfoCard("守備力", card.def));
+
+        if (!isMonster) {
+          rows.push(createInfoCard("攻撃力", "—"));
+          rows.push(createInfoCard("守備力", "—"));
+        }
+
+        infoGrid.innerHTML = rows.join("");
+      }
+
+      function renderSets(card) {
+        if (!card.card_sets || !card.card_sets.length) {
+          setInfo.textContent = "収録情報なし";
+          return;
+        }
+
+        const lines = card.card_sets
+          .slice(0, 12)
+          .map(set => {
+            const name = set.set_name || "";
+            const code = set.set_code || "";
+            const rarity = set.set_rarity || "";
+            return [name, code, rarity].filter(Boolean).join(" / ");
+          });
+
+        setInfo.textContent = lines.join("\n");
+      }
+
+      function renderCard(card) {
+        currentCard = card;
+        cardTitle.textContent = card.name || "検索結果";
+        renderBadges(card);
+        renderInfo(card);
+        cardDesc.textContent = card.desc || "テキストなし";
+        renderSets(card);
+
+        ownedName.value = card.name || "";
+        ownedCount.value = 1;
+
+        resultCard.classList.add("show");
+      }
+
+      function renderCandidates(cards) {
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = cards.length ? "none" : "block";
+
+        cards.forEach(card => {
+          const item = document.createElement("div");
+          item.className = "candidate-item";
+
+          const info = [
+            card.type,
+            card.attribute,
+            card.race
+          ].filter(Boolean).join(" / ");
+
+          item.innerHTML = `
+            <h2>${escapeHtml(card.name || "無名カード")}</h2>
+            <div class="small">${escapeHtml(info || "情報なし")}</div>
+            <div class="row" style="margin-top:12px;">
+              <button type="button" data-action="show" data-id="${escapeHtml(String(card.id))}">詳細表示</button>
+            </div>
+          `;
+
+          candidateList.appendChild(item);
+        });
+
+        candidateList.querySelectorAll("button[data-action='show']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = Number(btn.dataset.id);
+            const target = cards.find(card => Number(card.id) === id);
+            if (target) {
+              renderCard(target);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          });
+        });
+      }
+
+      async function searchCard() {
+        const keyword = searchInput.value.trim();
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        ownedStatus.textContent = "";
+        resultCard.classList.remove("show");
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = "block";
+        currentCard = null;
+
+        if (!keyword) {
+          errorText.textContent = "カード名を入れてください。";
+          return;
+        }
+
+        try {
+          loadingText.textContent = "取得中...";
+          const url = `${API_BASE}?fname=${encodeURIComponent(keyword)}&num=20&offset=0`;
+          const data = await fetchJson(url);
+
+          if (!data.data || !data.data.length) {
+            throw new Error("not_found");
+          }
+
+          renderCandidates(data.data);
+          renderCard(data.data[0]);
+          loadingText.textContent = "";
+        } catch (e) {
+          loadingText.textContent = "";
+          errorText.textContent = "カードが見つかりませんでした。別の名前で試してください。";
+        }
+      }
+
+      function addOwnedCard() {
+        if (!currentCard || !ownedName.value.trim()) {
+          setOwnedStatus("先にカードを検索してください。");
+          return;
+        }
+
+        const name = ownedName.value.trim();
+        const count = Number(ownedCount.value || 1);
+
+        if (count <= 0) {
+          setOwnedStatus("追加枚数は1以上にしてください。");
+          return;
+        }
+
+        const ownedCards = loadOwnedCards();
+        const existing = ownedCards.find(c => c.name === name);
+
+        if (existing) {
+          existing.count += count;
+        } else {
+          ownedCards.unshift({
+            id: createId("owned"),
+            name,
+            count
+          });
+        }
+
+        saveOwnedCards(ownedCards);
+        setOwnedStatus(`「${name}」を ${count} 枚追加しました。`);
+      }
+
+      function clearResult() {
+        searchInput.value = "";
+        errorText.textContent = "";
+        loadingText.textContent = "";
+        ownedStatus.textContent = "";
+        resultCard.classList.remove("show");
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = "block";
+        typeBadges.innerHTML = "";
+        infoGrid.innerHTML = "";
+        cardDesc.textContent = "";
+        setInfo.textContent = "";
+        ownedName.value = "";
+        ownedCount.value = 1;
+        currentCard = null;
+      }
+
+      searchBtn.addEventListener("click", searchCard);
+      clearBtn.addEventListener("click", clearResult);
+      addOwnedBtn.addEventListener("click", addOwnedCard);
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchCard();
+      });
+    })();
+  </script>
+</body>
+</html>
