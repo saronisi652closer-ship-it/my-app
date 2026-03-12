@@ -363,7 +363,11 @@
   }
 
       async function searchCard() {
-        const keyword = searchInput.value.trim();
+        let keyword = searchInput.value.trim();
+
+if(JP_TO_EN[keyword]){
+  keyword = JP_TO_EN[keyword]
+}
 
         errorText.textContent = "";
         loadingText.textContent = "";
