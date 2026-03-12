@@ -164,6 +164,30 @@
       const ownedStatus = $("ownedStatus");
 
       const cache = {};
+      const JP_TO_EN = {
+
+  "青眼": "Blue-Eyes White Dragon",
+  "ブルーアイズ": "Blue-Eyes White Dragon",
+
+  "ブラックマジシャン": "Dark Magician",
+  "ブラマジ": "Dark Magician",
+
+  "真紅眼": "Red-Eyes Black Dragon",
+
+  "うらら": "Ash Blossom & Joyous Spring",
+  "灰流うらら": "Ash Blossom & Joyous Spring",
+
+  "増殖するG": "Maxx \"C\"",
+
+  "ニビル": "Nibiru, the Primal Being",
+
+  "ロンギヌス": "Artifact Lancea",
+
+  "ヴェーラー": "Effect Veiler",
+
+  "幽鬼うさぎ": "Ghost Ogre & Snow Rabbit"
+
+      }
       let currentCard = null;
 
       function escapeHtml(text) {
