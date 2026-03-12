@@ -376,16 +376,7 @@
 
   }
 
-      }
-
-          renderCandidates(data.data);
-          renderCard(data.data[0]);
-          loadingText.textContent = "";
-        } catch (e) {
-          loadingText.textContent = "";
-          errorText.textContent = "カードが見つかりませんでした。別の名前で試してください。";
-        }
-      }
+   
 
       function addOwnedCard() {
         if (!currentCard || !ownedName.value.trim()) {
