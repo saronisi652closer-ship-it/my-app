@@ -57,7 +57,7 @@
   <header>
     <div class="wrap">
       <h1>遊戯王カード検索</h1>
-      <div class="small">候補一覧つき検索 + 所持カード追加</div>
+      <div class="small">候補一覧つき検索 + 所持カード追加 + デッキビルダー連携</div>
     </div>
   </header>
 
@@ -81,7 +81,7 @@
 
         <div class="small" style="margin-top:12px;">
           まず部分一致で候補一覧を出します。<br>
-          候補を押すと詳細を表示し、そのまま所持カードへ追加できます。
+          候補を押すと詳細を表示し、所持カードやデッキビルダーへ追加できます。
         </div>
 
         <div style="margin-top:12px;">
@@ -92,10 +92,6 @@
       </section>
 
       <section class="card result-card" id="resultCard">
-        <div style="margin-top:10px;text-align:center;">
-  <img id="cardImage"
-       style="max-width:220px;border-radius:10px;border:1px solid #333;">
-        </div>
         <h2 id="cardTitle">検索結果</h2>
 
         <div class="badge-list" id="typeBadges"></div>
@@ -135,6 +131,31 @@
 
           <div class="small" id="ownedStatus" style="margin-top:10px;"></div>
         </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h2>デッキビルダーへ追加</h2>
+
+          <div class="two">
+            <div>
+              <div class="label">入れる場所</div>
+              <select id="builderZone">
+                <option value="main">メイン</option>
+                <option value="extra">エクストラ</option>
+                <option value="side">サイド</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">追加枚数</div>
+              <input id="builderCount" type="number" min="1" max="99" value="1">
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="addBuilderBtn" type="button">デッキビルダーへ追加</button>
+          </div>
+
+          <div class="small" id="builderStatus" style="margin-top:10px;"></div>
+        </div>
       </section>
     </div>
   </main>
@@ -143,6 +164,7 @@
     (() => {
       const API_BASE = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
       const OWNED_KEY = "yugioh_owned_cards_v1";
+      const BUILDER_KEY = "yugioh_deck_builder_v1";
 
       const $ = (id) => document.getElementById(id);
 
@@ -161,38 +183,18 @@
       const infoGrid = $("infoGrid");
       const cardDesc = $("cardDesc");
       const setInfo = $("setInfo");
-      const cardImage = $("cardImage");
 
       const ownedName = $("ownedName");
       const ownedCount = $("ownedCount");
       const addOwnedBtn = $("addOwnedBtn");
       const ownedStatus = $("ownedStatus");
 
+      const builderZone = $("builderZone");
+      const builderCount = $("builderCount");
+      const addBuilderBtn = $("addBuilderBtn");
+      const builderStatus = $("builderStatus");
+
       const cache = {};
-      const JP_TO_EN = {
-
-  "青眼": "Blue-Eyes White Dragon",
-  "ブルーアイズ": "Blue-Eyes White Dragon",
-
-  "ブラックマジシャン": "Dark Magician",
-  "ブラマジ": "Dark Magician",
-
-  "真紅眼": "Red-Eyes Black Dragon",
-
-  "うらら": "Ash Blossom & Joyous Spring",
-  "灰流うらら": "Ash Blossom & Joyous Spring",
-
-  "増殖するG": "Maxx \"C\"",
-
-  "ニビル": "Nibiru, the Primal Being",
-
-  "ロンギヌス": "Artifact Lancea",
-
-  "ヴェーラー": "Effect Veiler",
-
-  "幽鬼うさぎ": "Ghost Ogre & Snow Rabbit"
-
-      }
       let currentCard = null;
 
       function escapeHtml(text) {
@@ -226,12 +228,36 @@
         localStorage.setItem(OWNED_KEY, JSON.stringify(cards));
       }
 
+      function loadBuilderDeck() {
+        try {
+          const raw = localStorage.getItem(BUILDER_KEY);
+          return raw ? JSON.parse(raw) : { main: [], extra: [], side: [] };
+        } catch (e) {
+          return { main: [], extra: [], side: [] };
+        }
+      }
+
+      function saveBuilderDeck(deck) {
+        localStorage.setItem(BUILDER_KEY, JSON.stringify(deck));
+      }
+
       function setOwnedStatus(message) {
         ownedStatus.textContent = message;
         if (message) {
           setTimeout(() => {
             if (ownedStatus.textContent === message) {
               ownedStatus.textContent = "";
+            }
+          }, 2500);
+        }
+      }
+
+      function setBuilderStatus(message) {
+        builderStatus.textContent = message;
+        if (message) {
+          setTimeout(() => {
+            if (builderStatus.textContent === message) {
+              builderStatus.textContent = "";
             }
           }, 2500);
         }
@@ -311,9 +337,6 @@
       function renderCard(card) {
         currentCard = card;
         cardTitle.textContent = card.name || "検索結果";
-
-　　　　　cardImage.src = card.card_images?.[0]?.image_url || "";
-        
         renderBadges(card);
         renderInfo(card);
         cardDesc.textContent = card.desc || "テキストなし";
@@ -321,6 +344,8 @@
 
         ownedName.value = card.name || "";
         ownedCount.value = 1;
+        builderCount.value = 1;
+        builderZone.value = "main";
 
         resultCard.classList.add("show");
       }
@@ -351,35 +376,27 @@
         });
 
         candidateList.onclick = (e) => {
+          const btn = e.target.closest("button");
+          if (!btn) return;
+          if (btn.dataset.action !== "show") return;
 
-  const btn = e.target.closest("button")
+          const id = Number(btn.dataset.id);
+          const target = cards.find((card) => Number(card.id) === id);
 
-  if(!btn) return
-  if(btn.dataset.action !== "show") return
-
-  const id = Number(btn.dataset.id)
-
-  const target = cards.find(card => Number(card.id) === id)
-
-  if(target){
-    renderCard(target)
-    window.scrollTo({ top:0, behavior:"smooth" })
-  }
-          
-  }
-
-  }
+          if (target) {
+            renderCard(target);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        };
+      }
 
       async function searchCard() {
-        let keyword = searchInput.value.trim();
-
-if(JP_TO_EN[keyword]){
-  keyword = JP_TO_EN[keyword]
-}
+        const keyword = searchInput.value.trim();
 
         errorText.textContent = "";
         loadingText.textContent = "";
         ownedStatus.textContent = "";
+        builderStatus.textContent = "";
         resultCard.classList.remove("show");
         candidateList.innerHTML = "";
         candidateEmpty.style.display = "block";
@@ -449,11 +466,56 @@ if(JP_TO_EN[keyword]){
         setOwnedStatus(`「${name}」を ${count} 枚追加しました。`);
       }
 
+      function addToBuilder() {
+        if (!currentCard) {
+          setBuilderStatus("先にカードを検索してください。");
+          return;
+        }
+
+        const name = currentCard.name || "";
+        const zone = builderZone.value;
+        const count = Number(builderCount.value || 1);
+
+        if (!name) {
+          setBuilderStatus("カード情報がありません。");
+          return;
+        }
+
+        if (count <= 0) {
+          setBuilderStatus("追加枚数は1以上にしてください。");
+          return;
+        }
+
+        const deck = loadBuilderDeck();
+
+        if (!deck.main) deck.main = [];
+        if (!deck.extra) deck.extra = [];
+        if (!deck.side) deck.side = [];
+
+        const targetZone = deck[zone];
+        const existing = targetZone.find((item) => item.name === name);
+
+        if (existing) {
+          existing.count += count;
+        } else {
+          targetZone.push({
+            id: createId("builder"),
+            name,
+            count,
+            memo: ""
+          });
+        }
+
+        saveBuilderDeck(deck);
+        setBuilderStatus(`「${name}」を ${zone === "main" ? "メイン" : zone === "extra" ? "エクストラ" : "サイド"}に ${count} 枚追加しました。`);
+      }
+
       function clearResult() {
         searchInput.value = "";
         errorText.textContent = "";
         loadingText.textContent = "";
         ownedStatus.textContent = "";
+        builderStatus.textContent = "";
         resultCard.classList.remove("show");
         candidateList.innerHTML = "";
         candidateEmpty.style.display = "block";
@@ -463,12 +525,15 @@ if(JP_TO_EN[keyword]){
         setInfo.textContent = "";
         ownedName.value = "";
         ownedCount.value = 1;
+        builderCount.value = 1;
+        builderZone.value = "main";
         currentCard = null;
       }
 
       searchBtn.addEventListener("click", searchCard);
       clearBtn.addEventListener("click", clearResult);
       addOwnedBtn.addEventListener("click", addOwnedCard);
+      addBuilderBtn.addEventListener("click", addToBuilder);
       searchInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") searchCard();
       });
