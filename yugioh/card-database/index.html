@@ -1,1 +1,425 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>遊戯王カードDB</title>
+  <link rel="stylesheet" href="../../style.css">
+  <style>
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .item{
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+    .item-head{
+      display:grid;
+      grid-template-columns:90px 1fr;
+      gap:12px;
+      align-items:start;
+    }
+    .item-head img{
+      width:100%;
+      max-width:90px;
+      border-radius:8px;
+      border:1px solid var(--line);
+      background:#0f1117;
+    }
+    @media(max-width:700px){
+      .item-head{grid-template-columns:1fr}
+      .item-head img{max-width:140px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>遊戯王カードDB</h1>
+      <div class="small">独自カード情報の登録・編集・日本語検索</div>
+    </div>
+  </header>
 
+  <main class="wrap">
+    <a class="back" href="../">← 遊戯王へ戻る</a>
+
+    <div class="grid">
+      <section class="card">
+        <h2 id="editorTitle">新規登録</h2>
+
+        <div class="two">
+          <div>
+            <div class="label">日本語名</div>
+            <input id="nameJa" type="text" placeholder="例：ブラック・マジシャン">
+          </div>
+          <div>
+            <div class="label">英語名</div>
+            <input id="nameEn" type="text" placeholder="例：Dark Magician">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">別名・略称（カンマ区切り）</div>
+          <input id="aliases" type="text" placeholder="例：ブラックマジシャン, ブラマジ">
+        </div>
+
+        <div class="three" style="margin-top:10px;">
+          <div>
+            <div class="label">属性</div>
+            <input id="attributeJa" type="text" placeholder="例：闇">
+          </div>
+          <div>
+            <div class="label">種族</div>
+            <input id="raceJa" type="text" placeholder="例：魔法使い族">
+          </div>
+          <div>
+            <div class="label">種類</div>
+            <input id="typeJa" type="text" placeholder="例：通常モンスター">
+          </div>
+        </div>
+
+        <div class="three" style="margin-top:10px;">
+          <div>
+            <div class="label">レベル / ランク / LINK</div>
+            <input id="level" type="number" min="0" placeholder="例：7">
+          </div>
+          <div>
+            <div class="label">攻撃力</div>
+            <input id="atk" type="number" min="0" placeholder="例：2500">
+          </div>
+          <div>
+            <div class="label">守備力</div>
+            <input id="def" type="number" min="0" placeholder="例：2100">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">カード画像URL</div>
+          <input id="image" type="text" placeholder="例：https://...">
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">説明・テキスト</div>
+          <textarea id="descJa" placeholder="カードのテキストや補足"></textarea>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button class="primary" id="saveBtn" type="button">保存</button>
+          <button id="clearBtn" type="button">入力クリア</button>
+          <button class="danger" id="deleteBtn" type="button" style="display:none;">削除</button>
+        </div>
+
+        <div class="small" id="status" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>登録済みカード</h2>
+
+        <div class="two" style="margin-bottom:12px;">
+          <div>
+            <div class="label">検索</div>
+            <input id="searchBox" type="text" placeholder="名前 / 別名 / 属性 / 種族 / 種類">
+          </div>
+          <div>
+            <div class="label">並び順</div>
+            <select id="sortBox">
+              <option value="updated_desc">更新日（新しい順）</option>
+              <option value="name_asc">日本語名（あいうえお順）</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="cardList" class="list"></div>
+        <div id="emptyMessage" class="small">まだカードがありません。</div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "yugioh_local_card_db_v1";
+
+      const $ = (id) => document.getElementById(id);
+
+      const editorTitle = $("editorTitle");
+      const nameJa = $("nameJa");
+      const nameEn = $("nameEn");
+      const aliases = $("aliases");
+      const attributeJa = $("attributeJa");
+      const raceJa = $("raceJa");
+      const typeJa = $("typeJa");
+      const level = $("level");
+      const atk = $("atk");
+      const def = $("def");
+      const image = $("image");
+      const descJa = $("descJa");
+
+      const saveBtn = $("saveBtn");
+      const clearBtn = $("clearBtn");
+      const deleteBtn = $("deleteBtn");
+      const status = $("status");
+
+      const searchBox = $("searchBox");
+      const sortBox = $("sortBox");
+      const cardList = $("cardList");
+      const emptyMessage = $("emptyMessage");
+
+      let cards = loadCards();
+      let editingId = null;
+
+      function loadCards() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveCards() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+      }
+
+      function createId() {
+        return "localcard_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      }
+
+      function escapeHtml(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function setStatus(message) {
+        status.textContent = message;
+        if (message) {
+          setTimeout(() => {
+            if (status.textContent === message) status.textContent = "";
+          }, 2500);
+        }
+      }
+
+      function parseAliases(text) {
+        return text.split(",").map(x => x.trim()).filter(Boolean);
+      }
+
+      function clearForm() {
+        editingId = null;
+        editorTitle.textContent = "新規登録";
+        nameJa.value = "";
+        nameEn.value = "";
+        aliases.value = "";
+        attributeJa.value = "";
+        raceJa.value = "";
+        typeJa.value = "";
+        level.value = "";
+        atk.value = "";
+        def.value = "";
+        image.value = "";
+        descJa.value = "";
+        deleteBtn.style.display = "none";
+      }
+
+      function fillForm(card) {
+        editingId = card.id;
+        editorTitle.textContent = `編集中：${card.nameJa || "無名カード"}`;
+        nameJa.value = card.nameJa || "";
+        nameEn.value = card.nameEn || "";
+        aliases.value = (card.aliases || []).join(", ");
+        attributeJa.value = card.attributeJa || "";
+        raceJa.value = card.raceJa || "";
+        typeJa.value = card.typeJa || "";
+        level.value = card.level ?? "";
+        atk.value = card.atk ?? "";
+        def.value = card.def ?? "";
+        image.value = card.image || "";
+        descJa.value = card.descJa || "";
+        deleteBtn.style.display = "inline-block";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function getFormData() {
+        return {
+          id: editingId || createId(),
+          nameJa: nameJa.value.trim(),
+          nameEn: nameEn.value.trim(),
+          aliases: parseAliases(aliases.value),
+          attributeJa: attributeJa.value.trim(),
+          raceJa: raceJa.value.trim(),
+          typeJa: typeJa.value.trim(),
+          level: level.value === "" ? "" : Number(level.value),
+          atk: atk.value === "" ? "" : Number(atk.value),
+          def: def.value === "" ? "" : Number(def.value),
+          image: image.value.trim(),
+          descJa: descJa.value.trim(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+
+      function saveCard() {
+        const data = getFormData();
+
+        if (!data.nameJa) {
+          setStatus("日本語名を入れてください");
+          return;
+        }
+
+        const existingIndex = cards.findIndex(c => c.id === data.id);
+
+        if (existingIndex >= 0) {
+          data.createdAt = cards[existingIndex].createdAt || data.updatedAt;
+          cards[existingIndex] = data;
+          setStatus("更新しました");
+        } else {
+          data.createdAt = data.updatedAt;
+          cards.unshift(data);
+          setStatus("保存しました");
+        }
+
+        saveCards();
+        renderList();
+        fillForm(data);
+      }
+
+      function deleteCard() {
+        if (!editingId) return;
+
+        const target = cards.find(c => c.id === editingId);
+        if (!target) return;
+
+        const ok = confirm(`「${target.nameJa || "このカード"}」を削除しますか？`);
+        if (!ok) return;
+
+        cards = cards.filter(c => c.id !== editingId);
+        saveCards();
+        clearForm();
+        renderList();
+        setStatus("削除しました");
+      }
+
+      function getFilteredCards() {
+        const keyword = searchBox.value.trim().toLowerCase();
+        const sort = sortBox.value;
+
+        let result = [...cards];
+
+        if (keyword) {
+          result = result.filter(card => {
+            const text = [
+              card.nameJa,
+              card.nameEn,
+              ...(card.aliases || []),
+              card.attributeJa,
+              card.raceJa,
+              card.typeJa,
+              card.descJa
+            ].join(" ").toLowerCase();
+
+            return text.includes(keyword);
+          });
+        }
+
+        if (sort === "updated_desc") {
+          result.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+        } else if (sort === "name_asc") {
+          result.sort((a, b) => (a.nameJa || "").localeCompare(b.nameJa || "", "ja"));
+        }
+
+        return result;
+      }
+
+      function renderList() {
+        const items = getFilteredCards();
+        cardList.innerHTML = "";
+        emptyMessage.style.display = items.length ? "none" : "block";
+
+        items.forEach(card => {
+          const item = document.createElement("div");
+          item.className = "item";
+
+          const imageHtml = card.image
+            ? `<img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.nameJa)}">`
+            : `<div style="width:90px;height:126px;border:1px solid var(--line);border-radius:8px;background:#0f1117;"></div>`;
+
+          item.innerHTML = `
+            <div class="item-head">
+              <div>${imageHtml}</div>
+              <div>
+                <h2>${escapeHtml(card.nameJa || "無名カード")}</h2>
+                <div class="small">${escapeHtml(card.nameEn || "")}</div>
+                <div class="small" style="margin-top:6px;">
+                  ${escapeHtml(card.typeJa || "—")} / ${escapeHtml(card.attributeJa || "—")} / ${escapeHtml(card.raceJa || "—")}
+                </div>
+                <div class="small" style="margin-top:6px;">
+                  レベル:${escapeHtml(card.level)} / 攻:${escapeHtml(card.atk)} / 守:${escapeHtml(card.def)}
+                </div>
+                ${
+                  (card.aliases || []).length
+                    ? `<div class="small" style="margin-top:6px;">別名：${escapeHtml(card.aliases.join(" / "))}</div>`
+                    : ""
+                }
+                ${
+                  card.descJa
+                    ? `<div class="small preline" style="margin-top:8px;">${escapeHtml(card.descJa)}</div>`
+                    : ""
+                }
+                <div class="row" style="margin-top:12px;">
+                  <button type="button" data-action="edit" data-id="${escapeHtml(card.id)}">編集</button>
+                  <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(card.id)}">削除</button>
+                </div>
+              </div>
+            </div>
+          `;
+
+          cardList.appendChild(item);
+        });
+
+        cardList.querySelectorAll("button[data-action='edit']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = cards.find(c => c.id === btn.dataset.id);
+            if (target) fillForm(target);
+          });
+        });
+
+        cardList.querySelectorAll("button[data-action='delete']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = cards.find(c => c.id === btn.dataset.id);
+            if (!target) return;
+
+            const ok = confirm(`「${target.nameJa || "このカード"}」を削除しますか？`);
+            if (!ok) return;
+
+            cards = cards.filter(c => c.id !== btn.dataset.id);
+            saveCards();
+
+            if (editingId === btn.dataset.id) clearForm();
+
+            renderList();
+            setStatus("削除しました");
+          });
+        });
+      }
+
+      saveBtn.addEventListener("click", saveCard);
+      clearBtn.addEventListener("click", () => {
+        clearForm();
+        setStatus("入力をクリアしました");
+      });
+      deleteBtn.addEventListener("click", deleteCard);
+
+      searchBox.addEventListener("input", renderList);
+      sortBox.addEventListener("change", renderList);
+
+      clearForm();
+      renderList();
+    })();
+  </script>
+</body>
+</html>
