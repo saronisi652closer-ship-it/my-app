@@ -11,20 +11,20 @@
 .result-card.show{display:block}
 
 .info-grid{
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:10px
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px
 }
 
 @media(min-width:700px){
-.info-grid{grid-template-columns:repeat(3,1fr)}
+  .info-grid{grid-template-columns:repeat(3,1fr)}
 }
 
 .mini-card{
-background:#10131b;
-border:1px solid var(--line);
-border-radius:14px;
-padding:10px
+  background:#10131b;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px
 }
 
 .loading{color:var(--muted);margin-top:10px}
@@ -32,40 +32,40 @@ padding:10px
 .preline{white-space:pre-wrap}
 
 .badge-list{
-display:flex;
-flex-wrap:wrap;
-gap:8px;
-margin-top:8px
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:8px
 }
 
 .badge{
-display:inline-block;
-padding:6px 10px;
-border:1px solid var(--line);
-border-radius:999px;
-font-size:12px;
-background:#0f1117
+  display:inline-block;
+  padding:6px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  font-size:12px;
+  background:#0f1117
 }
 
 .candidate-list{
-display:flex;
-flex-direction:column;
-gap:10px;
-margin-top:12px
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:12px
 }
 
 .candidate-item{
-background:#10131b;
-border:1px solid var(--line);
-border-radius:14px;
-padding:12px
+  background:#10131b;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px
 }
 
 .card-img{
-max-width:220px;
-border-radius:10px;
-border:1px solid #333;
-margin-top:10px
+  max-width:220px;
+  border-radius:10px;
+  border:1px solid #333;
+  margin-top:10px
 }
 </style>
 </head>
@@ -73,262 +73,118 @@ margin-top:10px
 <body>
 
 <header>
-<div class="wrap">
-<h1>遊戯王カード検索</h1>
-<div class="small">日本語検索対応 + 所持カード + デッキビルダー</div>
-</div>
+  <div class="wrap">
+    <h1>遊戯王カード検索</h1>
+    <div class="small">日本語検索対応 + 所持カード + デッキビルダー</div>
+  </div>
 </header>
 
 <main class="wrap">
+  <a class="back" href="../">← 遊戯王へ戻る</a>
 
-<a class="back" href="../">← 遊戯王へ戻る</a>
+  <div class="grid">
 
-<div class="grid">
+    <section class="card">
+      <h2>検索</h2>
 
-<section class="card">
+      <div class="label">カード名</div>
+      <input id="searchInput" type="text" placeholder="例：青眼 / ブラックマジシャン / Dark Magician">
 
-<h2>検索</h2>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="searchBtn" type="button">検索</button>
+        <button id="clearBtn" type="button">クリア</button>
+      </div>
 
-<div class="label">カード名</div>
+      <div class="loading" id="loadingText"></div>
+      <div class="error-box" id="errorText"></div>
 
-<input id="searchInput" type="text"
-placeholder="例：青眼 / ブラックマジシャン / Dark Magician">
+      <div style="margin-top:12px;">
+        <div class="label">候補一覧</div>
+        <div id="candidateList" class="candidate-list"></div>
+        <div id="candidateEmpty" class="small">候補はまだありません。</div>
+      </div>
+    </section>
 
-<div class="row" style="margin-top:12px;">
-<button class="primary" id="searchBtn">検索</button>
-<button id="clearBtn">クリア</button>
-</div>
+    <section class="card result-card" id="resultCard">
+      <h2 id="cardTitle">検索結果</h2>
 
-<div class="loading" id="loadingText"></div>
-<div class="error-box" id="errorText"></div>
+      <div style="text-align:center">
+        <img id="cardImage" class="card-img" alt="card image">
+      </div>
 
-<div style="margin-top:12px;">
-<div class="label">候補一覧</div>
-<div id="candidateList" class="candidate-list"></div>
-<div id="candidateEmpty" class="small">候補はまだありません。</div>
-</div>
+      <div class="badge-list" id="typeBadges"></div>
 
-</section>
+      <div style="margin-top:12px">
+        <div class="label">基本情報</div>
+        <div class="info-grid" id="infoGrid"></div>
+      </div>
 
-<section class="card result-card" id="resultCard">
+      <div style="margin-top:12px">
+        <div class="label">カードテキスト</div>
+        <div id="cardDesc" class="small preline"></div>
+      </div>
 
-<h2 id="cardTitle">検索結果</h2>
+      <div style="margin-top:12px">
+        <div class="label">収録情報</div>
+        <div id="setInfo" class="small preline"></div>
+      </div>
 
-<div style="text-align:center">
-<img id="cardImage" class="card-img">
-</div>
+      <div class="card" style="margin-top:12px">
+        <h2>所持カードへ追加</h2>
 
-<div class="badge-list" id="typeBadges"></div>
+        <div class="two">
+          <div>
+            <div class="label">カード名</div>
+            <input id="ownedName" readonly>
+          </div>
 
-<div style="margin-top:12px">
-<div class="label">基本情報</div>
-<div class="info-grid" id="infoGrid"></div>
-</div>
+          <div>
+            <div class="label">追加枚数</div>
+            <input id="ownedCount" type="number" min="1" value="1">
+          </div>
+        </div>
 
-<div style="margin-top:12px">
-<div class="label">カードテキスト</div>
-<div id="cardDesc" class="small preline"></div>
-</div>
+        <div class="row" style="margin-top:12px">
+          <button class="primary" id="addOwnedBtn" type="button">所持カードへ追加</button>
+        </div>
 
-<div style="margin-top:12px">
-<div class="label">収録情報</div>
-<div id="setInfo" class="small preline"></div>
-</div>
+        <div class="small" id="ownedStatus"></div>
+      </div>
 
-<div class="card" style="margin-top:12px">
+      <div class="card" style="margin-top:12px">
+        <h2>デッキビルダーへ追加</h2>
 
-<h2>所持カードへ追加</h2>
+        <div class="two">
+          <div>
+            <div class="label">入れる場所</div>
+            <select id="builderZone">
+              <option value="main">メイン</option>
+              <option value="extra">エクストラ</option>
+              <option value="side">サイド</option>
+            </select>
+          </div>
 
-<div class="two">
-<div>
-<div class="label">カード名</div>
-<input id="ownedName" readonly>
-</div>
+          <div>
+            <div class="label">追加枚数</div>
+            <input id="builderCount" type="number" min="1" value="1">
+          </div>
+        </div>
 
-<div>
-<div class="label">追加枚数</div>
-<input id="ownedCount" type="number" min="1" value="1">
-</div>
-</div>
+        <div class="row" style="margin-top:12px">
+          <button class="primary" id="addBuilderBtn" type="button">デッキビルダーへ追加</button>
+        </div>
 
-<div class="row" style="margin-top:12px">
-<button class="primary" id="addOwnedBtn">所持カードへ追加</button>
-</div>
+        <div class="small" id="builderStatus"></div>
+      </div>
+    </section>
 
-<div class="small" id="ownedStatus"></div>
-
-</div>
-
-<div class="card" style="margin-top:12px">
-
-<h2>デッキビルダーへ追加</h2>
-
-<div class="two">
-<div>
-<div class="label">入れる場所</div>
-
-<select id="builderZone">
-<option value="main">メイン</option>
-<option value="extra">エクストラ</option>
-<option value="side">サイド</option>
-</select>
-
-</div>
-
-<div>
-<div class="label">追加枚数</div>
-<input id="builderCount" type="number" min="1" value="1">
-</div>
-</div>
-
-<div class="row" style="margin-top:12px">
-<button class="primary" id="addBuilderBtn">デッキビルダーへ追加</button>
-</div>
-
-<div class="small" id="builderStatus"></div>
-
-</div>
-
-</section>
-
-</div>
+  </div>
 </main>
 
 <script>
-
-const API="https://db.ygoprodeck.com/api/v7/cardinfo.php"
-
-const JP_TO_EN={
-"青眼":"Blue-Eyes",
-"ブルーアイズ":"Blue-Eyes",
-"青眼の白龍":"Blue-Eyes White Dragon",
-"ブラックマジシャン":"Dark Magician",
-"ブラマジ":"Dark Magician",
-"ブラックマジシャンガール":"Dark Magician Girl",
-"真紅眼":"Red-Eyes",
-"うらら":"Ash Blossom & Joyous Spring",
-"灰流うらら":"Ash Blossom & Joyous Spring",
-"増殖するG":"Maxx \"C\"",
-"増G":"Maxx \"C\"",
-"ニビル":"Nibiru, the Primal Being",
-"BF":"Blackwing",
-"スプライト":"Spright",
-"烙印":"Branded",
-"ティアラメンツ":"Tearlaments"
-}
-
-const JP_TO_EN={
-  "青眼":"Blue-Eyes",
-  "ブルーアイズ":"Blue-Eyes",
-  "青眼の白龍":"Blue-Eyes White Dragon",
-  "ブラックマジシャン":"Dark Magician",
-  "ブラマジ":"Dark Magician",
-  "ブラックマジシャンガール":"Dark Magician Girl",
-  "真紅眼":"Red-Eyes",
-  "うらら":"Ash Blossom & Joyous Spring",
-  "灰流うらら":"Ash Blossom & Joyous Spring",
-  "増殖するG":"Maxx \"C\"",
-  "増G":"Maxx \"C\"",
-  "ニビル":"Nibiru, the Primal Being",
-  "BF":"Blackwing",
-  "スプライト":"Spright",
-  "烙印":"Branded",
-  "ティアラメンツ":"Tearlaments"
-}
-
-const RACE_JP = {
-  "Spellcaster":"魔法使い族",
-  "Dragon":"ドラゴン族",
-  "Warrior":"戦士族",
-  "Beast":"獣族",
-  "Beast-Warrior":"獣戦士族",
-  "Winged Beast":"鳥獣族",
-  "Fiend":"悪魔族",
-  "Fairy":"天使族",
-  "Zombie":"アンデット族",
-  "Machine":"機械族",
-  "Aqua":"水族",
-  "Pyro":"炎族",
-  "Thunder":"雷族",
-  "Rock":"岩石族",
-  "Plant":"植物族",
-  "Insect":"昆虫族",
-  "Reptile":"爬虫類族",
-  "Fish":"魚族",
-  "Sea Serpent":"海竜族",
-  "Dinosaur":"恐竜族",
-  "Psychic":"サイキック族",
-  "Cyberse":"サイバース族"
-}
-
-const ATTRIBUTE_JP = {
-  "DARK":"闇",
-  "LIGHT":"光",
-  "EARTH":"地",
-  "WATER":"水",
-  "FIRE":"炎",
-  "WIND":"風",
-  "DIVINE":"神"
-}
-
-const TYPE_JP = {
-  "Normal Monster":"通常モンスター",
-  "Effect Monster":"効果モンスター",
-  "Fusion Monster":"融合モンスター",
-  "Synchro Monster":"シンクロモンスター",
-  "XYZ Monster":"エクシーズモンスター",
-  "Link Monster":"リンクモンスター",
-  "Pendulum Effect Monster":"ペンデュラムモンスター",
-  "Spell Card":"魔法カード",
-  "Trap Card":"罠カード"
-}
-  
-const $=id=>document.getElementById(id)
-
-const searchInput=$("searchInput")
-const searchBtn=$("searchBtn")
-const clearBtn=$("clearBtn")
-
-const candidateList=$("candidateList")
-const candidateEmpty=$("candidateEmpty")
-
-const resultCard=$("resultCard")
-const cardTitle=$("cardTitle")
-const cardImage=$("cardImage")
-
-const typeBadges=$("typeBadges")
-const infoGrid=$("infoGrid")
-const cardDesc=$("cardDesc")
-const setInfo=$("setInfo")
-
-const ownedName=$("ownedName")
-const ownedCount=$("ownedCount")
-const ownedStatus=$("ownedStatus")
-
-const builderZone=$("builderZone")
-const builderCount=$("builderCount")
-const builderStatus=$("builderStatus")
-
-let currentCard=null
-
-function createInfo(label,val){
-return`
-<div class="mini-card">
-<strong>${label}</strong>
-<div>${val??"—"}</div>
-</div>`
-}
-
-function renderCard(card){
-
-currentCard=card
-
-cardTitle.textContent=card.name
-cardImage.src=card.card_images?.[0]?.image_url??""
-
-function renderBadges(card) {
-<script>
 const API = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
+const OWNED_KEY = "yugioh_owned_cards_v1";
+const BUILDER_KEY = "yugioh_deck_builder_v1";
 
 const JP_TO_EN = {
   "青眼":"Blue-Eyes",
@@ -336,14 +192,19 @@ const JP_TO_EN = {
   "青眼の白龍":"Blue-Eyes White Dragon",
   "ブラックマジシャン":"Dark Magician",
   "ブラマジ":"Dark Magician",
+  "ブラック・マジシャン":"Dark Magician",
   "ブラックマジシャンガール":"Dark Magician Girl",
+  "ブラック・マジシャン・ガール":"Dark Magician Girl",
   "真紅眼":"Red-Eyes",
+  "レッドアイズ":"Red-Eyes",
+  "真紅眼の黒竜":"Red-Eyes Black Dragon",
   "うらら":"Ash Blossom & Joyous Spring",
   "灰流うらら":"Ash Blossom & Joyous Spring",
   "増殖するG":"Maxx \"C\"",
   "増G":"Maxx \"C\"",
   "ニビル":"Nibiru, the Primal Being",
   "BF":"Blackwing",
+  "ブラックフェザー":"Blackwing",
   "スプライト":"Spright",
   "烙印":"Branded",
   "ティアラメンツ":"Tearlaments"
@@ -396,7 +257,7 @@ const TYPE_JP = {
   "Trap Card":"罠カード"
 };
 
-const $ = id => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
 const searchInput = $("searchInput");
 const searchBtn = $("searchBtn");
@@ -417,10 +278,12 @@ const setInfo = $("setInfo");
 
 const ownedName = $("ownedName");
 const ownedCount = $("ownedCount");
+const addOwnedBtn = $("addOwnedBtn");
 const ownedStatus = $("ownedStatus");
 
 const builderZone = $("builderZone");
 const builderCount = $("builderCount");
+const addBuilderBtn = $("addBuilderBtn");
 const builderStatus = $("builderStatus");
 
 let currentCard = null;
@@ -432,6 +295,54 @@ function createInfo(label, val) {
       <div>${val ?? "—"}</div>
     </div>
   `;
+}
+
+function createId(prefix = "id") {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function loadOwnedCards() {
+  try {
+    const raw = localStorage.getItem(OWNED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveOwnedCards(cards) {
+  localStorage.setItem(OWNED_KEY, JSON.stringify(cards));
+}
+
+function loadBuilderDeck() {
+  try {
+    const raw = localStorage.getItem(BUILDER_KEY);
+    return raw ? JSON.parse(raw) : { main: [], extra: [], side: [] };
+  } catch (e) {
+    return { main: [], extra: [], side: [] };
+  }
+}
+
+function saveBuilderDeck(deck) {
+  localStorage.setItem(BUILDER_KEY, JSON.stringify(deck));
+}
+
+function setOwnedStatus(message) {
+  ownedStatus.textContent = message;
+  if (message) {
+    setTimeout(() => {
+      if (ownedStatus.textContent === message) ownedStatus.textContent = "";
+    }, 2500);
+  }
+}
+
+function setBuilderStatus(message) {
+  builderStatus.textContent = message;
+  if (message) {
+    setTimeout(() => {
+      if (builderStatus.textContent === message) builderStatus.textContent = "";
+    }, 2500);
+  }
 }
 
 function renderBadges(card) {
@@ -503,7 +414,7 @@ function renderCandidates(cards) {
         RACE_JP[card.race] || card.race
       }</div>
       <div class="row" style="margin-top:12px">
-        <button data-id="${card.id}">詳細表示</button>
+        <button type="button">詳細表示</button>
       </div>
     `;
 
@@ -524,6 +435,9 @@ async function searchCard() {
   candidateList.innerHTML = "";
   candidateEmpty.style.display = "block";
   resultCard.classList.remove("show");
+  ownedStatus.textContent = "";
+  builderStatus.textContent = "";
+  currentCard = null;
 
   if (JP_TO_EN[keyword]) {
     keyword = JP_TO_EN[keyword];
@@ -562,22 +476,113 @@ async function searchCard() {
   }
 }
 
-searchBtn.onclick = searchCard;
+function addOwnedCard() {
+  if (!currentCard || !ownedName.value.trim()) {
+    setOwnedStatus("先にカードを検索してください。");
+    return;
+  }
 
-clearBtn.onclick = () => {
+  const name = ownedName.value.trim();
+  const count = Number(ownedCount.value || 1);
+
+  if (count <= 0) {
+    setOwnedStatus("追加枚数は1以上にしてください。");
+    return;
+  }
+
+  const ownedCards = loadOwnedCards();
+  const existing = ownedCards.find(c => c.name === name);
+
+  if (existing) {
+    existing.count += count;
+  } else {
+    ownedCards.unshift({
+      id: createId("owned"),
+      name,
+      count
+    });
+  }
+
+  saveOwnedCards(ownedCards);
+  setOwnedStatus(`「${name}」を ${count} 枚追加しました。`);
+}
+
+function addToBuilder() {
+  if (!currentCard) {
+    setBuilderStatus("先にカードを検索してください。");
+    return;
+  }
+
+  const name = currentCard.name || "";
+  const zone = builderZone.value;
+  const count = Number(builderCount.value || 1);
+  const image = currentCard.card_images?.[0]?.image_url || "";
+
+  if (!name) {
+    setBuilderStatus("カード情報がありません。");
+    return;
+  }
+
+  if (count <= 0) {
+    setBuilderStatus("追加枚数は1以上にしてください。");
+    return;
+  }
+
+  const deck = loadBuilderDeck();
+  if (!deck.main) deck.main = [];
+  if (!deck.extra) deck.extra = [];
+  if (!deck.side) deck.side = [];
+
+  const targetZone = deck[zone];
+  const existing = targetZone.find(item => item.name === name);
+
+  if (existing) {
+    existing.count += count;
+    if (image) existing.image = image;
+  } else {
+    targetZone.push({
+      id: createId("builder"),
+      name,
+      count,
+      image,
+      memo: ""
+    });
+  }
+
+  saveBuilderDeck(deck);
+  setBuilderStatus(`「${name}」を追加しました。`);
+}
+
+function clearResult() {
   searchInput.value = "";
   loadingText.textContent = "";
   errorText.textContent = "";
   candidateList.innerHTML = "";
   candidateEmpty.style.display = "block";
   resultCard.classList.remove("show");
+  typeBadges.innerHTML = "";
+  infoGrid.innerHTML = "";
+  cardDesc.textContent = "";
+  setInfo.textContent = "";
   cardImage.src = "";
-};
+  ownedName.value = "";
+  ownedCount.value = 1;
+  builderZone.value = "main";
+  builderCount.value = 1;
+  ownedStatus.textContent = "";
+  builderStatus.textContent = "";
+  currentCard = null;
+}
+
+searchBtn.onclick = searchCard;
+clearBtn.onclick = clearResult;
+addOwnedBtn.onclick = addOwnedCard;
+addBuilderBtn.onclick = addToBuilder;
 
 searchInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") searchCard();
 });
-  </script>
+</script>
 
 </body>
 </html>
