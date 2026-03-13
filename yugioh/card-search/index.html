@@ -217,6 +217,72 @@ const JP_TO_EN={
 "ティアラメンツ":"Tearlaments"
 }
 
+const JP_TO_EN={
+  "青眼":"Blue-Eyes",
+  "ブルーアイズ":"Blue-Eyes",
+  "青眼の白龍":"Blue-Eyes White Dragon",
+  "ブラックマジシャン":"Dark Magician",
+  "ブラマジ":"Dark Magician",
+  "ブラックマジシャンガール":"Dark Magician Girl",
+  "真紅眼":"Red-Eyes",
+  "うらら":"Ash Blossom & Joyous Spring",
+  "灰流うらら":"Ash Blossom & Joyous Spring",
+  "増殖するG":"Maxx \"C\"",
+  "増G":"Maxx \"C\"",
+  "ニビル":"Nibiru, the Primal Being",
+  "BF":"Blackwing",
+  "スプライト":"Spright",
+  "烙印":"Branded",
+  "ティアラメンツ":"Tearlaments"
+}
+
+const RACE_JP = {
+  "Spellcaster":"魔法使い族",
+  "Dragon":"ドラゴン族",
+  "Warrior":"戦士族",
+  "Beast":"獣族",
+  "Beast-Warrior":"獣戦士族",
+  "Winged Beast":"鳥獣族",
+  "Fiend":"悪魔族",
+  "Fairy":"天使族",
+  "Zombie":"アンデット族",
+  "Machine":"機械族",
+  "Aqua":"水族",
+  "Pyro":"炎族",
+  "Thunder":"雷族",
+  "Rock":"岩石族",
+  "Plant":"植物族",
+  "Insect":"昆虫族",
+  "Reptile":"爬虫類族",
+  "Fish":"魚族",
+  "Sea Serpent":"海竜族",
+  "Dinosaur":"恐竜族",
+  "Psychic":"サイキック族",
+  "Cyberse":"サイバース族"
+}
+
+const ATTRIBUTE_JP = {
+  "DARK":"闇",
+  "LIGHT":"光",
+  "EARTH":"地",
+  "WATER":"水",
+  "FIRE":"炎",
+  "WIND":"風",
+  "DIVINE":"神"
+}
+
+const TYPE_JP = {
+  "Normal Monster":"通常モンスター",
+  "Effect Monster":"効果モンスター",
+  "Fusion Monster":"融合モンスター",
+  "Synchro Monster":"シンクロモンスター",
+  "XYZ Monster":"エクシーズモンスター",
+  "Link Monster":"リンクモンスター",
+  "Pendulum Effect Monster":"ペンデュラムモンスター",
+  "Spell Card":"魔法カード",
+  "Trap Card":"罠カード"
+}
+  
 const $=id=>document.getElementById(id)
 
 const searchInput=$("searchInput")
@@ -260,15 +326,22 @@ currentCard=card
 cardTitle.textContent=card.name
 cardImage.src=card.card_images?.[0]?.image_url??""
 
-typeBadges.innerHTML=""
+function renderBadges(card) {
+  typeBadges.innerHTML = "";
 
-;[card.type,card.attribute,card.race].forEach(t=>{
-if(!t)return
-const span=document.createElement("span")
-span.className="badge"
-span.textContent=t
-typeBadges.appendChild(span)
-})
+  const type = TYPE_JP[card.type] || card.type;
+  const attr = ATTRIBUTE_JP[card.attribute] || card.attribute;
+  const race = RACE_JP[card.race] || card.race;
+
+  const badges = [type, attr, race].filter(Boolean);
+
+  badges.forEach(text => {
+    const span = document.createElement("span");
+    span.className = "badge";
+    span.textContent = text;
+    typeBadges.appendChild(span);
+  });
+}
 
 const rows=[
 createInfo("カードID",card.id),
@@ -311,7 +384,13 @@ div.className="candidate-item"
 
 div.innerHTML=`
 <h2>${card.name}</h2>
-<div class="small">${card.type} / ${card.attribute} / ${card.race}</div>
+<div class="small">${
+  TYPE_JP[card.type] || card.type
+} / ${
+  ATTRIBUTE_JP[card.attribute] || card.attribute
+} / ${
+  RACE_JP[card.race] || card.race
+}</div>
 <div class="row" style="margin-top:12px">
 <button data-id="${card.id}">詳細表示</button>
 </div>
