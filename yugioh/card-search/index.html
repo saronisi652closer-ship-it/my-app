@@ -327,15 +327,121 @@ cardTitle.textContent=card.name
 cardImage.src=card.card_images?.[0]?.image_url??""
 
 function renderBadges(card) {
+<script>
+const API = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
+
+const JP_TO_EN = {
+  "青眼":"Blue-Eyes",
+  "ブルーアイズ":"Blue-Eyes",
+  "青眼の白龍":"Blue-Eyes White Dragon",
+  "ブラックマジシャン":"Dark Magician",
+  "ブラマジ":"Dark Magician",
+  "ブラックマジシャンガール":"Dark Magician Girl",
+  "真紅眼":"Red-Eyes",
+  "うらら":"Ash Blossom & Joyous Spring",
+  "灰流うらら":"Ash Blossom & Joyous Spring",
+  "増殖するG":"Maxx \"C\"",
+  "増G":"Maxx \"C\"",
+  "ニビル":"Nibiru, the Primal Being",
+  "BF":"Blackwing",
+  "スプライト":"Spright",
+  "烙印":"Branded",
+  "ティアラメンツ":"Tearlaments"
+};
+
+const RACE_JP = {
+  "Spellcaster":"魔法使い族",
+  "Dragon":"ドラゴン族",
+  "Warrior":"戦士族",
+  "Beast":"獣族",
+  "Beast-Warrior":"獣戦士族",
+  "Winged Beast":"鳥獣族",
+  "Fiend":"悪魔族",
+  "Fairy":"天使族",
+  "Zombie":"アンデット族",
+  "Machine":"機械族",
+  "Aqua":"水族",
+  "Pyro":"炎族",
+  "Thunder":"雷族",
+  "Rock":"岩石族",
+  "Plant":"植物族",
+  "Insect":"昆虫族",
+  "Reptile":"爬虫類族",
+  "Fish":"魚族",
+  "Sea Serpent":"海竜族",
+  "Dinosaur":"恐竜族",
+  "Psychic":"サイキック族",
+  "Cyberse":"サイバース族"
+};
+
+const ATTRIBUTE_JP = {
+  "DARK":"闇",
+  "LIGHT":"光",
+  "EARTH":"地",
+  "WATER":"水",
+  "FIRE":"炎",
+  "WIND":"風",
+  "DIVINE":"神"
+};
+
+const TYPE_JP = {
+  "Normal Monster":"通常モンスター",
+  "Effect Monster":"効果モンスター",
+  "Fusion Monster":"融合モンスター",
+  "Synchro Monster":"シンクロモンスター",
+  "XYZ Monster":"エクシーズモンスター",
+  "Link Monster":"リンクモンスター",
+  "Pendulum Effect Monster":"ペンデュラムモンスター",
+  "Spell Card":"魔法カード",
+  "Trap Card":"罠カード"
+};
+
+const $ = id => document.getElementById(id);
+
+const searchInput = $("searchInput");
+const searchBtn = $("searchBtn");
+const clearBtn = $("clearBtn");
+const loadingText = $("loadingText");
+const errorText = $("errorText");
+
+const candidateList = $("candidateList");
+const candidateEmpty = $("candidateEmpty");
+
+const resultCard = $("resultCard");
+const cardTitle = $("cardTitle");
+const cardImage = $("cardImage");
+const typeBadges = $("typeBadges");
+const infoGrid = $("infoGrid");
+const cardDesc = $("cardDesc");
+const setInfo = $("setInfo");
+
+const ownedName = $("ownedName");
+const ownedCount = $("ownedCount");
+const ownedStatus = $("ownedStatus");
+
+const builderZone = $("builderZone");
+const builderCount = $("builderCount");
+const builderStatus = $("builderStatus");
+
+let currentCard = null;
+
+function createInfo(label, val) {
+  return `
+    <div class="mini-card">
+      <strong>${label}</strong>
+      <div>${val ?? "—"}</div>
+    </div>
+  `;
+}
+
+function renderBadges(card) {
   typeBadges.innerHTML = "";
 
   const type = TYPE_JP[card.type] || card.type;
   const attr = ATTRIBUTE_JP[card.attribute] || card.attribute;
   const race = RACE_JP[card.race] || card.race;
 
-  const badges = [type, attr, race].filter(Boolean);
-
-  badges.forEach(text => {
+  [type, attr, race].filter(Boolean).forEach(text => {
     const span = document.createElement("span");
     span.className = "badge";
     span.textContent = text;
@@ -343,114 +449,135 @@ function renderBadges(card) {
   });
 }
 
-const rows=[
-createInfo("カードID",card.id),
-createInfo("属性",card.attribute),
-createInfo("種族",card.race),
-createInfo("レベル",card.level),
-createInfo("攻撃力",card.atk),
-createInfo("守備力",card.def)
-]
+function renderCard(card) {
+  currentCard = card;
 
-infoGrid.innerHTML=rows.join("")
+  cardTitle.textContent = card.name || "";
+  cardImage.src = card.card_images?.[0]?.image_url || "";
+  renderBadges(card);
 
-cardDesc.textContent=card.desc
+  const rows = [
+    createInfo("カードID", card.id),
+    createInfo("属性", ATTRIBUTE_JP[card.attribute] || card.attribute),
+    createInfo("種族", RACE_JP[card.race] || card.race),
+    createInfo("レベル", card.level),
+    createInfo("攻撃力", card.atk),
+    createInfo("守備力", card.def)
+  ];
 
-if(card.card_sets){
+  infoGrid.innerHTML = rows.join("");
+  cardDesc.textContent = card.desc || "";
 
-setInfo.textContent=
-card.card_sets
-.slice(0,10)
-.map(s=>`${s.set_name} / ${s.set_code} / ${s.set_rarity}`)
-.join("\n")
+  if (card.card_sets && card.card_sets.length) {
+    setInfo.textContent = card.card_sets
+      .slice(0, 10)
+      .map(s => `${s.set_name} / ${s.set_code} / ${s.set_rarity}`)
+      .join("\n");
+  } else {
+    setInfo.textContent = "収録情報なし";
+  }
 
+  ownedName.value = card.name || "";
+  ownedCount.value = 1;
+  builderZone.value = "main";
+  builderCount.value = 1;
+
+  resultCard.classList.add("show");
 }
 
-ownedName.value=card.name
+function renderCandidates(cards) {
+  candidateList.innerHTML = "";
+  candidateEmpty.style.display = cards.length ? "none" : "block";
 
-resultCard.classList.add("show")
+  cards.forEach(card => {
+    const div = document.createElement("div");
+    div.className = "candidate-item";
 
+    div.innerHTML = `
+      <h2>${card.name}</h2>
+      <div class="small">${
+        TYPE_JP[card.type] || card.type
+      } / ${
+        ATTRIBUTE_JP[card.attribute] || card.attribute
+      } / ${
+        RACE_JP[card.race] || card.race
+      }</div>
+      <div class="row" style="margin-top:12px">
+        <button data-id="${card.id}">詳細表示</button>
+      </div>
+    `;
+
+    div.querySelector("button").onclick = () => {
+      renderCard(card);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    candidateList.appendChild(div);
+  });
 }
 
-function renderCandidates(cards){
+async function searchCard() {
+  let keyword = searchInput.value.trim();
 
-candidateList.innerHTML=""
-candidateEmpty.style.display=cards.length?"none":"block"
+  errorText.textContent = "";
+  loadingText.textContent = "";
+  candidateList.innerHTML = "";
+  candidateEmpty.style.display = "block";
+  resultCard.classList.remove("show");
 
-cards.forEach(card=>{
+  if (JP_TO_EN[keyword]) {
+    keyword = JP_TO_EN[keyword];
+  }
 
-const div=document.createElement("div")
-div.className="candidate-item"
+  if (!keyword) {
+    errorText.textContent = "カード名を入れてください";
+    return;
+  }
 
-div.innerHTML=`
-<h2>${card.name}</h2>
-<div class="small">${
-  TYPE_JP[card.type] || card.type
-} / ${
-  ATTRIBUTE_JP[card.attribute] || card.attribute
-} / ${
-  RACE_JP[card.race] || card.race
-}</div>
-<div class="row" style="margin-top:12px">
-<button data-id="${card.id}">詳細表示</button>
-</div>
-`
+  try {
+    loadingText.textContent = "検索中...";
 
-div.querySelector("button").onclick=()=>{
-renderCard(card)
-window.scrollTo({top:0,behavior:"smooth"})
+    let data = null;
+
+    try {
+      const res1 = await fetch(`${API}?fname=${encodeURIComponent(keyword)}`);
+      data = await res1.json();
+    } catch (e) {}
+
+    if (!data || !data.data) {
+      const res2 = await fetch(`${API}?name=${encodeURIComponent(keyword)}`);
+      data = await res2.json();
+    }
+
+    if (!data || !data.data || !data.data.length) {
+      throw new Error("notfound");
+    }
+
+    renderCandidates(data.data);
+    renderCard(data.data[0]);
+    loadingText.textContent = "";
+  } catch (e) {
+    loadingText.textContent = "";
+    errorText.textContent = "カードが見つかりません";
+  }
 }
 
-candidateList.appendChild(div)
+searchBtn.onclick = searchCard;
 
-})
+clearBtn.onclick = () => {
+  searchInput.value = "";
+  loadingText.textContent = "";
+  errorText.textContent = "";
+  candidateList.innerHTML = "";
+  candidateEmpty.style.display = "block";
+  resultCard.classList.remove("show");
+  cardImage.src = "";
+};
 
-}
-
-async function searchCard(){
-
-let keyword=searchInput.value.trim()
-
-if(JP_TO_EN[keyword]){
-keyword=JP_TO_EN[keyword]
-}
-
-try{
-
-let data
-
-try{
-data=await fetch(`${API}?fname=${encodeURIComponent(keyword)}`)
-data=await data.json()
-}catch{}
-
-if(!data||!data.data){
-data=await fetch(`${API}?name=${encodeURIComponent(keyword)}`)
-data=await data.json()
-}
-
-if(!data||!data.data)throw"notfound"
-
-renderCandidates(data.data)
-renderCard(data.data[0])
-
-}catch{
-
-$("errorText").textContent="カードが見つかりません"
-
-}
-
-}
-
-searchBtn.onclick=searchCard
-
-clearBtn.onclick=()=>{
-searchInput.value=""
-candidateList.innerHTML=""
-resultCard.classList.remove("show")
-}
-
-</script>
+searchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") searchCard();
+});
+  </script>
 
 </body>
 </html>
