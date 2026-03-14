@@ -263,6 +263,14 @@ const TYPE_JP = {
 };
 
 const $ = (id) => document.getElementById(id);
+  function loadLocalDB(){
+  try{
+    const raw = localStorage.getItem(LOCAL_CARD_DB);
+    return raw ? JSON.parse(raw) : [];
+  }catch{
+    return [];
+  }
+  }
   const cameraBtn = $("cameraBtn");
 const cameraInput = $("cameraInput");
 
