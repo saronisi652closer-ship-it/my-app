@@ -465,6 +465,28 @@ function renderCandidates(cards) {
 }
 
 async function searchCard() {
+  const localCards = searchLocalDB(keyword);
+
+if(localCards.length){
+
+  const converted = localCards.map(card=>({
+    name: card.nameJa,
+    id: card.id,
+    type: card.typeJa,
+    attribute: card.attributeJa,
+    race: card.raceJa,
+    level: card.level,
+    atk: card.atk,
+    def: card.def,
+    desc: card.descJa,
+    card_images:[{image_url:card.image}]
+  }));
+
+  renderCandidates(converted);
+  renderCard(converted[0]);
+  return;
+
+}
   let keyword = searchInput.value.trim();
 
   errorText.textContent = "";
