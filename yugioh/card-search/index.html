@@ -271,6 +271,28 @@ const $ = (id) => document.getElementById(id);
     return [];
   }
   }
+  function searchLocalDB(keyword){
+
+  const db = loadLocalDB();
+  const q = keyword.toLowerCase();
+
+  return db.filter(card=>{
+
+    const text = [
+      card.nameJa,
+      card.nameEn,
+      ...(card.aliases || []),
+      card.attributeJa,
+      card.raceJa,
+      card.typeJa,
+      card.descJa
+    ].join(" ").toLowerCase();
+
+    return text.includes(q);
+
+  });
+
+  }
   const cameraBtn = $("cameraBtn");
 const cameraInput = $("cameraInput");
 
