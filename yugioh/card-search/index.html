@@ -786,26 +786,26 @@ cameraInput.onchange = async () => {
   const file = cameraInput.files[0];
   if (!file) return;
 
-  loadingText.textContent = "カード読み取り中...";
+  errorText.textContent = "";
+  loadingText.textContent = "カード名を高精度読み取り中...";
 
-  const { createWorker } = Tesseract;
-  const worker = await createWorker("eng");
+  try {
+    const rawText = await runCardNameOCR(file);
+    const resolvedName = resolveScannedName(rawText);
 
-  const result = await worker.recognize(file);
-  const text = result.data.text;
+    loadingText.textContent = "";
 
-  await worker.terminate();
-
-  loadingText.textContent = "";
-
-  const lines = text.split("\n").map(x => x.trim()).filter(Boolean);
-  const name = lines.find(l => l.length > 5);
-
-  if (name) {
-    searchInput.value = name;
-    await searchCard();
-  } else {
-    errorText.textContent = "カード名を読み取れませんでした";
+    if (resolvedName) {
+      searchInput.value = resolvedName;
+      await searchCard();
+    } else {
+      errorText.textContent = "カード名を読み取れませんでした";
+    }
+  } catch (e) {
+    loadingText.textContent = "";
+    errorText.textContent = "カメラ読み取りに失敗しました";
+  } finally {
+    cameraInput.value = "";
   }
 };
   function saveCardToLocalDB(card){
