@@ -641,6 +641,143 @@ searchInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") searchCard();
 });
 
+function normalizeScanText(text) {
+  return String(text || "")
+    .replace(/[|]/g, "I")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getAllKnownNames() {
+  const db = loadLocalDB();
+
+  const dbNames = db.flatMap(card => [
+    card.nameJa,
+    card.nameEn,
+    ...(card.aliases || [])
+  ]).filter(Boolean);
+
+  const dictNames = Object.keys(JP_TO_EN);
+
+  const all = [...new Set([...dbNames, ...dictNames])];
+  return all;
+}
+
+function scoreNameMatch(a, b) {
+  const x = normalizeScanText(a).toLowerCase();
+  const y = normalizeScanText(b).toLowerCase();
+
+  if (!x || !y) return 0;
+  if (x === y) return 100;
+  if (x.includes(y) || y.includes(x)) return 80;
+
+  let same = 0;
+  const minLen = Math.min(x.length, y.length);
+  for (let i = 0; i < minLen; i++) {
+    if (x[i] === y[i]) same++;
+  }
+  return Math.round((same / Math.max(x.length, y.length)) * 60);
+}
+
+function resolveScannedName(rawText) {
+  const lines = String(rawText || "")
+    .split("\n")
+    .map(x => normalizeScanText(x))
+    .filter(Boolean)
+    .filter(x => x.length >= 3);
+
+  if (!lines.length) return "";
+
+  const known = getAllKnownNames();
+
+  let bestName = "";
+  let bestScore = 0;
+
+  for (const line of lines) {
+    for (const knownName of known) {
+      const score = scoreNameMatch(line, knownName);
+      if (score > bestScore) {
+        bestScore = score;
+        bestName = knownName;
+      }
+    }
+  }
+
+  if (bestScore >= 60) return bestName;
+
+  return lines.sort((a, b) => b.length - a.length)[0] || "";
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+async function buildTitleCrop(file) {
+  const img = await loadImageFromFile(file);
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const sw = img.width;
+  const sh = img.height;
+
+  // カード上部の名前欄だけを狙う
+  const sx = Math.floor(sw * 0.08);
+  const sy = Math.floor(sh * 0.04);
+  const cw = Math.floor(sw * 0.84);
+  const ch = Math.floor(sh * 0.18);
+
+  canvas.width = cw;
+  canvas.height = ch;
+
+  ctx.drawImage(img, sx, sy, cw, ch, 0, 0, cw, ch);
+
+  // 白黒 + コントラスト強化
+  const imageData = ctx.getImageData(0, 0, cw, ch);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    let gray = (r + g + b) / 3;
+    gray = gray > 145 ? 255 : 0;
+
+    data[i] = gray;
+    data[i + 1] = gray;
+    data[i + 2] = gray;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+
+  return canvas;
+}
+
+async function runCardNameOCR(file) {
+  const cropCanvas = await buildTitleCrop(file);
+
+  const { createWorker } = Tesseract;
+  const worker = await createWorker("eng+jpn");
+
+  const result = await worker.recognize(cropCanvas);
+  await worker.terminate();
+
+  return result.data.text || "";
+}
+  
 cameraBtn.onclick = () => {
   cameraInput.click();
 };
