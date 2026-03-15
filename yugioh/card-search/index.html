@@ -306,6 +306,42 @@ function loadLocalDB() {
   }
 }
 
+  function saveCardToLocalDB(card) {
+  const db = loadLocalDB();
+
+  const exists = db.find(x =>
+    String(x.id || "") === String(card.id || "") ||
+    (x.nameJa && x.nameJa === card.name) ||
+    (x.nameEn && x.nameEn === card.name)
+  );
+
+  if (exists) return;
+
+  const newCard = {
+    id: String(card.id || ""),
+    nameJa: card.name || "",
+    nameEn: card.name || "",
+    aliases: [card.name].filter(Boolean),
+
+    attributeJa: ATTRIBUTE_JP[card.attribute] || card.attribute || "",
+    raceJa: RACE_JP[card.race] || card.race || "",
+    typeJa: TYPE_JP[card.type] || card.type || "",
+
+    level: card.level ?? "",
+    atk: card.atk ?? "",
+    def: card.def ?? "",
+
+    descJa: card.desc || "",
+    image: card.card_images?.[0]?.image_url || "",
+
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  db.unshift(newCard);
+  localStorage.setItem(LOCAL_CARD_DB, JSON.stringify(db));
+  }
+
 function searchLocalDB(keyword) {
   const db = loadLocalDB();
   const q = keyword.toLowerCase();
