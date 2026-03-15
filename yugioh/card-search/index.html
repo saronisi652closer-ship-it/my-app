@@ -526,6 +526,7 @@ async function searchCard() {
 
     renderCandidates(data.data);
     renderCard(data.data[0]);
+    saveCardToLocalDB(data.data[0])
     loadingText.textContent = "";
   } catch (e) {
     loadingText.textContent = "";
