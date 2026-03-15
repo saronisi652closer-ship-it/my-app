@@ -666,7 +666,7 @@ cameraInput.onchange = async () => {
 
   if (name) {
     searchInput.value = name;
-    searchCard();
+    await searchCard();
   } else {
     errorText.textContent = "カード名を読み取れませんでした";
   }
