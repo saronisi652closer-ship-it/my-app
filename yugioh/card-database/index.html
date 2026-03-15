@@ -382,11 +382,11 @@
         });
 
         cardList.querySelectorAll("button[data-action='edit']").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const target = cards.find(c => c.id === btn.dataset.id);
-            if (target) fillForm(target);
-          });
-        });
+  btn.addEventListener("click", () => {
+    const target = cards.find(c => String(c.id) === String(btn.dataset.id));
+    if (target) fillForm(target);
+  });
+});
 
         cardList.querySelectorAll("button[data-action='delete']").forEach(btn => {
           btn.addEventListener("click", () => {
