@@ -185,75 +185,7 @@
   </div>
 </main>
 
-<script>
-const LOCAL_CARD_DB = "yugioh_local_card_db_v1";
-const API = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
-const OWNED_KEY = "yugioh_owned_cards_v1";
-const BUILDER_KEY = "yugioh_deck_builder_v1";
-
-const JP_TO_EN = {
-  "青眼":"Blue-Eyes",
-  "ブルーアイズ":"Blue-Eyes",
-  "青眼の白龍":"Blue-Eyes White Dragon",
-  "ブラックマジシャン":"Dark Magician",
-  "ブラマジ":"Dark Magician",
-  "ブラック・マジシャン":"Dark Magician",
-  "ブラックマジシャンガール":"Dark Magician Girl",
-  "ブラック・マジシャン・ガール":"Dark Magician Girl",
-  "真紅眼":"Red-Eyes",
-  "レッドアイズ":"Red-Eyes",
-  "真紅眼の黒竜":"Red-Eyes Black Dragon",
-  "うらら":"Ash Blossom & Joyous Spring",
-  "灰流うらら":"Ash Blossom & Joyous Spring",
-  "増殖するG":"Maxx \"C\"",
-  "増G":"Maxx \"C\"",
-  "ニビル":"Nibiru, the Primal Being",
-  "BF":"Blackwing",
-  "ブラックフェザー":"Blackwing",
-  "スプライト":"Spright",
-  "烙印":"Branded",
-  "ティアラメンツ":"Tearlaments"
-};
-
-const RACE_JP = {
-  "Spellcaster":"魔法使い族",
-  "Dragon":"ドラゴン族",
-  "Warrior":"戦士族",
-  "Beast":"獣族",
-  "Beast-Warrior":"獣戦士族",
-  "Winged Beast":"鳥獣族",
-  "Fiend":"悪魔族",
-  "Fairy":"天使族",
-  "Zombie":"アンデット族",
-  "Machine":"機械族",
-  "Aqua":"水族",
-  "Pyro":"炎族",
-  "Thunder":"雷族",
-  "Rock":"岩石族",
-  "Plant":"植物族",
-  "Insect":"昆虫族",
-  "Reptile":"爬虫類族",
-  "Fish":"魚族",
-  "Sea Serpent":"海竜族",
-  "Dinosaur":"恐竜族",
-  "Psychic":"サイキック族",
-  "Cyberse":"サイバース族"
-};
-
-const ATTRIBUTE_JP = {
-  "DARK":"闇",
-  "LIGHT":"光",
-  "EARTH":"地",
-  "WATER":"水",
-  "FIRE":"炎",
-  "WIND":"風",
-  "DIVINE":"神"
-};
-
-const TYPE_JP = {
-  "Normal Monster":"通常モンスター",
-  "Effect Monster":"効果モンスター",
-  "Fusion Monster":"融合モンスター",
+モンスター",
   "Synchro Monster":"シンクロモンスター",
   "XYZ Monster":"エクシーズモンスター",
   "Link Monster":"リンクモンスター",
@@ -619,62 +551,278 @@ function clearResult() {
   candidateList.innerHTML = "";
   candidateEmpty.style.display = "block";
   resultCard.classList.remove("show");
-  typeBadges.innerHTML = "";
-  infoGrid.innerHTML = "";
-  cardDesc.textContent = "";
-  setInfo.textContent = "";
-  cardImage.src = "";
-  ownedName.value = "";
-  ownedCount.value = 1;
-  builderZone.value = "main";
-  builderCount.value = 1;
-  ownedStatus.textContent = "";
-  builderStatus.textContent = "";
-  currentCard = null;
+
+    <script>
+
+const LOCAL_CARD_DB = "yugioh_local_card_db_v1";
+const API = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
+const OWNED_KEY = "yugioh_owned_cards_v1";
+const BUILDER_KEY = "yugioh_deck_builder_v1";
+
+const $ = (id) => document.getElementById(id);
+
+const cameraBtn = $("cameraBtn");
+const cameraInput = $("cameraInput");
+
+const searchInput = $("searchInput");
+const searchBtn = $("searchBtn");
+const clearBtn = $("clearBtn");
+
+const loadingText = $("loadingText");
+const errorText = $("errorText");
+
+const candidateList = $("candidateList");
+const candidateEmpty = $("candidateEmpty");
+
+const resultCard = $("resultCard");
+const cardTitle = $("cardTitle");
+const cardImage = $("cardImage");
+
+const typeBadges = $("typeBadges");
+const infoGrid = $("infoGrid");
+const cardDesc = $("cardDesc");
+const setInfo = $("setInfo");
+
+const ownedName = $("ownedName");
+const ownedCount = $("ownedCount");
+const addOwnedBtn = $("addOwnedBtn");
+const ownedStatus = $("ownedStatus");
+
+const builderZone = $("builderZone");
+const builderCount = $("builderCount");
+const addBuilderBtn = $("addBuilderBtn");
+const builderStatus = $("builderStatus");
+
+let currentCard = null;
+
+function loadLocalDB(){
+  try{
+    const raw = localStorage.getItem(LOCAL_CARD_DB);
+    return raw ? JSON.parse(raw) : [];
+  }catch{
+    return [];
+  }
 }
 
-searchBtn.onclick = searchCard;
-clearBtn.onclick = clearResult;
-addOwnedBtn.onclick = addOwnedCard;
-addBuilderBtn.onclick = addToBuilder;
+function searchLocalDB(keyword){
 
-searchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") searchCard();
-});
-  cameraBtn.onclick = () => {
-  cameraInput.click();
-};
+  const db = loadLocalDB();
+  const q = keyword.toLowerCase();
 
-cameraInput.onchange = async () => {
+  return db.filter(card=>{
 
-  const file = cameraInput.files[0];
-  if(!file) return;
+    const text = [
+      card.nameJa,
+      card.nameEn,
+      ...(card.aliases || []),
+      card.attributeJa,
+      card.raceJa,
+      card.typeJa,
+      card.descJa
+    ].join(" ").toLowerCase();
 
-  loadingText.textContent="カード読み取り中...";
+    return text.includes(q);
 
-  const { createWorker } = Tesseract;
-  const worker = await createWorker("eng");
+  });
 
-  const result = await worker.recognize(file);
+}
 
-  const text = result.data.text;
+function createInfo(label,val){
+return`
+<div class="mini-card">
+<strong>${label}</strong>
+<div>${val??"—"}</div>
+</div>`
+}
 
-  await worker.terminate();
+function renderCard(card){
 
-  loadingText.textContent="";
+currentCard=card
 
-  const lines = text.split("\n");
-  const name = lines.find(l=>l.length>5);
+cardTitle.textContent=card.name
+cardImage.src=card.card_images?.[0]?.image_url??""
 
-  if(name){
-    searchInput.value = name;
-    searchCard();
-  }else{
-    errorText.textContent="カード名を読み取れませんでした";
-  }
+typeBadges.innerHTML=""
 
-};
-</script>
+;[card.type,card.attribute,card.race].forEach(t=>{
+if(!t)return
+const span=document.createElement("span")
+span.className="badge"
+span.textContent=t
+typeBadges.appendChild(span)
+})
+
+const rows=[
+createInfo("カードID",card.id),
+createInfo("属性",card.attribute),
+createInfo("種族",card.race),
+createInfo("レベル",card.level),
+createInfo("攻撃力",card.atk),
+createInfo("守備力",card.def)
+]
+
+infoGrid.innerHTML=rows.join("")
+
+cardDesc.textContent=card.desc
+
+ownedName.value=card.name
+
+resultCard.classList.add("show")
+
+}
+
+function renderCandidates(cards){
+
+candidateList.innerHTML=""
+candidateEmpty.style.display=cards.length?"none":"block"
+
+cards.forEach(card=>{
+
+const div=document.createElement("div")
+div.className="candidate-item"
+
+div.innerHTML=`
+<h2>${card.name}</h2>
+<div class="row" style="margin-top:12px">
+<button>詳細表示</button>
+</div>
+`
+
+div.querySelector("button").onclick=()=>{
+renderCard(card)
+window.scrollTo({top:0,behavior:"smooth"})
+}
+
+candidateList.appendChild(div)
+
+})
+
+}
+
+async function searchCard(){
+
+let keyword = searchInput.value.trim()
+
+errorText.textContent=""
+loadingText.textContent=""
+
+candidateList.innerHTML=""
+candidateEmpty.style.display="block"
+resultCard.classList.remove("show")
+
+if(!keyword){
+errorText.textContent="カード名を入れてください"
+return
+}
+
+const localCards = searchLocalDB(keyword)
+
+if(localCards.length){
+
+const converted = localCards.map(card=>({
+
+name: card.nameJa,
+id: card.id,
+type: card.typeJa,
+attribute: card.attributeJa,
+race: card.raceJa,
+level: card.level,
+atk: card.atk,
+def: card.def,
+desc: card.descJa,
+card_images:[{image_url:card.image}]
+
+}))
+
+renderCandidates(converted)
+renderCard(converted[0])
+return
+
+}
+
+try{
+
+loadingText.textContent="検索中..."
+
+let data
+
+try{
+data=await fetch(`${API}?fname=${encodeURIComponent(keyword)}`)
+data=await data.json()
+}catch{}
+
+if(!data||!data.data){
+data=await fetch(`${API}?name=${encodeURIComponent(keyword)}`)
+data=await data.json()
+}
+
+if(!data||!data.data)throw"notfound"
+
+renderCandidates(data.data)
+renderCard(data.data[0])
+
+loadingText.textContent=""
+
+}catch{
+
+loadingText.textContent=""
+errorText.textContent="カードが見つかりません"
+
+}
+
+}
+
+searchBtn.onclick=searchCard
+
+clearBtn.onclick=()=>{
+searchInput.value=""
+candidateList.innerHTML=""
+resultCard.classList.remove("show")
+}
+
+searchInput.addEventListener("keydown",(e)=>{
+if(e.key==="Enter")searchCard()
+})
+
+cameraBtn.onclick=()=>{
+cameraInput.click()
+}
+
+cameraInput.onchange=async()=>{
+
+const file=cameraInput.files[0]
+if(!file)return
+
+loadingText.textContent="カード読み取り中..."
+
+const {createWorker}=Tesseract
+const worker=await createWorker("eng")
+
+const result=await worker.recognize(file)
+const text=result.data.text
+
+await worker.terminate()
+
+loadingText.textContent=""
+
+const lines=text.split("\n")
+const name=lines.find(l=>l.length>5)
+
+if(name){
+
+searchInput.value=name
+searchCard()
+
+}else{
+
+errorText.textContent="カード名を読み取れませんでした"
+
+}
+
+}
+
+  </script>
+    
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </body>
 </html>
