@@ -2,418 +2,456 @@
 
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>遊戯王デッキビルダー</title>
-<link rel="stylesheet" href="../../style.css">
-<style>
-.builder-grid{
-  display:grid;
-  grid-template-columns:1.2fr .8fr;
-  gap:16px;
-}
-@media(max-width:900px){
-  .builder-grid{grid-template-columns:1fr}
-}
-.zone-wrap{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-.zone-card{
-  background:#10131b;
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:12px;
-}
-.zone-head{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  align-items:center;
-  margin-bottom:10px;
-}
-.card-row{
-  display:grid;
-  grid-template-columns:64px 1fr auto;
-  gap:10px;
-  align-items:center;
-  background:#0f1117;
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:8px;
-  margin-top:8px;
-}
-.card-row img{
-  width:64px;
-  height:90px;
-  object-fit:cover;
-  border-radius:8px;
-  border:1px solid var(--line);
-  background:#111;
-}
-.card-meta{min-width:0}
-.card-name{
-  font-weight:700;
-  line-height:1.4;
-}
-.card-memo{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:4px;
-  white-space:pre-wrap;
-}
-.card-actions{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.count-badge{
-  display:inline-block;
-  padding:4px 8px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  font-size:12px;
-  background:#14161d;
-}
-.summary-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-@media(max-width:700px){
-  .summary-grid{grid-template-columns:1fr}
-}
-.small-input{width:100%}
-.empty-box{
-  color:var(--muted);
-  font-size:14px;
-  padding:8px 0;
-}
-.sticky-side{
-  position:sticky;
-  top:12px;
-  align-self:start;
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>遊戯王デッキビルダー</title>
+  <link rel="stylesheet" href="../../style.css">
+  <style>
+    .builder-grid{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:16px;
+    }
+    @media(max-width:900px){
+      .builder-grid{grid-template-columns:1fr}
+    }
+    .zone-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .zone-card{
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+    .zone-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    .count-badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:12px;
+      background:#14161d;
+    }
+    .cards-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+      gap:10px;
+    }
+    .card-tile{
+      background:#0f1117;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:8px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .card-tile img{
+      width:100%;
+      aspect-ratio:421 / 614;
+      object-fit:cover;
+      border-radius:8px;
+      border:1px solid var(--line);
+      background:#111;
+    }
+    .card-title{
+      font-size:13px;
+      font-weight:700;
+      line-height:1.4;
+      min-height:2.8em;
+      word-break:break-word;
+    }
+    .card-sub{
+      color:var(--muted);
+      font-size:12px;
+    }
+    .tile-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:6px;
+    }
+    .tile-actions-bottom{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+    }
+    .memo-input{
+      width:100%;
+      min-height:58px;
+      resize:vertical;
+      font-size:12px;
+    }
+    .summary-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+    @media(max-width:700px){
+      .summary-grid{grid-template-columns:1fr}
+    }
+    .empty-box{
+      color:var(--muted);
+      font-size:14px;
+      padding:8px 0;
+    }
+    .sticky-side{
+      position:sticky;
+      top:12px;
+      align-self:start;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <h1>遊戯王デッキビルダー</h1>
-    <div class="small">検索画面から追加したカードを編集・整理・保存</div>
-  </div>
-</header><main class="wrap">
-  <a class="back" href="../">← 遊戯王へ戻る</a>  <div class="builder-grid">
-    <section class="zone-wrap">
-      <section class="card">
-        <h2>デッキ情報</h2>
-        <div class="two">
-          <div>
-            <div class="label">デッキ名</div>
-            <input id="deckName" type="text" placeholder="例：ブラック・マジシャン構築">
-          </div>
-          <div>
-            <div class="label">分類</div>
-            <select id="deckFormat">
-              <option value="OCG">OCG</option>
-              <option value="MD">MD</option>
-              <option value="LOTD">LOTD</option>
-              <option value="その他">その他</option>
-            </select>
-          </div>
-        </div>
-        <div style="margin-top:10px;">
-          <div class="label">メモ</div>
-          <textarea id="deckNotes" placeholder="構築メモ、採用理由、候補カードなど"></textarea>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <button class="primary" id="saveDeckBtn" type="button">デッキ管理へ保存</button>
-          <button id="reloadBtn" type="button">再読込</button>
-          <button class="danger" id="clearBuilderBtn" type="button">ビルダーを空にする</button>
-        </div>
-        <div class="small" id="statusText" style="margin-top:10px;"></div>
-      </section><section class="zone-card">
-    <div class="zone-head">
-      <h2>メインデッキ</h2>
-      <span class="count-badge" id="mainCount">0枚</span>
+  <header>
+    <div class="wrap">
+      <h1>遊戯王デッキビルダー</h1>
+      <div class="small">カード画像つきでデッキを確認・編集・保存</div>
     </div>
-    <div id="mainList"></div>
-    <div id="mainEmpty" class="empty-box">まだカードがありません。</div>
-  </section>
-
-  <section class="zone-card">
-    <div class="zone-head">
-      <h2>エクストラデッキ</h2>
-      <span class="count-badge" id="extraCount">0枚</span>
-    </div>
-    <div id="extraList"></div>
-    <div id="extraEmpty" class="empty-box">まだカードがありません。</div>
-  </section>
-
-  <section class="zone-card">
-    <div class="zone-head">
-      <h2>サイドデッキ</h2>
-      <span class="count-badge" id="sideCount">0枚</span>
-    </div>
-    <div id="sideList"></div>
-    <div id="sideEmpty" class="empty-box">まだカードがありません。</div>
-  </section>
-</section>
-
-<aside class="sticky-side">
-  <section class="card">
-    <h2>合計枚数</h2>
-    <div class="summary-grid">
-      <div class="mini-card"><strong>メイン</strong><div id="summaryMain">0</div></div>
-      <div class="mini-card"><strong>エクストラ</strong><div id="summaryExtra">0</div></div>
-      <div class="mini-card"><strong>サイド</strong><div id="summarySide">0</div></div>
-    </div>
-  </section>
-
-  <section class="card" style="margin-top:12px;">
-    <h2>使い方</h2>
-    <div class="small preline">カード検索画面で「デッキビルダーへ追加」を押すとここに入ります。
-
-ここでは枚数変更、移動、削除、メモ入力ができます。</div> </section> </aside>
-
-  </div>
-</main><script>
-(() => {
-  const BUILDER_KEY = "yugioh_deck_builder_v1";
-  const MANAGER_KEY = "yugioh_deck_manager_v1";
-
-  const $ = (id) => document.getElementById(id);
-
-  const deckName = $("deckName");
-  const deckFormat = $("deckFormat");
-  const deckNotes = $("deckNotes");
-  const saveDeckBtn = $("saveDeckBtn");
-  const reloadBtn = $("reloadBtn");
-  const clearBuilderBtn = $("clearBuilderBtn");
-  const statusText = $("statusText");
-
-  const mainList = $("mainList");
-  const extraList = $("extraList");
-  const sideList = $("sideList");
-  const mainEmpty = $("mainEmpty");
-  const extraEmpty = $("extraEmpty");
-  const sideEmpty = $("sideEmpty");
-
-  const mainCount = $("mainCount");
-  const extraCount = $("extraCount");
-  const sideCount = $("sideCount");
-  const summaryMain = $("summaryMain");
-  const summaryExtra = $("summaryExtra");
-  const summarySide = $("summarySide");
-
-  let deck = loadBuilderDeck();
-
-  function createId(prefix = "id") {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  function escapeHtml(text) {
-    return String(text ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function normalizeDeckShape(input) {
-    const base = input && typeof input === "object" ? input : {};
-    return {
-      main: Array.isArray(base.main) ? base.main : [],
-      extra: Array.isArray(base.extra) ? base.extra : [],
-      side: Array.isArray(base.side) ? base.side : []
-    };
-  }
-
-  function loadBuilderDeck() {
-    try {
-      const raw = localStorage.getItem(BUILDER_KEY);
-      return normalizeDeckShape(raw ? JSON.parse(raw) : null);
-    } catch (e) {
-      return normalizeDeckShape(null);
-    }
-  }
-
-  function saveBuilderDeck() {
-    localStorage.setItem(BUILDER_KEY, JSON.stringify(deck));
-  }
-
-  function loadSavedDecks() {
-    try {
-      const raw = localStorage.getItem(MANAGER_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveSavedDecks(list) {
-    localStorage.setItem(MANAGER_KEY, JSON.stringify(list));
-  }
-
-  function setStatus(message) {
-    statusText.textContent = message;
-    if (message) {
-      setTimeout(() => {
-        if (statusText.textContent === message) statusText.textContent = "";
-      }, 2500);
-    }
-  }
-
-  function getZoneTotal(zoneName) {
-    return (deck[zoneName] || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
-  }
-
-  function updateSummary() {
-    const mainTotal = getZoneTotal("main");
-    const extraTotal = getZoneTotal("extra");
-    const sideTotal = getZoneTotal("side");
-
-    mainCount.textContent = `${mainTotal}枚`;
-    extraCount.textContent = `${extraTotal}枚`;
-    sideCount.textContent = `${sideTotal}枚`;
-
-    summaryMain.textContent = String(mainTotal);
-    summaryExtra.textContent = String(extraTotal);
-    summarySide.textContent = String(sideTotal);
-  }
-
-  function moveCard(itemId, fromZone, toZone) {
-    if (fromZone === toZone) return;
-
-    const fromList = deck[fromZone];
-    const toList = deck[toZone];
-    const index = fromList.findIndex(item => item.id === itemId);
-    if (index < 0) return;
-
-    const item = fromList[index];
-    fromList.splice(index, 1);
-
-    const existing = toList.find(x => x.name === item.name);
-    if (existing) {
-      existing.count += Number(item.count || 0);
-      if (!existing.image && item.image) existing.image = item.image;
-      if (!existing.memo && item.memo) existing.memo = item.memo;
-    } else {
-      toList.push(item);
-    }
-
-    saveBuilderDeck();
-    renderAll();
-  }
-
-  function updateCount(itemId, zoneName, delta) {
-    const list = deck[zoneName];
-    const item = list.find(x => x.id === itemId);
-    if (!item) return;
-
-    item.count = Number(item.count || 0) + delta;
-    if (item.count <= 0) {
-      const index = list.findIndex(x => x.id === itemId);
-      if (index >= 0) list.splice(index, 1);
-    }
-
-    saveBuilderDeck();
-    renderAll();
-  }
-
-  function removeItem(itemId, zoneName) {
-    deck[zoneName] = deck[zoneName].filter(x => x.id !== itemId);
-    saveBuilderDeck();
-    renderAll();
-  }
-
-  function updateMemo(itemId, zoneName, memoText) {
-    const item = deck[zoneName].find(x => x.id === itemId);
-    if (!item) return;
-    item.memo = memoText;
-    saveBuilderDeck();
-  }
-
-  function renderZone(zoneName, container, emptyEl) {
-    const list = deck[zoneName] || [];
-    container.innerHTML = "";
-    emptyEl.style.display = list.length ? "none" : "block";
-
-    list.forEach(item => {
-      const row = document.createElement("div");
-      row.className = "card-row";
-
-      const moveOptions = [
-        `<option value="main" ${zoneName === "main" ? "selected" : ""}>メイン</option>`,
-        `<option value="extra" ${zoneName === "extra" ? "selected" : ""}>エクストラ</option>`,
-        `<option value="side" ${zoneName === "side" ? "selected" : ""}>サイド</option>`
-      ].join("");
-
-      row.innerHTML = `
+  </header>  <main class="wrap">
+    <a class="back" href="../">← 遊戯王へ戻る</a><div class="builder-grid">
+  <section class="zone-wrap">
+    <section class="card">
+      <h2>デッキ情報</h2>
+      <div class="two">
         <div>
-          ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">` : `<div style="width:64px;height:90px;border:1px solid var(--line);border-radius:8px;background:#111;"></div>`}
+          <div class="label">デッキ名</div>
+          <input id="deckName" type="text" placeholder="例：ブラック・マジシャン構築">
         </div>
-        <div class="card-meta">
-          <div class="card-name">${escapeHtml(item.name || "無名カード")}</div>
-          <div class="small" style="margin-top:4px;">枚数：${escapeHtml(item.count)}</div>
-          <div style="margin-top:8px;">
-            <div class="label">メモ</div>
-            <textarea class="small-input" data-role="memo">${escapeHtml(item.memo || "")}</textarea></div>
-    </div>
-    <div class="card-actions">
-      <button type="button" data-role="plus">+1</button>
-      <button type="button" data-role="minus">-1</button>
-      <select data-role="move">${moveOptions}</select>
-      <button type="button" class="danger" data-role="remove">削除</button>
-    </div>
-  `;
+        <div>
+          <div class="label">分類</div>
+          <select id="deckFormat">
+            <option value="OCG">OCG</option>
+            <option value="MD">MD</option>
+            <option value="LOTD">LOTD</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="label">メモ</div>
+        <textarea id="deckNotes" placeholder="構築メモ、採用理由、候補カードなど"></textarea>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="saveDeckBtn" type="button">デッキ管理へ保存</button>
+        <button id="reloadBtn" type="button">再読込</button>
+        <button class="danger" id="clearBuilderBtn" type="button">ビルダーを空にする</button>
+      </div>
+      <div class="small" id="statusText" style="margin-top:10px;"></div>
+    </section>
 
-  row.querySelector('[data-role="plus"]').addEventListener("click", () => updateCount(item.id, zoneName, 1));
-  row.querySelector('[data-role="minus"]').addEventListener("click", () => updateCount(item.id, zoneName, -1));
-  row.querySelector('[data-role="remove"]').addEventListener("click", () => removeItem(item.id, zoneName));
-  row.querySelector('[data-role="move"]').addEventListener("change", (e) => moveCard(item.id, zoneName, e.target.value));
-  row.querySelector('[data-role="memo"]').addEventListener("change", (e) => updateMemo(item.id, zoneName, e.target.value));
+    <section class="zone-card">
+      <div class="zone-head">
+        <h2>メインデッキ</h2>
+        <span class="count-badge" id="mainCount">0枚</span>
+      </div>
+      <div id="mainList" class="cards-grid"></div>
+      <div id="mainEmpty" class="empty-box">まだカードがありません。</div>
+    </section>
 
-  container.appendChild(row);
+    <section class="zone-card">
+      <div class="zone-head">
+        <h2>エクストラデッキ</h2>
+        <span class="count-badge" id="extraCount">0枚</span>
+      </div>
+      <div id="extraList" class="cards-grid"></div>
+      <div id="extraEmpty" class="empty-box">まだカードがありません。</div>
+    </section>
+
+    <section class="zone-card">
+      <div class="zone-head">
+        <h2>サイドデッキ</h2>
+        <span class="count-badge" id="sideCount">0枚</span>
+      </div>
+      <div id="sideList" class="cards-grid"></div>
+      <div id="sideEmpty" class="empty-box">まだカードがありません。</div>
+    </section>
+  </section>
+
+  <aside class="sticky-side">
+    <section class="card">
+      <h2>合計枚数</h2>
+      <div class="summary-grid">
+        <div class="mini-card"><strong>メイン</strong><div id="summaryMain">0</div></div>
+        <div class="mini-card"><strong>エクストラ</strong><div id="summaryExtra">0</div></div>
+        <div class="mini-card"><strong>サイド</strong><div id="summarySide">0</div></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:12px;">
+      <h2>使い方</h2>
+      <div class="small preline">カード検索画面で「デッキビルダーへ追加」を押すとここに入ります。
+
+画像つきで確認しながら、枚数変更・移動・メモ入力ができます。</div> </section> </aside> </div>
+
+  </main>  <script>
+  (() => {
+    const BUILDER_KEY = "yugioh_deck_builder_v1";
+    const MANAGER_KEY = "yugioh_deck_manager_v1";
+
+    const $ = (id) => document.getElementById(id);
+
+    const deckName = $("deckName");
+    const deckFormat = $("deckFormat");
+    const deckNotes = $("deckNotes");
+    const saveDeckBtn = $("saveDeckBtn");
+    const reloadBtn = $("reloadBtn");
+    const clearBuilderBtn = $("clearBuilderBtn");
+    const statusText = $("statusText");
+
+    const mainList = $("mainList");
+    const extraList = $("extraList");
+    const sideList = $("sideList");
+    const mainEmpty = $("mainEmpty");
+    const extraEmpty = $("extraEmpty");
+    const sideEmpty = $("sideEmpty");
+
+    const mainCount = $("mainCount");
+    const extraCount = $("extraCount");
+    const sideCount = $("sideCount");
+    const summaryMain = $("summaryMain");
+    const summaryExtra = $("summaryExtra");
+    const summarySide = $("summarySide");
+
+    let deck = loadBuilderDeck();
+
+    function createId(prefix = "id") {
+      return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeDeckShape(input) {
+      const base = input && typeof input === "object" ? input : {};
+      return {
+        main: Array.isArray(base.main) ? base.main : [],
+        extra: Array.isArray(base.extra) ? base.extra : [],
+        side: Array.isArray(base.side) ? base.side : []
+      };
+    }
+
+    function loadBuilderDeck() {
+      try {
+        const raw = localStorage.getItem(BUILDER_KEY);
+        return normalizeDeckShape(raw ? JSON.parse(raw) : null);
+      } catch (e) {
+        return normalizeDeckShape(null);
+      }
+    }
+
+    function saveBuilderDeck() {
+      localStorage.setItem(BUILDER_KEY, JSON.stringify(deck));
+    }
+
+    function loadSavedDecks() {
+      try {
+        const raw = localStorage.getItem(MANAGER_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveSavedDecks(list) {
+      localStorage.setItem(MANAGER_KEY, JSON.stringify(list));
+    }
+
+    function setStatus(message) {
+      statusText.textContent = message;
+      if (message) {
+        setTimeout(() => {
+          if (statusText.textContent === message) statusText.textContent = "";
+        }, 2500);
+      }
+    }
+
+    function getZoneTotal(zoneName) {
+      return (deck[zoneName] || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
+    }
+
+    function updateSummary() {
+      const mainTotal = getZoneTotal("main");
+      const extraTotal = getZoneTotal("extra");
+      const sideTotal = getZoneTotal("side");
+
+      mainCount.textContent = `${mainTotal}枚`;
+      extraCount.textContent = `${extraTotal}枚`;
+      sideCount.textContent = `${sideTotal}枚`;
+
+      summaryMain.textContent = String(mainTotal);
+      summaryExtra.textContent = String(extraTotal);
+      summarySide.textContent = String(sideTotal);
+    }
+
+    function moveCard(itemId, fromZone, toZone) {
+      if (fromZone === toZone) return;
+
+      const fromList = deck[fromZone];
+      const toList = deck[toZone];
+      const index = fromList.findIndex(item => item.id === itemId);
+      if (index < 0) return;
+
+      const item = fromList[index];
+      fromList.splice(index, 1);
+
+      const existing = toList.find(x => x.name === item.name);
+      if (existing) {
+        existing.count += Number(item.count || 0);
+        if (!existing.image && item.image) existing.image = item.image;
+        if (!existing.memo && item.memo) existing.memo = item.memo;
+      } else {
+        toList.push(item);
+      }
+
+      saveBuilderDeck();
+      renderAll();
+    }
+
+    function updateCount(itemId, zoneName, delta) {
+      const list = deck[zoneName];
+      const item = list.find(x => x.id === itemId);
+      if (!item) return;
+
+      item.count = Number(item.count || 0) + delta;
+      if (item.count <= 0) {
+        const index = list.findIndex(x => x.id === itemId);
+        if (index >= 0) list.splice(index, 1);
+      }
+
+      saveBuilderDeck();
+      renderAll();
+    }
+
+    function removeItem(itemId, zoneName) {
+      deck[zoneName] = deck[zoneName].filter(x => x.id !== itemId);
+      saveBuilderDeck();
+      renderAll();
+    }
+
+    function updateMemo(itemId, zoneName, memoText) {
+      const item = deck[zoneName].find(x => x.id === itemId);
+      if (!item) return;
+      item.memo = memoText;
+      saveBuilderDeck();
+    }
+
+    function renderZone(zoneName, container, emptyEl) {
+      const list = deck[zoneName] || [];
+      container.innerHTML = "";
+      emptyEl.style.display = list.length ? "none" : "block";
+
+      list.forEach(item => {
+        const tile = document.createElement("div");
+        tile.className = "card-tile";
+
+        const moveOptions = [
+          `<option value="main" ${zoneName === "main" ? "selected" : ""}>メイン</option>`,
+          `<option value="extra" ${zoneName === "extra" ? "selected" : ""}>エクストラ</option>`,
+          `<option value="side" ${zoneName === "side" ? "selected" : ""}>サイド</option>`
+        ].join("");
+
+        tile.innerHTML = `
+          <div>
+            ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">` : `<div style="width:100%;aspect-ratio:421/614;border:1px solid var(--line);border-radius:8px;background:#111;"></div>`}
+          </div>
+          <div class="card-title">${escapeHtml(item.name || "無名カード")}</div>
+          <div class="card-sub">枚数：${escapeHtml(item.count)}</div>
+          <textarea class="memo-input" data-role="memo" placeholder="メモ">${escapeHtml(item.memo || "")}</textarea><div class="tile-actions">
+        <button type="button" data-role="plus">+1</button>
+        <button type="button" data-role="minus">-1</button>
+      </div>
+      <div class="tile-actions-bottom">
+        <select data-role="move">${moveOptions}</select>
+        <button type="button" class="danger" data-role="remove">削除</button>
+      </div>
+    `;
+
+    tile.querySelector('[data-role="plus"]').addEventListener("click", () => updateCount(item.id, zoneName, 1));
+    tile.querySelector('[data-role="minus"]').addEventListener("click", () => updateCount(item.id, zoneName, -1));
+    tile.querySelector('[data-role="remove"]').addEventListener("click", () => removeItem(item.id, zoneName));
+    tile.querySelector('[data-role="move"]').addEventListener("change", (e) => moveCard(item.id, zoneName, e.target.value));
+    tile.querySelector('[data-role="memo"]').addEventListener("change", (e) => updateMemo(item.id, zoneName, e.target.value));
+
+    container.appendChild(tile);
+  });
+}
+
+function renderAll() {
+  renderZone("main", mainList, mainEmpty);
+  renderZone("extra", extraList, extraEmpty);
+  renderZone("side", sideList, sideEmpty);
+  updateSummary();
+}
+
+function convertZoneToText(zoneName) {
+  return (deck[zoneName] || [])
+    .map(item => `${item.name} x${item.count}`)
+    .join("\n");
+}
+
+function saveToDeckManager() {
+  const name = deckName.value.trim();
+  if (!name) {
+    setStatus("デッキ名を入れてください");
+    return;
+  }
+
+  const savedDecks = loadSavedDecks();
+  const now = new Date().toISOString();
+
+  const payload = {
+    id: createId("deck"),
+    format: deckFormat.value || "OCG",
+    name,
+    main: convertZoneToText("main"),
+    extra: convertZoneToText("extra"),
+    side: convertZoneToText("side"),
+    tags: [],
+    notes: deckNotes.value.trim(),
+    createdAt: now,
+    updatedAt: now
+  };
+
+  savedDecks.unshift(payload);
+  saveSavedDecks(savedDecks);
+  setStatus("デッキ管理へ保存しました");
+}
+
+function clearBuilder() {
+  const ok = confirm("ビルダー内のカードをすべて消しますか？");
+  if (!ok) return;
+  deck = { main: [], extra: [], side: [] };
+  saveBuilderDeck();
+  renderAll();
+  setStatus("ビルダーを空にしました");
+}
+
+saveDeckBtn.addEventListener("click", saveToDeckManager);
+reloadBtn.addEventListener("click", () => {
+  deck = loadBuilderDeck();
+  renderAll();
+  setStatus("再読込しました");
 });
+clearBuilderBtn.addEventListener("click", clearBuilder);
 
-}
+renderAll();
 
-function renderAll() { renderZone("main", mainList, mainEmpty); renderZone("extra", extraList, extraEmpty); renderZone("side", sideList, sideEmpty); updateSummary(); }
-
-function convertZoneToText(zoneName) { return (deck[zoneName] || []) .map(item => ${item.name} x${item.count}) .join("\n"); }
-
-function saveToDeckManager() { const name = deckName.value.trim(); if (!name) { setStatus("デッキ名を入れてください"); return; }
-
-const savedDecks = loadSavedDecks();
-const now = new Date().toISOString();
-
-const payload = {
-  id: createId("deck"),
-  format: deckFormat.value || "OCG",
-  name,
-  main: convertZoneToText("main"),
-  extra: convertZoneToText("extra"),
-  side: convertZoneToText("side"),
-  tags: [],
-  notes: deckNotes.value.trim(),
-  createdAt: now,
-  updatedAt: now
-};
-
-savedDecks.unshift(payload);
-saveSavedDecks(savedDecks);
-setStatus("デッキ管理へ保存しました");
-
-}
-
-function clearBuilder() { const ok = confirm("ビルダー内のカードをすべて消しますか？"); if (!ok) return; deck = { main: [], extra: [], side: [] }; saveBuilderDeck(); renderAll(); setStatus("ビルダーを空にしました"); }
-
-saveDeckBtn.addEventListener("click", saveToDeckManager); reloadBtn.addEventListener("click", () => { deck = loadBuilderDeck(); renderAll(); setStatus("再読込しました"); }); clearBuilderBtn.addEventListener("click", clearBuilder);
-
-renderAll(); })(); </script>
+})(); </script>
 
 </body>
 </html>
