@@ -315,7 +315,10 @@ function loadLocalDB() {
     (x.nameEn && x.nameEn === card.name)
   );
 
-  if (exists) return;
+  if (exists) {
+    console.log("既に保存済み:", card.name);
+    return;
+  }
 
   const newCard = {
     id: String(card.id || ""),
@@ -340,6 +343,7 @@ function loadLocalDB() {
 
   db.unshift(newCard);
   localStorage.setItem(LOCAL_CARD_DB, JSON.stringify(db));
+  console.log("保存しました:", newCard);
   }
 
 function searchLocalDB(keyword) {
