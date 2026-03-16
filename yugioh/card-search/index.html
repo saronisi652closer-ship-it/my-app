@@ -306,45 +306,51 @@ function loadLocalDB() {
   }
 }
 
-  function saveCardToLocalDB(card) {
-  const db = loadLocalDB();
+function saveCardToLocalDB(card) {
+  try {
+    const db = loadLocalDB();
 
-  const exists = db.find(x =>
-    String(x.id || "") === String(card.id || "") ||
-    (x.nameJa && x.nameJa === card.name) ||
-    (x.nameEn && x.nameEn === card.name)
-  );
+    const exists = db.find(x =>
+      String(x.id || "") === String(card.id || "") ||
+      (x.nameJa && x.nameJa === card.name) ||
+      (x.nameEn && x.nameEn === card.name)
+    );
 
-  if (exists) {
-    console.log("既に保存済み:", card.name);
-    return;
+    if (exists) {
+      console.log("既に保存済み:", card.name);
+      return false;
+    }
+
+    const newCard = {
+      id: String(card.id || ""),
+      nameJa: card.name || "",
+      nameEn: card.name || "",
+      aliases: [card.name].filter(Boolean),
+
+      attributeJa: ATTRIBUTE_JP[card.attribute] || card.attribute || "",
+      raceJa: RACE_JP[card.race] || card.race || "",
+      typeJa: TYPE_JP[card.type] || card.type || "",
+
+      level: card.level ?? "",
+      atk: card.atk ?? "",
+      def: card.def ?? "",
+
+      descJa: card.desc || "",
+      image: card.card_images?.[0]?.image_url || "",
+
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    db.unshift(newCard);
+    localStorage.setItem(LOCAL_CARD_DB, JSON.stringify(db));
+    console.log("保存しました:", newCard);
+    return true;
+  } catch (e) {
+    console.error("独自DB保存失敗:", e);
+    return false;
   }
-
-  const newCard = {
-    id: String(card.id || ""),
-    nameJa: card.name || "",
-    nameEn: card.name || "",
-    aliases: [card.name].filter(Boolean),
-
-    attributeJa: ATTRIBUTE_JP[card.attribute] || card.attribute || "",
-    raceJa: RACE_JP[card.race] || card.race || "",
-    typeJa: TYPE_JP[card.type] || card.type || "",
-
-    level: card.level ?? "",
-    atk: card.atk ?? "",
-    def: card.def ?? "",
-
-    descJa: card.desc || "",
-    image: card.card_images?.[0]?.image_url || "",
-
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-
-  db.unshift(newCard);
-  localStorage.setItem(LOCAL_CARD_DB, JSON.stringify(db));
-  console.log("保存しました:", newCard);
-  }
+}
 
 function searchLocalDB(keyword) {
   const db = loadLocalDB();
@@ -566,13 +572,23 @@ async function searchCard() {
 
     renderCandidates(data.data);
     renderCard(data.data[0]);
-    saveCardToLocalDB(data.data[0])
 
+    const saved = saveCardToLocalDB(data.data[0]);
     const checkDb = loadLocalDB();
-console.log("現在のDB件数:", checkDb.length);
+    console.log("現在のDB件数:", checkDb.length);
 
-loadingText.textContent = "";
-    
+    loadingText.textContent = saved ? "独自DBへ保存しました" : "独自DBには保存済みです";
+    setTimeout(() => {
+      if (
+        loadingText.textContent === "独自DBへ保存しました" ||
+        loadingText.textContent === "独自DBには保存済みです"
+      ) {
+        loadingText.textContent = "";
+      }
+    }, 2000);
+
+  } catch (e) {
+    loadingText.textContent = "";
     errorText.textContent = "カードが見つかりません";
   }
 }
@@ -704,8 +720,7 @@ function getAllKnownNames() {
 
   const dictNames = Object.keys(JP_TO_EN);
 
-  const all = [...new Set([...dbNames, ...dictNames])];
-  return all;
+  return [...new Set([...dbNames, ...dictNames])];
 }
 
 function scoreNameMatch(a, b) {
@@ -776,7 +791,6 @@ async function buildTitleCrop(file) {
   const sw = img.width;
   const sh = img.height;
 
-  // カード上部の名前欄だけを狙う
   const sx = Math.floor(sw * 0.08);
   const sy = Math.floor(sh * 0.04);
   const cw = Math.floor(sw * 0.84);
@@ -787,7 +801,6 @@ async function buildTitleCrop(file) {
 
   ctx.drawImage(img, sx, sy, cw, ch, 0, 0, cw, ch);
 
-  // 白黒 + コントラスト強化
   const imageData = ctx.getImageData(0, 0, cw, ch);
   const data = imageData.data;
 
@@ -820,7 +833,7 @@ async function runCardNameOCR(file) {
 
   return result.data.text || "";
 }
-  
+
 cameraBtn.onclick = () => {
   cameraInput.click();
 };
@@ -851,7 +864,6 @@ cameraInput.onchange = async () => {
     cameraInput.value = "";
   }
 };
-
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
