@@ -271,7 +271,7 @@
           return;
         }
 
-        const existingIndex = cards.findIndex(c => c.id === data.id);
+        const existingIndex = cards.findIndex(c => String(c.id) === String(data.id));
 
         if (existingIndex >= 0) {
           data.createdAt = cards[existingIndex].createdAt || data.updatedAt;
@@ -291,13 +291,13 @@
       function deleteCard() {
         if (!editingId) return;
 
-        const target = cards.find(c => c.id === editingId);
+        const target = cards.find(c => String(c.id) === String(editingId));
         if (!target) return;
 
         const ok = confirm(`「${target.nameJa || "このカード"}」を削除しますか？`);
         if (!ok) return;
 
-        cards = cards.filter(c => c.id !== editingId);
+        cards = cards.filter(c => String(c.id) !== String(editingId));
         saveCards();
         clearForm();
         renderList();
@@ -382,29 +382,30 @@
         });
 
         cardList.querySelectorAll("button[data-action='edit']").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const target = cards.find(c => String(c.id) === String(btn.dataset.id));
-    if (target) fillForm(target);
-  });
-});
+          btn.addEventListener("click", () => {
+            const target = cards.find(c => String(c.id) === String(btn.dataset.id));
+            if (target) fillForm(target);
+          });
+        });
 
         cardList.querySelectorAll("button[data-action='delete']").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const target = cards.find(c => String(c.id) === String(btn.dataset.id));
-    if (!target) return;
+          btn.addEventListener("click", () => {
+            const target = cards.find(c => String(c.id) === String(btn.dataset.id));
+            if (!target) return;
 
-    const ok = confirm(`「${target.nameJa || "このカード"}」を削除しますか？`);
-    if (!ok) return;
+            const ok = confirm(`「${target.nameJa || "このカード"}」を削除しますか？`);
+            if (!ok) return;
 
-    cards = cards.filter(c => String(c.id) !== String(btn.dataset.id));
-    saveCards();
+            cards = cards.filter(c => String(c.id) !== String(btn.dataset.id));
+            saveCards();
 
-    if (String(editingId) === String(btn.dataset.id)) clearForm();
+            if (String(editingId) === String(btn.dataset.id)) clearForm();
 
-    renderList();
-    setStatus("削除しました");
-  });
-});
+            renderList();
+            setStatus("削除しました");
+          });
+        });
+      }
 
       saveBtn.addEventListener("click", saveCard);
       clearBtn.addEventListener("click", () => {
