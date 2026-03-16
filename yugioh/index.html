@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="ja">
 <head>
   <meta charset="utf-8">
@@ -6,76 +7,84 @@
   <title>遊戯王メニュー</title>
   <link rel="stylesheet" href="../style.css">
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #111827;
-      color: #fff;
+    .menu-grid{
+      display:grid;
+      gap:14px;
     }
-    .wrap {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 24px 16px 40px;
+    .menu-card{
+      display:block;
+      text-decoration:none;
+      color:inherit;
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
+    .menu-card h2{
+      margin:0 0 8px;
+      font-size:20px;
     }
-    .back {
-      display: inline-block;
-      margin-bottom: 20px;
-      color: #93c5fd;
-      text-decoration: none;
+    .menu-card p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.6;
     }
-    .menu {
-      display: grid;
-      gap: 14px;
-    }
-    .card {
-      display: block;
-      text-decoration: none;
-      color: #fff;
-      background: #1f2937;
-      border-radius: 16px;
-      padding: 18px;
-    }
-    .card h2 {
-      margin: 0 0 8px;
-      font-size: 20px;
-    }
-    .card p {
-      margin: 0;
-      color: #d1d5db;
+    .info-box{
+      margin-top:16px;
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <a class="back" href="../">← ホームへ戻る</a>
-    <h1>遊戯王</h1>
-
-    <div class="menu">
-      <a class="card" href="./card-search/">
-        <h2>カード検索</h2>
-        <p>カード名・属性・種族・攻守などを確認</p>
-      </a>
-
-      <a class="card" href="./deck-manager/">
-        <h2>デッキ管理</h2>
-        <p>デッキの保存・編集・確認</p>
-      </a>
-
-      <a class="card" href="./deck-builder/">
-        <h2>デッキビルダー</h2>
-        <p>カードを追加してデッキを組む</p>
-      </a>
-
-      <a class="card" href="./card-database/">
-  <h2>カードDB</h2>
-  <p>独自カード情報の登録・編集・日本語検索</p>
-      </a>
-      
+  <header>
+    <div class="wrap">
+      <h1>遊戯王</h1>
+      <div class="small">検索・独自DB・デッキ構築をまとめて管理</div>
     </div>
-  </div>
+  </header>  <main class="wrap">
+    <a class="back" href="../">← ホームへ戻る</a><div class="menu-grid">
+  <a class="menu-card" href="./card-search/">
+    <h2>カード検索</h2>
+    <p>カード検索、日本語名修正、OCR読み取り、所持カード追加、デッキビルダー追加。</p>
+  </a>
+
+  <a class="menu-card" href="./card-database/">
+    <h2>独自カードDB</h2>
+    <p>日本語名、英語名、別名、画像URL、カード説明を手動で編集・管理。</p>
+  </a>
+
+  <a class="menu-card" href="./deck-builder/">
+    <h2>デッキビルダー</h2>
+    <p>検索画面から追加したカードをメイン・エクストラ・サイドに分けて整理し、保存前に確認。</p>
+  </a>
+
+  <a class="menu-card" href="./deck-manager/">
+    <h2>デッキ管理</h2>
+    <p>完成したデッキの保存、編集、不足カード確認、所持カード管理。</p>
+  </a>
+</div>
+
+<div class="info-box">
+  <h2>おすすめの使い方</h2>
+  <div class="small" style="white-space:pre-wrap;">
+
+1. カード検索でカードを探す
+
+
+2. 必要なら日本語名や別名を独自DBへ修正保存
+
+
+3. デッキビルダーへ追加して枚数や移動を調整
+
+
+4. 完成したらデッキ管理へ保存
+
+   </div>
+ </div>
+
+  </main>
 </body>
 </html>
