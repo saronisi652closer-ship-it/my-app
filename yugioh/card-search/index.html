@@ -682,6 +682,50 @@ function addToBuilder() {
     return;
   }
 
+function updateLocalCardFromSearch() {
+  if (!currentCard) {
+    setDbEditStatus("先にカードを検索してください。");
+    return;
+  }
+
+  const db = loadLocalDB();
+  const targetId = String(currentCard.id || "");
+
+  const index = db.findIndex(x => String(x.id || "") === targetId);
+
+  const aliases = editAliases.value
+    .split(",")
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  const updatedCard = {
+    id: targetId,
+    nameJa: editNameJa.value.trim() || currentCard.name || "",
+    nameEn: editNameEn.value.trim() || currentCard.name || "",
+    aliases,
+    attributeJa: ATTRIBUTE_JP[currentCard.attribute] || currentCard.attribute || "",
+    raceJa: RACE_JP[currentCard.race] || currentCard.race || "",
+    typeJa: TYPE_JP[currentCard.type] || currentCard.type || "",
+    level: currentCard.level ?? "",
+    atk: currentCard.atk ?? "",
+    def: currentCard.def ?? "",
+    descJa: currentCard.desc || "",
+    image: currentCard.card_images?.[0]?.image_url || "",
+    updatedAt: new Date().toISOString()
+  };
+
+  if (index >= 0) {
+    updatedCard.createdAt = db[index].createdAt || updatedCard.updatedAt;
+    db[index] = { ...db[index], ...updatedCard };
+  } else {
+    updatedCard.createdAt = updatedCard.updatedAt;
+    db.unshift(updatedCard);
+  }
+
+  localStorage.setItem(LOCAL_CARD_DB, JSON.stringify(db));
+  setDbEditStatus("独自DBを更新しました");
+}
+  
   const name = currentCard.name || "";
   const zone = builderZone.value;
   const count = Number(builderCount.value || 1);
