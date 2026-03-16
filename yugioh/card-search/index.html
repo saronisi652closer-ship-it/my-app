@@ -460,6 +460,15 @@ function setBuilderStatus(message) {
   }
 }
 
+function setDbEditStatus(message) {
+  dbEditStatus.textContent = message;
+  if (message) {
+    setTimeout(() => {
+      if (dbEditStatus.textContent === message) dbEditStatus.textContent = "";
+    }, 2500);
+  }
+}
+  
 function renderBadges(card) {
   typeBadges.innerHTML = "";
 
