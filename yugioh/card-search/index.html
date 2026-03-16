@@ -572,7 +572,12 @@ async function searchCard() {
   resultCard.classList.remove("show");
   ownedStatus.textContent = "";
   builderStatus.textContent = "";
+  editNameJa.value = "";
+editNameEn.value = "";
+editAliases.value = "";
+dbEditStatus.textContent = "";
   currentCard = null;
+  
 
   if (!keyword) {
     errorText.textContent = "カード名を入れてください";
