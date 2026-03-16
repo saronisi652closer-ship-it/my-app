@@ -567,9 +567,12 @@ async function searchCard() {
     renderCandidates(data.data);
     renderCard(data.data[0]);
     saveCardToLocalDB(data.data[0])
-    loadingText.textContent = "";
-  } catch (e) {
-    loadingText.textContent = "";
+
+    const checkDb = loadLocalDB();
+console.log("現在のDB件数:", checkDb.length);
+
+loadingText.textContent = "";
+    
     errorText.textContent = "カードが見つかりません";
   }
 }
