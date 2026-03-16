@@ -648,6 +648,78 @@
       renderDeckOptions();
       renderMissingCards();
     })();
+
+   function loadOwnedCards(){
+  try{
+    const raw = localStorage.getItem("yugioh_owned_cards_v1")
+    return raw ? JSON.parse(raw) : []
+  }catch{
+    return []
+  }
+}
+
+function parseDeckText(text){
+  if(!text) return []
+  return text.split("\n").map(line=>{
+    const parts=line.split(" x")
+    return {
+      name:parts[0].trim(),
+      count:Number(parts[1]||1)
+    }
+  })
+}
+
+function checkMissingCards(){
+
+  const owned=loadOwnedCards()
+
+  const main=parseDeckText(currentDeck.main)
+  const extra=parseDeckText(currentDeck.extra)
+  const side=parseDeckText(currentDeck.side)
+
+  const deckCards=[...main,...extra,...side]
+
+  const result=[]
+
+  deckCards.forEach(card=>{
+
+    const ownedCard=owned.find(o=>o.name===card.name)
+
+    const ownedCount=ownedCard?ownedCard.count:0
+
+    if(ownedCount<card.count){
+
+      result.push({
+        name:card.name,
+        need:card.count,
+        have:ownedCount
+      })
+
+    }
+
+  })
+
+  showMissing(result)
+
+}
+
+function showMissing(list){
+
+  if(list.length===0){
+    alert("不足カードはありません")
+    return
+  }
+
+  let text="不足カード\\n\\n"
+
+  list.forEach(card=>{
+    text+=`${card.name}  必要:${card.need}  所持:${card.have}\\n`
+  })
+
+  alert(text)
+
+}
+    
   </script>
 </body>
 </html>
