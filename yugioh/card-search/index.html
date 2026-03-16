@@ -513,6 +513,17 @@ function renderCard(card) {
   }
 
   ownedName.value = card.name || "";
+  editNameJa.value = card.name || "";
+  editNameEn.value = card.name || "";
+
+  const localMatch = loadLocalDB().find(x => String(x.id || "") === String(card.id || ""));
+  if (localMatch) {
+    editNameJa.value = localMatch.nameJa || card.name || "";
+    editNameEn.value = localMatch.nameEn || card.name || "";
+    editAliases.value = (localMatch.aliases || []).join(", ");
+  } else {
+    editAliases.value = "";
+  }
   ownedCount.value = 1;
   builderZone.value = "main";
   builderCount.value = 1;
