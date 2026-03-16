@@ -526,7 +526,8 @@
 
       function renderDeckOptions() {
         const currentValue = missingDeckSelect.value;
-        missingDeckSelect.innerHTML = `<option value="">デッキを選択</option>` +
+        missingDeckSelect.innerHTML =
+          `<option value="">デッキを選択</option>` +
           decks.map(deck => `<option value="${escapeHtml(deck.id)}">${escapeHtml(deck.name)}</option>`).join("");
 
         if (decks.some(deck => deck.id === currentValue)) {
@@ -589,38 +590,36 @@
           const card = document.createElement("div");
           card.className = "menu-card";
           card.innerHTML = `
-  <h2>${escapeHtml(item.name)}</h2>
-  <div class="small">必要枚数：${escapeHtml(item.required)}</div>
-  <div class="small">所持枚数：${escapeHtml(item.owned)}</div>
-  <div class="small" style="margin-top:6px;">不足枚数：${escapeHtml(item.missing)}</div>
+            <h2>${escapeHtml(item.name)}</h2>
+            <div class="small">必要枚数：${escapeHtml(item.required)}</div>
+            <div class="small">所持枚数：${escapeHtml(item.owned)}</div>
+            <div class="small" style="margin-top:6px;">不足枚数：${escapeHtml(item.missing)}</div>
 
-  <div class="row" style="margin-top:10px;">
-    <button data-add-owned="${escapeHtml(item.name)}">
-      所持に追加
-    </button>
-  </div>
-`;
+            <div class="row" style="margin-top:10px;">
+              <button data-add-owned="${escapeHtml(item.name)}">所持に追加</button>
+            </div>
+          `;
+
           card.querySelector("button").addEventListener("click", () => {
+            const name = item.name;
+            const existing = ownedCards.find(c => c.name === name);
 
-  const name = item.name
+            if (existing) {
+              existing.count += 1;
+            } else {
+              ownedCards.push({
+                id: createId("owned"),
+                name,
+                count: 1
+              });
+            }
 
-  const existing = ownedCards.find(c => c.name === name)
+            saveOwnedCards();
+            renderOwnedList();
+            renderMissingCards();
+            setStatus(`「${name}」を所持カードに追加しました`);
+          });
 
-  if(existing){
-    existing.count += 1
-  }else{
-    ownedCards.push({
-      id: createId("owned"),
-      name,
-      count: 1
-    })
-  }
-
-  saveOwnedCards()
-  renderOwnedList()
-  renderMissingCards()
-
-})
           missingList.appendChild(card);
         });
       }
@@ -648,9 +647,6 @@
       renderDeckOptions();
       renderMissingCards();
     })();
-
-
-    
   </script>
 </body>
 </html>
