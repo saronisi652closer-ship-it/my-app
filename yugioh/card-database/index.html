@@ -113,6 +113,12 @@
           <button class="danger" id="deleteBtn" type="button" style="display:none;">削除</button>
         </div>
 
+        <div class="row" style="margin-top:12px;">
+          <button id="exportBtn" type="button">DB書き出し</button>
+          <button id="importBtn" type="button">DB読み込み</button>
+          <input id="importFile" type="file" accept=".json" style="display:none;">
+        </div>
+
         <div class="small" id="status" style="margin-top:10px;"></div>
       </section>
 
@@ -161,6 +167,9 @@
       const saveBtn = $("saveBtn");
       const clearBtn = $("clearBtn");
       const deleteBtn = $("deleteBtn");
+      const exportBtn = $("exportBtn");
+      const importBtn = $("importBtn");
+      const importFile = $("importFile");
       const status = $("status");
 
       const searchBox = $("searchBox");
@@ -182,6 +191,48 @@
 
       function saveCards() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+      }
+
+      function exportCards() {
+        const blob = new Blob(
+          [JSON.stringify(cards, null, 2)],
+          { type: "application/json" }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "yugioh_card_db_backup.json";
+        a.click();
+        URL.revokeObjectURL(url);
+
+        setStatus("DBを書き出しました");
+      }
+
+      function importCards(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const imported = JSON.parse(reader.result);
+
+            if (!Array.isArray(imported)) {
+              setStatus("JSON形式が正しくありません");
+              return;
+            }
+
+            cards = imported;
+            saveCards();
+            clearForm();
+            renderList();
+            setStatus("DBを読み込みました");
+          } catch (e) {
+            setStatus("JSONの読み込みに失敗しました");
+          }
+        };
+
+        reader.readAsText(file);
       }
 
       function createId() {
@@ -344,8 +395,12 @@
           const item = document.createElement("div");
           item.className = "item";
 
+          const levelText = card.level !== "" && card.level != null ? card.level : "—";
+          const atkText = card.atk !== "" && card.atk != null ? card.atk : "—";
+          const defText = card.def !== "" && card.def != null ? card.def : "—";
+
           const imageHtml = card.image
-            ? `<img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.nameJa)}">`
+            ? `<img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.nameJa)}" onerror="this.outerHTML='<div style=&quot;width:90px;height:126px;border:1px solid var(--line);border-radius:8px;background:#0f1117;&quot;></div>'">`
             : `<div style="width:90px;height:126px;border:1px solid var(--line);border-radius:8px;background:#0f1117;"></div>`;
 
           item.innerHTML = `
@@ -358,7 +413,7 @@
                   ${escapeHtml(card.typeJa || "—")} / ${escapeHtml(card.attributeJa || "—")} / ${escapeHtml(card.raceJa || "—")}
                 </div>
                 <div class="small" style="margin-top:6px;">
-                  レベル:${escapeHtml(card.level)} / 攻:${escapeHtml(card.atk)} / 守:${escapeHtml(card.def)}
+                  レベル:${escapeHtml(levelText)} / 攻:${escapeHtml(atkText)} / 守:${escapeHtml(defText)}
                 </div>
                 ${
                   (card.aliases || []).length
@@ -408,11 +463,25 @@
       }
 
       saveBtn.addEventListener("click", saveCard);
+
       clearBtn.addEventListener("click", () => {
         clearForm();
         setStatus("入力をクリアしました");
       });
+
       deleteBtn.addEventListener("click", deleteCard);
+
+      exportBtn.addEventListener("click", exportCards);
+
+      importBtn.addEventListener("click", () => {
+        importFile.click();
+      });
+
+      importFile.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        importCards(file);
+        importFile.value = "";
+      });
 
       searchBox.addEventListener("input", renderList);
       sortBox.addEventListener("change", renderList);
