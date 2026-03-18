@@ -1,12 +1,28 @@
 <!doctype html>
-
 <html lang="ja">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>遊戯王所持カード一覧</title>
+  <title>所持カード一覧</title>
   <link rel="stylesheet" href="../../style.css">
   <style>
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .summary-item{
+      background:#10131b;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+    .summary-item .num{
+      font-size:24px;
+      font-weight:700;
+      margin-top:6px;
+    }
     .list{
       display:flex;
       flex-direction:column;
@@ -19,139 +35,178 @@
       padding:12px;
     }
     .item-head{
-      display:flex;
-      justify-content:space-between;
+      display:grid;
+      grid-template-columns:90px 1fr;
       gap:12px;
-      align-items:flex-start;
+      align-items:start;
     }
-    .item-name{
-      font-weight:700;
-      line-height:1.5;
+    .item-head img{
+      width:100%;
+      max-width:90px;
+      border-radius:8px;
+      border:1px solid var(--line);
+      background:#0f1117;
     }
-    .count-badge{
+    .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:8px;
+    }
+    .chip{
       display:inline-block;
-      padding:6px 10px;
+      padding:4px 8px;
       border-radius:999px;
       border:1px solid var(--line);
       background:#0f1117;
       font-size:12px;
-      white-space:nowrap;
+      color:var(--muted);
     }
-    .summary-grid{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:10px;
+    .count-box{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      margin-top:12px;
+    }
+    .count-btn{
+      min-width:42px;
+      padding:8px 10px;
+    }
+    .count-value{
+      min-width:44px;
+      text-align:center;
+      font-size:18px;
+      font-weight:700;
+    }
+    .muted-block{
+      color:var(--muted);
+      line-height:1.6;
     }
     @media(max-width:700px){
-      .summary-grid{grid-template-columns:1fr}
-      .item-head{flex-direction:column}
+      .item-head{grid-template-columns:1fr}
+      .item-head img{max-width:140px}
+      .summary-box{grid-template-columns:1fr}
     }
   </style>
 </head>
 <body>
   <header>
     <div class="wrap">
-      <h1>遊戯王所持カード一覧</h1>
-      <div class="small">所持枚数の確認・編集・削除</div>
+      <h1>所持カード一覧</h1>
+      <div class="small">独自カードDBのカードを所持枚数つきで管理</div>
     </div>
-  </header>  <main class="wrap">
-    <a class="back" href="../">← 遊戯王へ戻る</a><div class="grid">
-  <section class="card">
-    <h2 id="editorTitle">所持カード編集</h2>
+  </header>
 
-    <div class="two">
-      <div>
-        <div class="label">カード名</div>
-        <input id="cardName" type="text" placeholder="例：灰流うらら">
+  <main class="wrap">
+    <a class="back" href="../">← 遊戯王へ戻る</a>
+
+    <section class="card" style="margin-bottom:14px;">
+      <div class="summary-box">
+        <div class="summary-item">
+          <div class="small">登録カード数</div>
+          <div class="num" id="totalCards">0</div>
+        </div>
+        <div class="summary-item">
+          <div class="small">所持ありカード数</div>
+          <div class="num" id="ownedKinds">0</div>
+        </div>
+        <div class="summary-item">
+          <div class="small">所持合計枚数</div>
+          <div class="num" id="ownedTotal">0</div>
+        </div>
       </div>
-      <div>
-        <div class="label">所持枚数</div>
-        <input id="cardCount" type="number" min="0" max="99" placeholder="例：3">
+
+      <div class="two">
+        <div>
+          <div class="label">検索</div>
+          <input id="searchBox" type="text" placeholder="名前 / 別名 / 属性 / 種族 / 種類">
+        </div>
+        <div>
+          <div class="label">表示条件</div>
+          <select id="filterBox">
+            <option value="all">全カード</option>
+            <option value="owned_only">所持ありのみ</option>
+            <option value="not_owned">未所持のみ</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="row" style="margin-top:12px;">
-      <button class="primary" id="saveBtn" type="button">保存</button>
-      <button id="clearBtn" type="button">入力クリア</button>
-      <button class="danger" id="deleteBtn" type="button" style="display:none;">削除</button>
-    </div>
-
-    <div class="small" id="statusText" style="margin-top:10px;"></div>
-
-    <div class="card" style="margin-top:12px;">
-      <h2>集計</h2>
-      <div class="summary-grid">
-        <div class="mini-card"><strong>登録種類数</strong><div id="summaryKinds">0</div></div>
-        <div class="mini-card"><strong>総枚数</strong><div id="summaryTotal">0</div></div>
-        <div class="mini-card"><strong>3枚以上</strong><div id="summaryPlayset">0</div></div>
+      <div class="two" style="margin-top:10px;">
+        <div>
+          <div class="label">並び順</div>
+          <select id="sortBox">
+            <option value="name_asc">日本語名（あいうえお順）</option>
+            <option value="count_desc">所持枚数（多い順）</option>
+            <option value="count_asc">所持枚数（少ない順）</option>
+            <option value="updated_desc">DB更新日（新しい順）</option>
+          </select>
+        </div>
+        <div>
+          <div class="label">一括操作</div>
+          <div class="row">
+            <button id="setAllZeroBtn" type="button">所持枚数を全部0にする</button>
+            <button id="deleteZeroBtn" type="button">0枚データ整理</button>
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
 
-  <section class="card">
-    <h2>登録済み所持カード</h2>
+      <div class="small" id="status" style="margin-top:10px;"></div>
+    </section>
 
-    <div class="two" style="margin-bottom:12px;">
-      <div>
-        <div class="label">検索</div>
-        <input id="searchBox" type="text" placeholder="カード名で検索">
-      </div>
-      <div>
-        <div class="label">並び順</div>
-        <select id="sortBox">
-          <option value="name_asc">カード名順</option>
-          <option value="count_desc">枚数が多い順</option>
-          <option value="updated_desc">更新が新しい順</option>
-        </select>
-      </div>
-    </div>
+    <section class="card">
+      <h2>カード一覧</h2>
+      <div id="cardList" class="list"></div>
+      <div id="emptyMessage" class="small">独自カードDBにカードがありません。先にカードDBへ登録してください。</div>
+    </section>
+  </main>
 
-    <div id="cardList" class="list"></div>
-    <div id="emptyMessage" class="small">まだ所持カードがありません。</div>
-  </section>
-</div>
-
-  </main>  <script>
+  <script>
     (() => {
-      const STORAGE_KEY = "yugioh_owned_cards_v1";
+      const DB_STORAGE_KEY = "yugioh_local_card_db_v1";
+      const OWNED_STORAGE_KEY = "yugioh_owned_cards_v1";
 
       const $ = (id) => document.getElementById(id);
 
-      const editorTitle = $("editorTitle");
-      const cardName = $("cardName");
-      const cardCount = $("cardCount");
-      const saveBtn = $("saveBtn");
-      const clearBtn = $("clearBtn");
-      const deleteBtn = $("deleteBtn");
-      const statusText = $("statusText");
+      const totalCards = $("totalCards");
+      const ownedKinds = $("ownedKinds");
+      const ownedTotal = $("ownedTotal");
 
       const searchBox = $("searchBox");
+      const filterBox = $("filterBox");
       const sortBox = $("sortBox");
+      const setAllZeroBtn = $("setAllZeroBtn");
+      const deleteZeroBtn = $("deleteZeroBtn");
+      const status = $("status");
+
       const cardList = $("cardList");
       const emptyMessage = $("emptyMessage");
 
-      const summaryKinds = $("summaryKinds");
-      const summaryTotal = $("summaryTotal");
-      const summaryPlayset = $("summaryPlayset");
+      let cards = loadCards();
+      let ownedCards = loadOwnedCards();
 
-      let items = loadItems();
-      let editingId = null;
-
-      function createId(prefix = "owned") {
-        return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      }
-
-      function loadItems() {
+      function loadCards() {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          return raw ? JSON.parse(raw) : [];
+          const raw = localStorage.getItem(DB_STORAGE_KEY);
+          const parsed = raw ? JSON.parse(raw) : [];
+          return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
           return [];
         }
       }
 
-      function saveItems() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      function loadOwnedCards() {
+        try {
+          const raw = localStorage.getItem(OWNED_STORAGE_KEY);
+          const parsed = raw ? JSON.parse(raw) : [];
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveOwnedCards() {
+        localStorage.setItem(OWNED_STORAGE_KEY, JSON.stringify(ownedCards));
       }
 
       function escapeHtml(text) {
@@ -164,216 +219,236 @@
       }
 
       function setStatus(message) {
-        statusText.textContent = message;
+        status.textContent = message;
         if (message) {
           setTimeout(() => {
-            if (statusText.textContent === message) statusText.textContent = "";
+            if (status.textContent === message) status.textContent = "";
           }, 2500);
         }
       }
 
-      function clearForm() {
-        editingId = null;
-        editorTitle.textContent = "所持カード編集";
-        cardName.value = "";
-        cardCount.value = "";
-        deleteBtn.style.display = "none";
+      function getOwnedCount(cardId) {
+        const found = ownedCards.find(x => String(x.cardId) === String(cardId));
+        return found ? Number(found.count || 0) : 0;
       }
 
-      function fillForm(item) {
-        editingId = item.id;
-        editorTitle.textContent = `編集中：${item.name}`;
-        cardName.value = item.name || "";
-        cardCount.value = item.count ?? "";
-        deleteBtn.style.display = "inline-block";
-        window.scrollTo({ top: 0, behavior: "smooth" });
+      function setOwnedCount(cardId, count) {
+        const safeCount = Math.max(0, Number(count) || 0);
+        const idx = ownedCards.findIndex(x => String(x.cardId) === String(cardId));
+
+        if (idx >= 0) {
+          ownedCards[idx].count = safeCount;
+          ownedCards[idx].updatedAt = new Date().toISOString();
+        } else {
+          ownedCards.push({
+            cardId,
+            count: safeCount,
+            updatedAt: new Date().toISOString()
+          });
+        }
+
+        saveOwnedCards();
+      }
+
+      function cleanZeroOwnedData() {
+        ownedCards = ownedCards.filter(x => Number(x.count || 0) > 0);
+        saveOwnedCards();
       }
 
       function updateSummary() {
-        const totalKinds = items.length;
-        const totalCards = items.reduce((sum, item) => sum + Number(item.count || 0), 0);
-        const playsetCount = items.filter(item => Number(item.count || 0) >= 3).length;
+        const total = cards.length;
+        const ownedList = cards.filter(card => getOwnedCount(card.id) > 0);
+        const totalCount = cards.reduce((sum, card) => sum + getOwnedCount(card.id), 0);
 
-        summaryKinds.textContent = String(totalKinds);
-        summaryTotal.textContent = String(totalCards);
-        summaryPlayset.textContent = String(playsetCount);
+        totalCards.textContent = total;
+        ownedKinds.textContent = ownedList.length;
+        ownedTotal.textContent = totalCount;
       }
 
-      function saveItem() {
-        const name = cardName.value.trim();
-        const count = Number(cardCount.value || 0);
-
-        if (!name) {
-          setStatus("カード名を入れてください");
-          return;
-        }
-
-        const now = new Date().toISOString();
-
-        if (editingId) {
-          const index = items.findIndex(item => item.id === editingId);
-          if (index >= 0) {
-            items[index] = {
-              ...items[index],
-              name,
-              count,
-              updatedAt: now
-            };
-            saveItems();
-            renderList();
-            fillForm(items[index]);
-            setStatus("更新しました");
-            return;
-          }
-        }
-
-        const existingByName = items.find(item => item.name === name);
-        if (existingByName) {
-          existingByName.count = count;
-          existingByName.updatedAt = now;
-          saveItems();
-          renderList();
-          fillForm(existingByName);
-          setStatus("更新しました");
-          return;
-        }
-
-        const newItem = {
-          id: createId(),
-          name,
-          count,
-          createdAt: now,
-          updatedAt: now
-        };
-
-        items.unshift(newItem);
-        saveItems();
-        renderList();
-        fillForm(newItem);
-        setStatus("保存しました");
-      }
-
-      function deleteCurrentItem() {
-        if (!editingId) return;
-
-        const target = items.find(item => item.id === editingId);
-        if (!target) return;
-
-        const ok = confirm(`「${target.name}」を削除しますか？`);
-        if (!ok) return;
-
-        items = items.filter(item => item.id !== editingId);
-        saveItems();
-        clearForm();
-        renderList();
-        setStatus("削除しました");
-      }
-
-      function getFilteredItems() {
+      function getFilteredCards() {
         const keyword = searchBox.value.trim().toLowerCase();
+        const filter = filterBox.value;
         const sort = sortBox.value;
 
-        let result = [...items];
+        let result = [...cards];
 
         if (keyword) {
-          result = result.filter(item => String(item.name || "").toLowerCase().includes(keyword));
+          result = result.filter(card => {
+            const text = [
+              card.nameJa,
+              card.nameEn,
+              ...(card.aliases || []),
+              card.attributeJa,
+              card.raceJa,
+              card.typeJa,
+              card.descJa
+            ].join(" ").toLowerCase();
+
+            return text.includes(keyword);
+          });
+        }
+
+        if (filter === "owned_only") {
+          result = result.filter(card => getOwnedCount(card.id) > 0);
+        } else if (filter === "not_owned") {
+          result = result.filter(card => getOwnedCount(card.id) === 0);
         }
 
         if (sort === "name_asc") {
-          result.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "ja"));
+          result.sort((a, b) => (a.nameJa || "").localeCompare(b.nameJa || "", "ja"));
         } else if (sort === "count_desc") {
-          result.sort((a, b) => Number(b.count || 0) - Number(a.count || 0) || String(a.name || "").localeCompare(String(b.name || ""), "ja"));
+          result.sort((a, b) => getOwnedCount(b.id) - getOwnedCount(a.id));
+        } else if (sort === "count_asc") {
+          result.sort((a, b) => getOwnedCount(a.id) - getOwnedCount(b.id));
         } else if (sort === "updated_desc") {
-          result.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+          result.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
         }
 
         return result;
       }
 
       function renderList() {
-        const filtered = getFilteredItems();
-        cardList.innerHTML = "";
-        emptyMessage.style.display = filtered.length ? "none" : "block";
-
-        filtered.forEach(item => {
-          const el = document.createElement("div");
-          el.className = "item";
-          el.innerHTML = `
-            <div class="item-head">
-              <div>
-                <div class="item-name">${escapeHtml(item.name)}</div>
-                <div class="small" style="margin-top:6px;">最終更新：${escapeHtml((item.updatedAt || "").replace("T", " ").slice(0, 16))}</div>
-              </div>
-              <div class="count-badge">${escapeHtml(item.count)} 枚</div>
-            </div>
-            <div class="row" style="margin-top:12px;">
-              <button type="button" data-role="edit" data-id="${escapeHtml(item.id)}">編集</button>
-              <button type="button" data-role="plus" data-id="${escapeHtml(item.id)}">+1</button>
-              <button type="button" data-role="minus" data-id="${escapeHtml(item.id)}">-1</button>
-              <button type="button" class="danger" data-role="delete" data-id="${escapeHtml(item.id)}">削除</button>
-            </div>
-          `;
-          cardList.appendChild(el);
-        });
-
-        cardList.querySelectorAll('button[data-role="edit"]').forEach(btn => {
-          btn.addEventListener("click", () => {
-            const target = items.find(item => item.id === btn.dataset.id);
-            if (target) fillForm(target);
-          });
-        });
-
-        cardList.querySelectorAll('button[data-role="plus"]').forEach(btn => {
-          btn.addEventListener("click", () => {
-            const target = items.find(item => item.id === btn.dataset.id);
-            if (!target) return;
-            target.count = Number(target.count || 0) + 1;
-            target.updatedAt = new Date().toISOString();
-            saveItems();
-            renderList();
-          });
-        });
-
-        cardList.querySelectorAll('button[data-role="minus"]').forEach(btn => {
-          btn.addEventListener("click", () => {
-            const target = items.find(item => item.id === btn.dataset.id);
-            if (!target) return;
-            target.count = Math.max(0, Number(target.count || 0) - 1);
-            target.updatedAt = new Date().toISOString();
-            saveItems();
-            renderList();
-          });
-        });
-
-        cardList.querySelectorAll('button[data-role="delete"]').forEach(btn => {
-          btn.addEventListener("click", () => {
-            const target = items.find(item => item.id === btn.dataset.id);
-            if (!target) return;
-            const ok = confirm(`「${target.name}」を削除しますか？`);
-            if (!ok) return;
-            items = items.filter(item => item.id !== btn.dataset.id);
-            saveItems();
-            if (editingId === btn.dataset.id) clearForm();
-            renderList();
-            setStatus("削除しました");
-          });
-        });
+        cards = loadCards();
+        ownedCards = loadOwnedCards();
 
         updateSummary();
+
+        const items = getFilteredCards();
+        cardList.innerHTML = "";
+        emptyMessage.style.display = items.length ? "none" : "block";
+
+        if (!cards.length) {
+          emptyMessage.textContent = "独自カードDBにカードがありません。先にカードDBへ登録してください。";
+          return;
+        }
+
+        if (!items.length) {
+          emptyMessage.textContent = "条件に一致するカードがありません。";
+          return;
+        }
+
+        items.forEach(card => {
+          const item = document.createElement("div");
+          item.className = "item";
+
+          const count = getOwnedCount(card.id);
+          const levelText = card.level !== "" && card.level != null ? card.level : "—";
+          const atkText = card.atk !== "" && card.atk != null ? card.atk : "—";
+          const defText = card.def !== "" && card.def != null ? card.def : "—";
+
+          const imageHtml = card.image
+            ? `<img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.nameJa)}" onerror="this.outerHTML='<div style=&quot;width:90px;height:126px;border:1px solid var(--line);border-radius:8px;background:#0f1117;&quot;></div>'">`
+            : `<div style="width:90px;height:126px;border:1px solid var(--line);border-radius:8px;background:#0f1117;"></div>`;
+
+          item.innerHTML = `
+            <div class="item-head">
+              <div>${imageHtml}</div>
+              <div>
+                <h2>${escapeHtml(card.nameJa || "無名カード")}</h2>
+                <div class="small">${escapeHtml(card.nameEn || "")}</div>
+
+                <div class="meta">
+                  <span class="chip">${escapeHtml(card.typeJa || "—")}</span>
+                  <span class="chip">${escapeHtml(card.attributeJa || "—")}</span>
+                  <span class="chip">${escapeHtml(card.raceJa || "—")}</span>
+                  <span class="chip">レベル:${escapeHtml(levelText)}</span>
+                  <span class="chip">攻:${escapeHtml(atkText)}</span>
+                  <span class="chip">守:${escapeHtml(defText)}</span>
+                </div>
+
+                ${
+                  (card.aliases || []).length
+                    ? `<div class="small" style="margin-top:8px;">別名：${escapeHtml(card.aliases.join(" / "))}</div>`
+                    : ""
+                }
+
+                ${
+                  card.descJa
+                    ? `<div class="small preline" style="margin-top:8px;">${escapeHtml(card.descJa)}</div>`
+                    : ""
+                }
+
+                <div class="count-box">
+                  <button type="button" class="count-btn" data-action="minus" data-id="${escapeHtml(card.id)}">-1</button>
+                  <div class="count-value">${count}</div>
+                  <button type="button" class="count-btn" data-action="plus" data-id="${escapeHtml(card.id)}">+1</button>
+                  <button type="button" data-action="set0" data-id="${escapeHtml(card.id)}">0にする</button>
+                  <button type="button" data-action="set3" data-id="${escapeHtml(card.id)}">3枚にする</button>
+                </div>
+              </div>
+            </div>
+          `;
+
+          cardList.appendChild(item);
+        });
+
+        cardList.querySelectorAll("button[data-action='minus']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const current = getOwnedCount(id);
+            setOwnedCount(id, current - 1);
+            renderList();
+          });
+        });
+
+        cardList.querySelectorAll("button[data-action='plus']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            const current = getOwnedCount(id);
+            setOwnedCount(id, current + 1);
+            renderList();
+          });
+        });
+
+        cardList.querySelectorAll("button[data-action='set0']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            setOwnedCount(id, 0);
+            renderList();
+          });
+        });
+
+        cardList.querySelectorAll("button[data-action='set3']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            setOwnedCount(id, 3);
+            renderList();
+          });
+        });
       }
 
-      saveBtn.addEventListener("click", saveItem);
-      clearBtn.addEventListener("click", () => {
-        clearForm();
-        setStatus("入力をクリアしました");
+      setAllZeroBtn.addEventListener("click", () => {
+        if (!cards.length) {
+          setStatus("カードDBが空です");
+          return;
+        }
+
+        const ok = confirm("全カードの所持枚数を0にしますか？");
+        if (!ok) return;
+
+        ownedCards = cards.map(card => ({
+          cardId: card.id,
+          count: 0,
+          updatedAt: new Date().toISOString()
+        }));
+
+        saveOwnedCards();
+        renderList();
+        setStatus("全カードの所持枚数を0にしました");
       });
-      deleteBtn.addEventListener("click", deleteCurrentItem);
+
+      deleteZeroBtn.addEventListener("click", () => {
+        cleanZeroOwnedData();
+        renderList();
+        setStatus("0枚データを整理しました");
+      });
 
       searchBox.addEventListener("input", renderList);
+      filterBox.addEventListener("change", renderList);
       sortBox.addEventListener("change", renderList);
 
-      clearForm();
       renderList();
     })();
-  </script></body>
+  </script>
+</body>
 </html>
