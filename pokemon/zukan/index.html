@@ -3,56 +3,64 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ポケモン図鑑</title>
+  <title>ポケモンパーティ管理</title>
   <link rel="stylesheet" href="../../style.css">
   <style>
-    .result-card img{
-      width:180px;
-      max-width:100%;
-      display:block;
-      margin:0 auto 14px;
+    /* ── 弱点バッジ ── */
+    .type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin: 2px;
+      color: #fff;
     }
-    .stat-grid{
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:10px;
+    .badge-x4  { background: #c0392b; }
+    .badge-x2  { background: #e67e22; }
+    .badge-x1  { background: #888;    }
+
+    /* ── エクスポート/インポート ── */
+    .io-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    #importFile { display:none; }
+
+    /* ── スプライト ── */
+    .sprite-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
     }
-    @media(min-width:700px){
-      .stat-grid{grid-template-columns:repeat(3,1fr)}
+    .sprite-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.7rem;
+      gap: 2px;
     }
-    .mini-card{
-      background:#10131b;
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:10px;
+    .sprite-item img {
+      width: 56px;
+      height: 56px;
+      image-rendering: pixelated;
     }
-    .badge-list{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:8px;
+    .sprite-placeholder {
+      width: 56px;
+      height: 56px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: #999;
     }
-    .badge{
-      display:inline-block;
-      padding:6px 10px;
-      border:1px solid var(--line);
-      border-radius:999px;
-      font-size:12px;
-      background:#0f1117;
-    }
-    .result-card{display:none}
-    .result-card.show{display:block}
-    .error-box{color:#fda4af;margin-top:10px}
-    .loading{color:var(--muted);margin-top:10px}
-    .section-gap{margin-top:12px}
-    .preline{white-space:pre-wrap}
   </style>
 </head>
 <body>
   <header>
     <div class="wrap">
-      <h1>ポケモン図鑑</h1>
-      <div class="small">API + 補完データ連携版</div>
+      <h1>ポケモンパーティ管理</h1>
+      <div class="small">パーティの保存・編集・削除ができます</div>
     </div>
   </header>
 
@@ -61,162 +69,165 @@
 
     <div class="grid">
       <section class="card">
-        <h2>検索</h2>
+        <h2 id="editorTitle">新規登録</h2>
 
-        <div class="label">ポケモン名 / 全国図鑑番号</div>
-        <input id="searchInput" type="text" placeholder="例：pikachu / ピカチュウ / 25">
+        <div class="two">
+          <div>
+            <div class="label">パーティ名</div>
+            <input id="partyName" type="text" placeholder="例：HGSS旅パ">
+          </div>
+          <div>
+            <div class="label">作品</div>
+            <select id="partyGame">
+              <option value="">未設定</option>
+              <option value="SV">SV</option>
+              <option value="剣盾">剣盾</option>
+              <option value="BDSP">BDSP</option>
+              <option value="PLA">PLA</option>
+              <option value="SM/USUM">SM/USUM</option>
+              <option value="XY/ORAS">XY/ORAS</option>
+              <option value="BW/BW2">BW/BW2</option>
+              <option value="DPt">DPt</option>
+              <option value="HGSS">HGSS</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">メンバー</div>
+          <div class="two">
+            <input id="member1" type="text" placeholder="1体目">
+            <input id="member2" type="text" placeholder="2体目">
+          </div>
+          <div class="two" style="margin-top:10px;">
+            <input id="member3" type="text" placeholder="3体目">
+            <input id="member4" type="text" placeholder="4体目">
+          </div>
+          <div class="two" style="margin-top:10px;">
+            <input id="member5" type="text" placeholder="5体目">
+            <input id="member6" type="text" placeholder="6体目">
+          </div>
+        </div>
+
+        <!-- ① スプライト表示エリア -->
+        <div id="spriteRow" class="sprite-row" style="display:none;"></div>
+
+        <div style="margin-top:10px;">
+          <div class="label">タグ（カンマ区切り）</div>
+          <input id="partyTags" type="text" placeholder="例：旅パ, ランクマ, 雨">
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="label">構築メモ</div>
+          <textarea id="partyNotes" placeholder="役割、技候補、持ち物、育成メモなど"></textarea>
+        </div>
 
         <div class="row" style="margin-top:12px;">
-          <button class="primary" id="searchBtn" type="button">検索</button>
-          <button id="clearBtn" type="button">クリア</button>
+          <button class="primary" id="saveBtn" type="button">保存</button>
+          <button id="clearBtn" type="button">入力クリア</button>
+          <button class="danger" id="deleteBtn" type="button" style="display:none;">削除</button>
         </div>
 
-        <div class="loading" id="loadingText"></div>
-        <div class="error-box" id="errorText"></div>
-
-        <div class="small" style="margin-top:12px;">
-          補完データ管理ページで入れた地方図鑑番号・作品別データ・補足メモも表示されます。
-        </div>
-
-        <div class="section-gap">
-          <a class="menu-card" href="../custom-data/" style="display:block;">
-            <h2>補完データ管理へ</h2>
-            <div class="small">APIに足りない情報を追加・編集</div>
-          </a>
-        </div>
+        <div class="small" id="status" style="margin-top:10px;"></div>
       </section>
 
-      <section class="card result-card" id="resultCard">
-        <h2 id="pokeTitle">検索結果</h2>
+      <section class="card">
+        <h2>保存済みパーティ一覧</h2>
 
-        <img id="pokeImage" alt="pokemon image">
-
-        <div class="small preline" id="pokeFlavor"></div>
-
-        <div class="section-gap">
-          <div class="label">タイプ</div>
-          <div class="badge-list" id="typeList"></div>
-        </div>
-
-        <div class="section-gap">
-          <div class="label">特性</div>
-          <div class="badge-list" id="abilityList"></div>
-        </div>
-
-        <div class="section-gap">
-          <div class="label">基本情報</div>
-          <div class="stat-grid">
-            <div class="mini-card"><strong>全国図鑑</strong><div id="nationalDex"></div></div>
-            <div class="mini-card"><strong>高さ</strong><div id="heightText"></div></div>
-            <div class="mini-card"><strong>重さ</strong><div id="weightText"></div></div>
+        <!-- ② エクスポート / インポート -->
+        <div class="card" style="margin-bottom:12px;">
+          <h2>バックアップ</h2>
+          <div class="small" style="margin-bottom:6px;">パーティデータをJSONで書き出し・読み込みできます。</div>
+          <div class="io-row">
+            <button type="button" id="exportBtn">エクスポート</button>
+            <button type="button" id="importBtn">インポート</button>
+            <input type="file" id="importFile" accept=".json">
           </div>
         </div>
 
-        <div class="section-gap">
-          <div class="label">種族値</div>
-          <div class="stat-grid" id="baseStats"></div>
+        <div class="card" style="margin-bottom:12px;">
+          <h2>図鑑から追加した候補</h2>
+          <div id="candidateList" class="menu"></div>
+          <div id="candidateEmpty" class="small">候補はまだありません。</div>
         </div>
 
-        <div class="section-gap">
-  <div class="label">地方図鑑番号</div>
-  <div class="badge-list" id="localDexList"></div>
-</div>
+        <div class="card" style="margin-bottom:12px;">
+          <h2>パーティ分析</h2>
 
-<div class="section-gap">
-  <div class="label">進化系統</div>
-  <div id="evolutionBox" class="small"></div>
-</div>
-<div class="section-gap">
-  <div class="label">タイプ相性</div>
-
-  <div style="margin-top:8px;">
-    <div class="small">弱点</div>
-    <div class="badge-list" id="weaknessList"></div>
-  </div>
-
-  <div style="margin-top:10px;">
-    <div class="small">半減</div>
-    <div class="badge-list" id="resistList"></div>
-  </div>
-
-  <div style="margin-top:10px;">
-    <div class="small">無効</div>
-    <div class="badge-list" id="immuneList"></div>
-  </div>
-</div>
-        
-        <div class="section-gap">
-          <div class="label">作品別データ</div>
-          <div id="gameDataBox" class="small"></div>
-        </div>
-
-        <div class="section-gap">
-          <div class="label">補足メモ</div>
-          <div class="section-gap">
-  <button class="primary" id="addToPartyBtn" type="button">パーティ管理へ追加</button>
-  <div class="small" id="partyAddStatus" style="margin-top:8px;"></div>
+          <div style="margin-top:8px;">
+            <div class="label">タイプバランス</div>
+            <div id="typeBalanceBox" class="small">まだ分析結果がありません。</div>
           </div>
-          <div id="customMemoBox" class="small preline"></div>
+
+          <div style="margin-top:12px;">
+            <div class="label">弱点まとめ</div>
+            <div id="weaknessSummaryBox">まだ分析結果がありません。</div>
+          </div>
+
+          <!-- ③ 4倍弱点アラート -->
+          <div id="quadWeaknessAlert" style="display:none; margin-top:10px; padding:8px 10px; background:#fdecea; border:1px solid #e74c3c; border-radius:6px; font-size:0.85rem; color:#c0392b;">
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <button type="button" id="analyzeBtn">今の入力内容を分析</button>
+          </div>
         </div>
+
+        <div class="two" style="margin-bottom:12px;">
+          <div>
+            <div class="label">作品で絞り込み</div>
+            <select id="filterGame">
+              <option value="">すべて</option>
+              <option value="SV">SV</option>
+              <option value="剣盾">剣盾</option>
+              <option value="BDSP">BDSP</option>
+              <option value="PLA">PLA</option>
+              <option value="SM/USUM">SM/USUM</option>
+              <option value="XY/ORAS">XY/ORAS</option>
+              <option value="BW/BW2">BW/BW2</option>
+              <option value="DPt">DPt</option>
+              <option value="HGSS">HGSS</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div>
+            <div class="label">検索</div>
+            <input id="searchBox" type="text" placeholder="パーティ名・メンバー・タグ検索">
+          </div>
+        </div>
+
+        <div id="partyList" class="menu"></div>
+        <div id="emptyMessage" class="small">まだパーティがありません。</div>
       </section>
     </div>
   </main>
 
   <script>
     (() => {
-      const API_BASE = "https://pokeapi.co/api/v2";
-      const CUSTOM_KEY = "pokemon_custom_data_v1";
-      const PARTY_CANDIDATE_KEY = "pokemon_party_candidates_v1";
+      const STORAGE_KEY   = "pokemon_party_manager_v1";
+      const CANDIDATE_KEY = "pokemon_party_candidates_v1";
 
-      const el = (id) => document.getElementById(id);
-      const searchInput = el("searchInput");
-      const searchBtn = el("searchBtn");
-      const clearBtn = el("clearBtn");
-      const loadingText = el("loadingText");
-      const errorText = el("errorText");
-      const resultCard = el("resultCard");
-
-      const pokeTitle = el("pokeTitle");
-      const pokeImage = el("pokeImage");
-      const pokeFlavor = el("pokeFlavor");
-      const typeList = el("typeList");
-      const abilityList = el("abilityList");
-      const nationalDex = el("nationalDex");
-      const heightText = el("heightText");
-      const weightText = el("weightText");
-      const baseStats = el("baseStats");
-      const localDexList = el("localDexList");
-      const evolutionBox = el("evolutionBox");
-      const weaknessList = el("weaknessList");
-const resistList = el("resistList");
-const immuneList = el("immuneList");
-      const gameDataBox = el("gameDataBox");
-      const customMemoBox = el("customMemoBox");
-      const addToPartyBtn = el("addToPartyBtn");
-const partyAddStatus = el("partyAddStatus");
-
-      const JA_TO_EN = {
-        "フシギダネ":"bulbasaur",
-        "ヒトカゲ":"charmander",
-        "ゼニガメ":"squirtle",
-        "ピカチュウ":"pikachu",
-        "イーブイ":"eevee",
-        "カビゴン":"snorlax",
-        "ミュウツー":"mewtwo",
-        "カイリュー":"dragonite",
-        "バンギラス":"tyranitar",
-        "サーナイト":"gardevoir",
-        "メタグロス":"metagross",
-        "ルカリオ":"lucario",
-        "ガブリアス":"garchomp",
-        "ゲッコウガ":"greninja",
-        "ミミッキュ":"mimikyu",
-        "ドラパルト":"dragapult",
-        "ニャオハ":"sprigatito",
-        "ホゲータ":"fuecoco",
-        "クワッス":"quaxly",
-        "コライドン":"koraidon",
-        "ミライドン":"miraidon"
+      /* ─── タイプ相性表 ─── */
+      const TYPE_CHART = {
+        normal:   { weak:["fighting"],                  resist:[],                                                          immune:["ghost"] },
+        fire:     { weak:["water","ground","rock"],      resist:["fire","grass","ice","bug","steel","fairy"],                immune:[] },
+        water:    { weak:["electric","grass"],           resist:["fire","water","ice","steel"],                              immune:[] },
+        electric: { weak:["ground"],                    resist:["electric","flying","steel"],                               immune:[] },
+        grass:    { weak:["fire","ice","poison","flying","bug"], resist:["water","electric","grass","ground"],               immune:[] },
+        ice:      { weak:["fire","fighting","rock","steel"], resist:["ice"],                                                 immune:[] },
+        fighting: { weak:["flying","psychic","fairy"],  resist:["bug","rock","dark"],                                       immune:[] },
+        poison:   { weak:["ground","psychic"],          resist:["grass","fighting","poison","bug","fairy"],                 immune:[] },
+        ground:   { weak:["water","grass","ice"],       resist:["poison","rock"],                                           immune:["electric"] },
+        flying:   { weak:["electric","ice","rock"],     resist:["grass","fighting","bug"],                                  immune:["ground"] },
+        psychic:  { weak:["bug","ghost","dark"],        resist:["fighting","psychic"],                                      immune:[] },
+        bug:      { weak:["fire","flying","rock"],      resist:["grass","fighting","ground"],                               immune:[] },
+        rock:     { weak:["water","grass","fighting","ground","steel"], resist:["normal","fire","poison","flying"],          immune:[] },
+        ghost:    { weak:["ghost","dark"],              resist:["poison","bug"],                                            immune:["normal","fighting"] },
+        dragon:   { weak:["ice","dragon","fairy"],      resist:["fire","water","electric","grass"],                         immune:[] },
+        dark:     { weak:["fighting","bug","fairy"],    resist:["ghost","dark"],                                            immune:["psychic"] },
+        steel:    { weak:["fire","fighting","ground"],  resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"], immune:["poison"] },
+        fairy:    { weak:["poison","steel"],            resist:["fighting","bug","dark"],                                   immune:["dragon"] }
       };
 
       const TYPE_JA = {
@@ -226,498 +237,589 @@ const partyAddStatus = el("partyAddStatus");
         dark:"あく", steel:"はがね", fairy:"フェアリー"
       };
 
-      const TYPE_CHART = {
-  normal:   { weak:["fighting"], resist:[], immune:["ghost"] },
-  fire:     { weak:["water","ground","rock"], resist:["fire","grass","ice","bug","steel","fairy"], immune:[] },
-  water:    { weak:["electric","grass"], resist:["fire","water","ice","steel"], immune:[] },
-  electric: { weak:["ground"], resist:["electric","flying","steel"], immune:[] },
-  grass:    { weak:["fire","ice","poison","flying","bug"], resist:["water","electric","grass","ground"], immune:[] },
-  ice:      { weak:["fire","fighting","rock","steel"], resist:["ice"], immune:[] },
-  fighting: { weak:["flying","psychic","fairy"], resist:["bug","rock","dark"], immune:[] },
-  poison:   { weak:["ground","psychic"], resist:["grass","fighting","poison","bug","fairy"], immune:[] },
-  ground:   { weak:["water","grass","ice"], resist:["poison","rock"], immune:["electric"] },
-  flying:   { weak:["electric","ice","rock"], resist:["grass","fighting","bug"], immune:["ground"] },
-  psychic:  { weak:["bug","ghost","dark"], resist:["fighting","psychic"], immune:[] },
-  bug:      { weak:["fire","flying","rock"], resist:["grass","fighting","ground"], immune:[] },
-  rock:     { weak:["water","grass","fighting","ground","steel"], resist:["normal","fire","poison","flying"], immune:[] },
-  ghost:    { weak:["ghost","dark"], resist:["poison","bug"], immune:["normal","fighting"] },
-  dragon:   { weak:["ice","dragon","fairy"], resist:["fire","water","electric","grass"], immune:[] },
-  dark:     { weak:["fighting","bug","fairy"], resist:["ghost","dark"], immune:["psychic"] },
-  steel:    { weak:["fire","fighting","ground"], resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"], immune:["poison"] },
-  fairy:    { weak:["poison","steel"], resist:["fighting","bug","dark"], immune:["dragon"] }
-};
-
-      const STAT_JA = {
-        hp:"HP",
-        attack:"こうげき",
-        defense:"ぼうぎょ",
-        "special-attack":"とくこう",
-        "special-defense":"とくぼう",
-        speed:"すばやさ"
+      /* ─── PokeAPI 日本語名→英語スラグ変換テーブル（主要ポケモン） ─── */
+      const NAME_JA_TO_EN = {
+        "ピカチュウ":"pikachu","ライチュウ":"raichu",
+        "フシギダネ":"bulbasaur","フシギソウ":"ivysaur","フシギバナ":"venusaur",
+        "ヒトカゲ":"charmander","リザード":"charmeleon","リザードン":"charizard",
+        "ゼニガメ":"squirtle","カメール":"wartortle","カメックス":"blastoise",
+        "ミニリュウ":"dratini","ハクリュー":"dragonair","カイリュー":"dragonite",
+        "イーブイ":"eevee","シャワーズ":"vaporeon","サンダース":"jolteon",
+        "ブースター":"flareon","エーフィ":"espeon","ブラッキー":"umbreon",
+        "リーフィア":"leafeon","グレイシア":"glaceon","ニンフィア":"sylveon",
+        "ガブリアス":"garchomp","ルカリオ":"lucario","ゲンガー":"gengar",
+        "カビゴン":"snorlax","ミミッキュ":"mimikyu","ドラパルト":"dragapult",
+        "サーナイト":"gardevoir","メタグロス":"metagross","バンギラス":"tyranitar",
+        "ゲッコウガ":"greninja","エースバーン":"cinderace",
+        "ハピナス":"blissey","ラプラス":"lapras","ケッキング":"slaking",
+        "ギャラドス":"gyarados","ボーマンダ":"salamence","ヘラクロス":"heracross",
+        "マリルリ":"azumarill","カイリキー":"machamp","フーディン":"alakazam",
+        "サメハダー":"sharpedo","バシャーモ":"blaziken","ジュカイン":"sceptile",
+        "ラグラージ":"swampert","ドンファン":"donphan","ハッサム":"scizor",
+        "グライオン":"gliscor","ローブシン":"conkeldurr","ウルガモス":"volcarona",
+        "ランドロス":"landorus","ブリムオン":"hatterene","ドリュウズ":"excadrill",
+        "ウーラオス":"urshifu","ザシアン":"zacian","ムゲンダイナ":"eternatus",
+        "コライドン":"koraidon","ミライドン":"miraidon","ハバタクカミ":"flutter-mane",
+        "チオンジェン":"chien-pao","テツノブジン":"iron-valiant","パオジアン":"chien-pao"
       };
 
-      const POKEDEXES = [
-        { key:"national", label:"全国" },
-        { key:"kanto", label:"カントー" },
-        { key:"original-johto", label:"ジョウト" },
-        { key:"hoenn", label:"ホウエン" },
-        { key:"original-sinnoh", label:"シンオウ" },
-        { key:"extended-sinnoh", label:"シンオウ(拡張)" },
-        { key:"updated-johto", label:"ジョウト(HGSS)" },
-        { key:"updated-unova", label:"イッシュ(更新)" },
-        { key:"kalos-central", label:"カロス中央" },
-        { key:"kalos-coastal", label:"カロス海岸" },
-        { key:"kalos-mountain", label:"カロス山" },
-        { key:"original-alola", label:"アローラ" },
-        { key:"updated-alola", label:"アローラ(USUM)" },
-        { key:"galar", label:"ガラル" },
-        { key:"isle-of-armor", label:"ヨロイ島" },
-        { key:"crown-tundra", label:"カンムリ雪原" },
-        { key:"hisui", label:"ヒスイ" },
-        { key:"paldea", label:"パルデア" },
-        { key:"kitakami", label:"キタカミ" },
-        { key:"blueberry", label:"ブルーベリー" }
-      ];
-      let jaNameMap = null;
+      /* ─── 固定タイプ辞書（PokeAPI 取得失敗時のフォールバック） ─── */
+      const POKEMON_TYPE_MAP = {
+        "ピカチュウ":["electric"],"ライチュウ":["electric"],
+        "フシギダネ":["grass","poison"],"フシギソウ":["grass","poison"],"フシギバナ":["grass","poison"],
+        "ヒトカゲ":["fire"],"リザード":["fire"],"リザードン":["fire","flying"],
+        "ゼニガメ":["water"],"カメール":["water"],"カメックス":["water"],
+        "ミニリュウ":["dragon"],"ハクリュー":["dragon"],"カイリュー":["dragon","flying"],
+        "イーブイ":["normal"],"シャワーズ":["water"],"サンダース":["electric"],
+        "ブースター":["fire"],"エーフィ":["psychic"],"ブラッキー":["dark"],
+        "リーフィア":["grass"],"グレイシア":["ice"],"ニンフィア":["fairy"],
+        "ガブリアス":["dragon","ground"],"ルカリオ":["fighting","steel"],
+        "ゲンガー":["ghost","poison"],"カビゴン":["normal"],"ミミッキュ":["ghost","fairy"],
+        "ドラパルト":["dragon","ghost"],"サーナイト":["psychic","fairy"],
+        "メタグロス":["steel","psychic"],"バンギラス":["rock","dark"],
+        "ゲッコウガ":["water","dark"],"エースバーン":["fire"]
+      };
 
-      const dexCache = {};
-      const fetchCache = {};
-      let currentPokemonData = null;
+      /* ─── PokeAPIキャッシュ ─── */
+      const apiCache = {};
 
+      async function fetchPokemonData(jaName) {
+        if (apiCache[jaName]) return apiCache[jaName];
+
+        const enName = NAME_JA_TO_EN[jaName];
+        if (!enName) return null;
+
+        try {
+          const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${enName}`);
+          if (!res.ok) return null;
+          const data = await res.json();
+
+          const types   = data.types.map(t => t.type.name);
+          const sprite  = data.sprites?.front_default || null;
+
+          const result = { types, sprite, enName };
+          apiCache[jaName] = result;
+          return result;
+        } catch {
+          return null;
+        }
+      }
+
+      /* ─── DOM ─── */
+      const $ = id => document.getElementById(id);
+
+      const editorTitle    = $("editorTitle");
+      const partyName      = $("partyName");
+      const partyGame      = $("partyGame");
+      const member1        = $("member1");
+      const member2        = $("member2");
+      const member3        = $("member3");
+      const member4        = $("member4");
+      const member5        = $("member5");
+      const member6        = $("member6");
+      const partyTags      = $("partyTags");
+      const partyNotes     = $("partyNotes");
+      const saveBtn        = $("saveBtn");
+      const clearBtn       = $("clearBtn");
+      const deleteBtn      = $("deleteBtn");
+      const status         = $("status");
+      const filterGame     = $("filterGame");
+      const searchBox      = $("searchBox");
+      const partyList      = $("partyList");
+      const emptyMessage   = $("emptyMessage");
+      const candidateList  = $("candidateList");
+      const candidateEmpty = $("candidateEmpty");
+      const typeBalanceBox      = $("typeBalanceBox");
+      const weaknessSummaryBox  = $("weaknessSummaryBox");
+      const analyzeBtn          = $("analyzeBtn");
+      const quadWeaknessAlert   = $("quadWeaknessAlert");
+      const spriteRow           = $("spriteRow");
+      const exportBtn           = $("exportBtn");
+      const importBtn           = $("importBtn");
+      const importFile          = $("importFile");
+
+      let parties   = loadParties();
+      let editingId = null;
+
+      let memberTypeOverrides = { 1:null, 2:null, 3:null, 4:null, 5:null, 6:null };
+
+      /* ─── ストレージ ─── */
+      function loadParties() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+        catch { return []; }
+      }
+      function saveParties() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parties));
+      }
+      function loadCandidates() {
+        try { return JSON.parse(localStorage.getItem(CANDIDATE_KEY)) || []; }
+        catch { return []; }
+      }
+      function saveCandidates(c) {
+        localStorage.setItem(CANDIDATE_KEY, JSON.stringify(c));
+      }
+
+      /* ─── ユーティリティ ─── */
+      function setStatus(msg) {
+        status.textContent = msg;
+        if (msg) setTimeout(() => { if (status.textContent === msg) status.textContent = ""; }, 2500);
+      }
+      function createId() {
+        return "party_" + Date.now() + "_" + Math.random().toString(36).slice(2,8);
+      }
+      function parseTags(text) {
+        return text.split(",").map(t => t.trim()).filter(Boolean);
+      }
       function escapeHtml(text) {
         return String(text ?? "")
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#039;");
+          .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+      }
+      function resetMemberOverrides() {
+        memberTypeOverrides = { 1:null, 2:null, 3:null, 4:null, 5:null, 6:null };
       }
 
-      async function normalizeQuery(value) {
-  const raw = value.trim();
-  if (!raw) return "";
-
-  if (/^\d+$/.test(raw)) return raw;
-
-  if (JA_TO_EN[raw]) return JA_TO_EN[raw];
-
-  const map = await buildJaNameMap();
-  if (map[raw]) return map[raw];
-
-  return raw.toLowerCase()
-    .replaceAll("♀", "-f")
-    .replaceAll("♂", "-m")
-    .replaceAll("　", " ")
-    .replaceAll(" ", "-");
+      /* ─── フォーム操作 ─── */
+      function getFormData() {
+        return {
+          id: editingId || createId(),
+          name: partyName.value.trim(),
+          game: partyGame.value,
+          members: [member1,member2,member3,member4,member5,member6]
+            .map(i => i.value.trim()).filter(Boolean),
+          tags: parseTags(partyTags.value),
+          notes: partyNotes.value.trim(),
+          updatedAt: new Date().toISOString()
+        };
       }
-    async function buildJaNameMap() {
-  if (jaNameMap) return jaNameMap;
 
-  jaNameMap = {};
-
-  const listData = await cachedFetchJson(`${API_BASE}/pokemon-species?limit=2000`);
-
-  for (const item of listData.results || []) {
-    try {
-      const speciesData = await cachedFetchJson(item.url);
-
-      const jaName =
-        speciesData.names?.find(n => n.language.name === "ja-Hrkt")?.name ||
-        speciesData.names?.find(n => n.language.name === "ja")?.name;
-
-      if (jaName) {
-        jaNameMap[jaName] = speciesData.name;
+      function clearForm() {
+        editingId = null;
+        editorTitle.textContent = "新規登録";
+        partyName.value = partyGame.value = "";
+        member1.value = member2.value = member3.value = "";
+        member4.value = member5.value = member6.value = "";
+        partyTags.value = partyNotes.value = "";
+        deleteBtn.style.display = "none";
+        typeBalanceBox.textContent = "まだ分析結果がありません。";
+        weaknessSummaryBox.textContent = "まだ分析結果がありません。";
+        quadWeaknessAlert.style.display = "none";
+        spriteRow.style.display = "none";
+        spriteRow.innerHTML = "";
+        resetMemberOverrides();
       }
-    } catch (e) {
-      // 個別失敗は無視
-    }
-  }
 
-  return jaNameMap;
-    }
+      /* ① バグ修正済み fillForm */
+      function fillForm(party) {
+        editingId = party.id;
+        editorTitle.textContent = "編集中：" + (party.name || "無名パーティ");
+        partyName.value  = party.name  || "";
+        partyGame.value  = party.game  || "";
+        member1.value    = party.members?.[0] || "";
+        member2.value    = party.members?.[1] || "";
+        member3.value    = party.members?.[2] || "";
+        member4.value    = party.members?.[3] || "";
+        member5.value    = party.members?.[4] || "";
+        member6.value    = party.members?.[5] || "";
+        partyTags.value  = (party.tags || []).join(", ");
+        partyNotes.value = party.notes || "";
+        deleteBtn.style.display = "inline-block";
+        resetMemberOverrides();
+        analyzeCurrentParty();
+        updateSprites();
+        window.scrollTo({ top:0, behavior:"smooth" });
+      } /* ← ここが抜けていたバグ修正箇所 */
 
-      function loadCustomData() {
-        try {
-          const raw = localStorage.getItem(CUSTOM_KEY);
-          return raw ? JSON.parse(raw) : [];
-        } catch {
-          return [];
+      function applyCandidate(candidate) {
+        const slots = [member1,member2,member3,member4,member5,member6];
+        let idx = slots.findIndex(i => !i.value.trim());
+        if (idx === -1) idx = 0;
+
+        slots[idx].value = candidate.name || "";
+        memberTypeOverrides[idx + 1] = candidate.types || null;
+
+        if (!partyName.value.trim()) partyName.value = candidate.name || "";
+
+        const lines = [];
+        if (candidate.types?.length)     lines.push(`タイプ: ${candidate.types.join(" / ")}`);
+        if (candidate.abilities?.length) lines.push(`特性: ${candidate.abilities.join(" / ")}`);
+        if (candidate.memo)              lines.push(candidate.memo);
+
+        const addText = lines.join("\n");
+        if (addText) {
+          const cur = partyNotes.value.trim();
+          partyNotes.value = cur
+            ? `${cur}\n\n【${candidate.name || "候補"}】\n${addText}`
+            : `【${candidate.name || "候補"}】\n${addText}`;
         }
+
+        window.scrollTo({ top:0, behavior:"smooth" });
+        analyzeCurrentParty();
+        updateSprites();
       }
 
-      function findCustomRecord(nameJa, nationalNo) {
-        const records = loadCustomData();
-        return records.find(r => {
-          const byName = (r.name || "").trim() === (nameJa || "").trim();
-          const byDex = String(r.nationalDex || "").trim() === String(nationalNo || "").trim();
-          return byName || byDex;
-        }) || null;
-      }
+      function saveCurrentParty() {
+        const data = getFormData();
+        if (!data.name) { setStatus("パーティ名を入れてください"); return; }
 
-      async function cachedFetchJson(url) {
-        if (fetchCache[url]) return fetchCache[url];
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("fetch_failed");
-        const data = await res.json();
-        fetchCache[url] = data;
-        return data;
-      }
-
-      async function fetchPokemon(query) {
-        const pokemon = await cachedFetchJson(`${API_BASE}/pokemon/${query}`);
-        const species = await cachedFetchJson(pokemon.species.url);
-        return { pokemon, species };
-      }
-
-      async function fetchPokedexEntry(pokedexKey, speciesName) {
-        if (!dexCache[pokedexKey]) {
-          dexCache[pokedexKey] = cachedFetchJson(`${API_BASE}/pokedex/${pokedexKey}`);
+        const idx = parties.findIndex(p => p.id === data.id);
+        if (idx >= 0) {
+          data.createdAt = parties[idx].createdAt || data.updatedAt;
+          parties[idx]   = data;
+          setStatus("更新しました");
+        } else {
+          data.createdAt = data.updatedAt;
+          parties.unshift(data);
+          setStatus("保存しました");
         }
-        const dexData = await dexCache[pokedexKey];
-        const entry = (dexData.pokemon_entries || []).find(
-          e => e.pokemon_species && e.pokemon_species.name === speciesName
-        );
-        return entry ? entry.entry_number : null;
+
+        saveParties();
+        renderList();
+        fillForm(data);
       }
 
-      async function getLocalDexNumbers(speciesName) {
-        const results = [];
-        for (const dex of POKEDEXES) {
+      function deleteCurrentParty() {
+        if (!editingId) return;
+        const target = parties.find(p => p.id === editingId);
+        if (!target) return;
+        if (!confirm(`「${target.name || "このパーティ"}」を削除しますか？`)) return;
+        parties = parties.filter(p => p.id !== editingId);
+        saveParties();
+        clearForm();
+        renderList();
+        setStatus("削除しました");
+      }
+
+      /* ─── ② エクスポート / インポート ─── */
+      function exportData() {
+        const blob = new Blob([JSON.stringify(parties, null, 2)], { type:"application/json" });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href     = url;
+        a.download = `pokemon_parties_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function importData(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
           try {
-            const num = await fetchPokedexEntry(dex.key, speciesName);
-            if (num !== null) {
-              results.push({ label: dex.label, number: num, source: "api" });
-            }
-          } catch (_) {}
-        }
-        return results;
-      }
+            const imported = JSON.parse(e.target.result);
+            if (!Array.isArray(imported)) throw new Error("配列ではありません");
+            if (!confirm(`${imported.length}件のパーティをインポートします。既存データに追加されます。よろしいですか？`)) return;
 
-      function getJapaneseName(species) {
-        return species.names?.find(n => n.language.name === "ja-Hrkt")?.name
-          || species.names?.find(n => n.language.name === "ja")?.name
-          || species.name;
-      }
+            const existingIds = new Set(parties.map(p => p.id));
+            let added = 0;
+            imported.forEach(p => {
+              if (!existingIds.has(p.id)) {
+                parties.unshift(p);
+                added++;
+              }
+            });
 
-      function getJapaneseFlavor(species) {
-        const entry = (species.flavor_text_entries || []).find(
-          x => x.language && x.language.name === "ja-Hrkt"
-        ) || (species.flavor_text_entries || []).find(
-          x => x.language && x.language.name === "ja"
-        );
-        if (!entry) return "";
-        return entry.flavor_text.replace(/\f|\n|\r/g, " ");
-      }
-
-      function renderBadgeList(container, texts) {
-        container.innerHTML = "";
-        if (!texts.length) {
-          const span = document.createElement("span");
-          span.className = "badge";
-          span.textContent = "データなし";
-          container.appendChild(span);
-          return;
-        }
-        texts.forEach(text => {
-          const span = document.createElement("span");
-          span.className = "badge";
-          span.textContent = text;
-          container.appendChild(span);
-        });
-      }
-
-      function renderTypes(types) {
-        renderBadgeList(typeList, types
-          .sort((a, b) => a.slot - b.slot)
-          .map(t => TYPE_JA[t.type.name] || t.type.name)
-        );
-      }
-
-      async function renderAbilities(abilities) {
-
-  abilityList.innerHTML = "";
-
-  for (const a of abilities.sort((a,b)=>a.slot-b.slot)) {
-
-    let name = a.ability.name;
-
-    try{
-      const data = await cachedFetchJson(a.ability.url);
-
-      const ja = data.names.find(n => 
-        n.language.name === "ja" || n.language.name === "ja-Hrkt"
-      );
-
-      if(ja) name = ja.name;
-
-    }catch(e){}
-
-    const span = document.createElement("span");
-    span.className = "badge";
-    span.textContent = a.is_hidden
-      ? `${name}（隠れ特性）`
-      : name;
-
-    abilityList.appendChild(span);
-  }
-      }
-
-      function renderStats(stats) {
-        baseStats.innerHTML = "";
-        stats.forEach(s => {
-          const box = document.createElement("div");
-          box.className = "mini-card";
-          box.innerHTML = `<strong>${escapeHtml(STAT_JA[s.stat.name] || s.stat.name)}</strong><div>${escapeHtml(String(s.base_stat))}</div>`;
-          baseStats.appendChild(box);
-        });
-      }
-
-      function mergeLocalDex(apiEntries, customRecord) {
-        const merged = [...apiEntries];
-        const existingLabels = new Set(apiEntries.map(x => x.label));
-
-        (customRecord?.localDex || []).forEach(item => {
-          if (!existingLabels.has(item.key)) {
-            merged.push({ label: item.key, number: item.value, source: "custom" });
+            saveParties();
+            renderList();
+            setStatus(`${added}件追加しました（重複はスキップ）`);
+          } catch {
+            alert("読み込みに失敗しました。正しいJSONファイルか確認してください。");
           }
-        });
-
-        return merged;
+        };
+        reader.readAsText(file);
       }
 
-      function renderLocalDex(entries) {
-        localDexList.innerHTML = "";
-        if (!entries.length) {
-          const span = document.createElement("span");
-          span.className = "badge";
-          span.textContent = "地方図鑑番号なし / 未取得";
-          localDexList.appendChild(span);
+      /* ─── ③ スプライト表示 ─── */
+      async function updateSprites() {
+        const members = [member1,member2,member3,member4,member5,member6]
+          .map(i => i.value.trim()).filter(Boolean);
+
+        if (!members.length) {
+          spriteRow.style.display = "none";
+          spriteRow.innerHTML = "";
           return;
         }
 
-        entries.forEach(e => {
-          const span = document.createElement("span");
-          span.className = "badge";
-          span.textContent = e.source === "custom"
-            ? `${e.label}: ${e.number}（補完）`
-            : `${e.label}: ${e.number}`;
-          localDexList.appendChild(span);
-        });
-      }
-
-      function renderGameData(customRecord) {
-        const list = customRecord?.gameData || [];
-        if (!list.length) {
-          gameDataBox.textContent = "補完データなし";
-          return;
-        }
-        gameDataBox.innerHTML = list.map(item =>
-          `<div style="margin-top:6px;"><strong>${escapeHtml(item.key)}</strong>：${escapeHtml(item.value)}</div>`
+        spriteRow.style.display = "flex";
+        spriteRow.innerHTML = members.map(name =>
+          `<div class="sprite-item" id="spr_${escapeHtml(name)}">
+            <div class="sprite-placeholder">⏳</div>
+            <span>${escapeHtml(name)}</span>
+          </div>`
         ).join("");
+
+        for (const name of members) {
+          const data = await fetchPokemonData(name);
+          const el   = document.getElementById(`spr_${name}`);
+          if (!el) continue;
+
+          const placeholder = el.querySelector(".sprite-placeholder");
+          if (data?.sprite) {
+            const img    = document.createElement("img");
+            img.src      = data.sprite;
+            img.alt      = name;
+            img.loading  = "lazy";
+            placeholder.replaceWith(img);
+          } else {
+            placeholder.textContent = "?";
+          }
+        }
       }
 
-      function renderCustomMemo(customRecord) {
-        customMemoBox.textContent = customRecord?.memo || "補完メモなし";
+      /* ─── タイプ相性計算 ─── */
+      function getMemberTypes(memberName, slotNumber) {
+        const override = memberTypeOverrides[slotNumber];
+        if (override?.length) {
+          return override.map(jaName => {
+            const found = Object.entries(TYPE_JA).find(([, ja]) => ja === jaName);
+            return found ? found[0] : null;
+          }).filter(Boolean);
+        }
+
+        /* PokeAPI キャッシュに英語タイプが入っていれば使う */
+        const cached = apiCache[memberName];
+        if (cached?.types) return cached.types;
+
+        return POKEMON_TYPE_MAP[memberName] || null;
       }
-      function savePartyCandidate(data) {
-  try {
-    const raw = localStorage.getItem(PARTY_CANDIDATE_KEY);
-    const list = raw ? JSON.parse(raw) : [];
 
-    const candidate = {
-      id: "candidate_" + Date.now(),
-      name: data.name || "",
-      types: data.types || [],
-      abilities: data.abilities || [],
-      memo: data.memo || "",
-      addedAt: new Date().toISOString()
-    };
-
-    list.unshift(candidate);
-    localStorage.setItem(PARTY_CANDIDATE_KEY, JSON.stringify(list));
-    partyAddStatus.textContent = "パーティ候補に追加しました";
-    setTimeout(() => {
-      if (partyAddStatus.textContent === "パーティ候補に追加しました") {
-        partyAddStatus.textContent = "";
+      function calculateTypeMultiplier(defTypes, attackType) {
+        let m = 1;
+        for (const t of defTypes) {
+          const c = TYPE_CHART[t];
+          if (!c) continue;
+          if      (c.immune.includes(attackType)) m *= 0;
+          else if (c.weak.includes(attackType))   m *= 2;
+          else if (c.resist.includes(attackType)) m *= 0.5;
+        }
+        return m;
       }
-    }, 2500);
-  } catch (e) {
-    partyAddStatus.textContent = "保存に失敗しました";
-  }
-      }
-      async function fetchEvolutionNames(species) {
-  if (!species.evolution_chain || !species.evolution_chain.url) return [];
 
-  const chainData = await cachedFetchJson(species.evolution_chain.url);
-  const names = [];
+      /* ─── ④ 分析（4倍弱点アラート付き） ─── */
+      function analyzeCurrentParty() {
+        const rawMembers = [member1,member2,member3,member4,member5,member6]
+          .map(i => i.value.trim());
 
-  function walkChain(node) {
-    if (!node) return;
-    if (node.species && node.species.name) {
-      names.push(node.species.name);
-    }
-    if (node.evolves_to && node.evolves_to.length) {
-      node.evolves_to.forEach(walkChain);
-    }
-  }
-
-  walkChain(chainData.chain);
-
-  const jaNames = [];
-  for (const enName of names) {
-    try {
-      const speciesData = await cachedFetchJson(`${API_BASE}/pokemon-species/${enName}`);
-      const jaName =
-        speciesData.names?.find(n => n.language.name === "ja-Hrkt")?.name ||
-        speciesData.names?.find(n => n.language.name === "ja")?.name ||
-        enName;
-      jaNames.push(jaName);
-    } catch (e) {
-      jaNames.push(enName);
-    }
-  }
-
-  return jaNames;
-}
-
-function renderEvolution(names) {
-  if (!names.length) {
-    evolutionBox.textContent = "進化系統データなし";
-    return;
-  }
-  evolutionBox.textContent = names.join(" → ");
-}
-function calculateTypeEffectiveness(typeNames) {
-  const attackTypes = Object.keys(TYPE_CHART);
-  const result = [];
-
-  for (const attackType of attackTypes) {
-    let multiplier = 1;
-
-    for (const defendType of typeNames) {
-      const chart = TYPE_CHART[defendType];
-      if (!chart) continue;
-
-      if (chart.immune.includes(attackType)) {
-        multiplier *= 0;
-      } else if (chart.weak.includes(attackType)) {
-        multiplier *= 2;
-      } else if (chart.resist.includes(attackType)) {
-        multiplier *= 0.5;
-      }
-    }
-
-    result.push({ type: attackType, multiplier });
-  }
-
-  return result;
-}
-
-function renderTypeEffectiveness(typeNames) {
-  const data = calculateTypeEffectiveness(typeNames);
-
-  const weak = data
-    .filter(x => x.multiplier > 1)
-    .map(x => `${TYPE_JA[x.type] || x.type} x${x.multiplier}`);
-
-  const resist = data
-    .filter(x => x.multiplier > 0 && x.multiplier < 1)
-    .map(x => `${TYPE_JA[x.type] || x.type} x${x.multiplier}`);
-
-  const immune = data
-    .filter(x => x.multiplier === 0)
-    .map(x => TYPE_JA[x.type] || x.type);
-
-  renderBadgeList(weaknessList, weak);
-  renderBadgeList(resistList, resist);
-  renderBadgeList(immuneList, immune);
-}
-      
-      async function searchPokemon() {
-        const query = await normalizeQuery(searchInput.value);
-        errorText.textContent = "";
-        loadingText.textContent = "";
-        resultCard.classList.remove("show");
-
-        if (!query) {
-          errorText.textContent = "ポケモン名か図鑑番号を入れてください。";
+        const members = rawMembers.filter(Boolean);
+        if (!members.length) {
+          typeBalanceBox.textContent = "メンバーを入力してください。";
+          weaknessSummaryBox.innerHTML = "メンバーを入力してください。";
+          quadWeaknessAlert.style.display = "none";
           return;
         }
 
-        try {
-          loadingText.textContent = "取得中...";
-          const { pokemon, species } = await fetchPokemon(query);
+        const typeCount     = {};
+        const weaknessCount = {};
+        const quadWeakness  = {};  /* ← 4倍弱点集計 */
 
-          const nameJa = getJapaneseName(species);
-          const customRecord = findCustomRecord(nameJa, species.id);
-          const apiLocalDex = await getLocalDexNumbers(species.name);
-          const mergedLocalDex = mergeLocalDex(apiLocalDex, customRecord);
-          const evolutionNames = await fetchEvolutionNames(species);
+        Object.keys(TYPE_JA).forEach(t => {
+          typeCount[t]     = 0;
+          weaknessCount[t] = 0;
+          quadWeakness[t]  = [];
+        });
 
-          pokeTitle.textContent = `No.${species.id} ${nameJa}`;
-          pokeImage.src =
-            pokemon.sprites?.other?.["official-artwork"]?.front_default ||
-            pokemon.sprites?.front_default ||
-            "";
-          pokeImage.alt = pokeTitle.textContent;
+        const unknownMembers = [];
 
-          pokeFlavor.textContent = getJapaneseFlavor(species) || "図鑑説明は未取得です。";
-          nationalDex.textContent = customRecord?.nationalDex || species.id;
-          heightText.textContent = `${pokemon.height / 10} m`;
-          weightText.textContent = `${pokemon.weight / 10} kg`;
+        rawMembers.forEach((name, idx) => {
+          if (!name) return;
+          const types = getMemberTypes(name, idx + 1);
+          if (!types) { unknownMembers.push(name); return; }
 
-          renderTypes(pokemon.types || []);
-          await renderAbilities(pokemon.abilities || []);
-          renderStats(pokemon.stats || []);
-          renderTypeEffectiveness((pokemon.types || []).map(t => t.type.name));
-          renderLocalDex(mergedLocalDex);
-          renderEvolution(evolutionNames);
-          renderGameData(customRecord);
-          renderCustomMemo(customRecord);
+          types.forEach(t => { typeCount[t] += 1; });
 
-          currentPokemonData = {
-  name: nameJa,
-  types: (pokemon.types || []).map(t => TYPE_JA[t.type.name] || t.type.name),
-  abilities: Array.from(abilityList.querySelectorAll(".badge")).map(x => x.textContent),
-  memo: [
-    `全国図鑑: ${customRecord?.nationalDex || species.id}`,
-    customRecord?.memo ? `補完メモ: ${customRecord.memo}` : ""
-  ].filter(Boolean).join("\n")
-};
+          Object.keys(TYPE_JA).forEach(attackType => {
+            const mult = calculateTypeMultiplier(types, attackType);
+            if (mult >= 4) {
+              weaknessCount[attackType] += 1;
+              quadWeakness[attackType].push(name);
+            } else if (mult > 1) {
+              weaknessCount[attackType] += 1;
+            }
+          });
+        });
 
-          resultCard.classList.add("show");
-          loadingText.textContent = "";
-        } catch (e) {
-          loadingText.textContent = "";
-          errorText.textContent = "データが見つかりませんでした。英語名または全国図鑑番号でも試してください。";
+        /* タイプバランス表示 */
+        const typeLines = Object.entries(typeCount)
+          .filter(([,c]) => c > 0)
+          .sort((a,b) => b[1] - a[1])
+          .map(([t,c]) => `${TYPE_JA[t]}: ${c}`)
+          .join(" / ");
+        typeBalanceBox.textContent = typeLines || "タイプデータなし";
+
+        /* 弱点まとめ（バッジ付き） */
+        const sorted = Object.entries(weaknessCount)
+          .filter(([,c]) => c > 0)
+          .sort((a,b) => b[1] - a[1]);
+
+        if (sorted.length === 0) {
+          weaknessSummaryBox.innerHTML = `<span class="small">大きな弱点なし</span>`;
+        } else {
+          weaknessSummaryBox.innerHTML = sorted.map(([t, c]) => {
+            const isQuad = quadWeakness[t]?.length > 0;
+            const cls    = isQuad ? "badge-x4" : (c >= 3 ? "badge-x2" : "badge-x1");
+            const tip    = isQuad
+              ? `4倍弱点: ${quadWeakness[t].join("、")}` : "";
+            return `<span class="type-badge ${cls}" title="${escapeHtml(tip)}">${TYPE_JA[t]} ${c}体</span>`;
+          }).join("");
+        }
+
+        /* 4倍弱点アラート */
+        const quadEntries = Object.entries(quadWeakness).filter(([,names]) => names.length > 0);
+        if (quadEntries.length > 0) {
+          quadWeaknessAlert.style.display = "block";
+          quadWeaknessAlert.innerHTML = "⚠️ <strong>4倍弱点あり：</strong> " +
+            quadEntries.map(([t, names]) =>
+              `${TYPE_JA[t]}（${names.join("、")}）`
+            ).join(" / ");
+        } else {
+          quadWeaknessAlert.style.display = "none";
+        }
+
+        if (unknownMembers.length) {
+          const note = document.createElement("div");
+          note.className = "small";
+          note.style.marginTop = "6px";
+          note.textContent = `タイプ未登録: ${unknownMembers.join("、")}`;
+          weaknessSummaryBox.appendChild(note);
         }
       }
 
-      function clearResult() {
-        searchInput.value = "";
-        errorText.textContent = "";
-        loadingText.textContent = "";
-        evolutionBox.textContent = "";
-        weaknessList.innerHTML = "";
-resistList.innerHTML = "";
-immuneList.innerHTML = "";
-        currentPokemonData = null;
-partyAddStatus.textContent = "";
-        resultCard.classList.remove("show");
+      /* ─── リスト描画 ─── */
+      function getFilteredParties() {
+        const game    = filterGame.value;
+        const keyword = searchBox.value.trim().toLowerCase();
+        let result = [...parties];
+        if (game)    result = result.filter(p => p.game === game);
+        if (keyword) result = result.filter(p =>
+          [p.name, p.game, ...(p.members||[]), ...(p.tags||[]), p.notes]
+            .join(" ").toLowerCase().includes(keyword)
+        );
+        result.sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""));
+        return result;
       }
 
-      searchBtn.addEventListener("click", searchPokemon);
-      clearBtn.addEventListener("click", clearResult);
-      addToPartyBtn.addEventListener("click", () => {
-  if (!currentPokemonData) {
-    partyAddStatus.textContent = "先にポケモンを検索してください";
-    return;
-  }
-  savePartyCandidate(currentPokemonData);
-});
-      searchInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") searchPokemon();
+      function renderList() {
+        const items = getFilteredParties();
+        partyList.innerHTML = "";
+        emptyMessage.style.display = items.length ? "none" : "block";
+
+        items.forEach(party => {
+          const card = document.createElement("div");
+          card.className = "menu-card";
+
+          const tagsHtml    = (party.tags||[]).length
+            ? `<div class="small" style="margin-top:8px;">タグ：${escapeHtml((party.tags||[]).join(" / "))}</div>` : "";
+          const membersHtml = (party.members||[]).length
+            ? `<div class="small" style="margin-top:8px;">メンバー：${escapeHtml((party.members||[]).join(" / "))}</div>`
+            : `<div class="small" style="margin-top:8px;">メンバー未入力</div>`;
+          const notesHtml   = party.notes
+            ? `<div class="small" style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(party.notes)}</div>` : "";
+
+          card.innerHTML = `
+            <h2>${escapeHtml(party.name || "無名パーティ")}</h2>
+            <div class="small">作品：${escapeHtml(party.game || "未設定")}</div>
+            ${membersHtml}${tagsHtml}${notesHtml}
+            <div class="row" style="margin-top:12px;">
+              <button type="button" data-action="edit"   data-id="${escapeHtml(party.id)}">編集</button>
+              <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(party.id)}">削除</button>
+            </div>
+          `;
+          partyList.appendChild(card);
+        });
+
+        partyList.querySelectorAll("[data-action='edit']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = parties.find(p => p.id === btn.dataset.id);
+            if (target) fillForm(target);
+          });
+        });
+
+        partyList.querySelectorAll("[data-action='delete']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = parties.find(p => p.id === btn.dataset.id);
+            if (!target) return;
+            if (!confirm(`「${target.name || "このパーティ"}」を削除しますか？`)) return;
+            parties = parties.filter(p => p.id !== btn.dataset.id);
+            saveParties();
+            if (editingId === btn.dataset.id) clearForm();
+            renderList();
+            setStatus("削除しました");
+          });
+        });
+      }
+
+      function renderCandidates() {
+        const candidates = loadCandidates();
+        candidateList.innerHTML = "";
+        candidateEmpty.style.display = candidates.length ? "none" : "block";
+
+        candidates.forEach(c => {
+          const card = document.createElement("div");
+          card.className = "menu-card";
+          card.innerHTML = `
+            <h2>${escapeHtml(c.name || "無名候補")}</h2>
+            <div class="small">${escapeHtml(c.types?.length ? `タイプ：${c.types.join(" / ")}` : "タイプ未設定")}</div>
+            <div class="small" style="margin-top:6px;">${escapeHtml(c.abilities?.length ? `特性：${c.abilities.join(" / ")}` : "特性未設定")}</div>
+            <div class="row" style="margin-top:12px;">
+              <button type="button" data-action="use"    data-id="${escapeHtml(c.id)}">フォームに反映</button>
+              <button type="button" class="danger" data-action="delete" data-id="${escapeHtml(c.id)}">削除</button>
+            </div>
+          `;
+          candidateList.appendChild(card);
+        });
+
+        candidateList.querySelectorAll("[data-action='use']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = loadCandidates().find(c => c.id === btn.dataset.id);
+            if (target) { applyCandidate(target); setStatus("候補をフォームに反映しました"); }
+          });
+        });
+
+        candidateList.querySelectorAll("[data-action='delete']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            let cands = loadCandidates();
+            const target = cands.find(c => c.id === btn.dataset.id);
+            if (!target) return;
+            if (!confirm(`「${target.name || "この候補"}」を削除しますか？`)) return;
+            saveCandidates(cands.filter(c => c.id !== btn.dataset.id));
+            renderCandidates();
+            setStatus("候補を削除しました");
+          });
+        });
+      }
+
+      /* ─── イベント登録 ─── */
+      [
+        [member1,1],[member2,2],[member3,3],
+        [member4,4],[member5,5],[member6,6]
+      ].forEach(([input, slot]) => {
+        input.addEventListener("input", () => {
+          memberTypeOverrides[slot] = null;
+          analyzeCurrentParty();
+        });
+        /* スプライトは blur 時にまとめて取得（入力中は呼ばない） */
+        input.addEventListener("blur", () => updateSprites());
       });
+
+      saveBtn.addEventListener("click",   saveCurrentParty);
+      clearBtn.addEventListener("click",  () => { clearForm(); setStatus("入力をクリアしました"); });
+      deleteBtn.addEventListener("click", deleteCurrentParty);
+      filterGame.addEventListener("change", renderList);
+      searchBox.addEventListener("input",   renderList);
+      analyzeBtn.addEventListener("click",  analyzeCurrentParty);
+
+      exportBtn.addEventListener("click", exportData);
+      importBtn.addEventListener("click", () => importFile.click());
+      importFile.addEventListener("change", e => {
+        if (e.target.files[0]) {
+          importData(e.target.files[0]);
+          importFile.value = "";
+        }
+      });
+
+      /* ─── 初期化 ─── */
+      clearForm();
+      renderList();
+      renderCandidates();
     })();
   </script>
 </body>
