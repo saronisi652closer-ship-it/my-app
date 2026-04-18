@@ -1,486 +1,334 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PokéChampions 構築マネージャー</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d0d1a;font-family:'Noto Sans JP',sans-serif;color:#fff;min-height:100vh}
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.25)}
+  select option{background:#1a1030;color:#fff}
+  ::-webkit-scrollbar{width:3px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useRef,useEffect,useCallback}=React;
 
-const TYPE_COLORS = {
-  ノーマル:"#A8A878", ほのお:"#F08030", みず:"#6890F0", でんき:"#F8D030",
-  くさ:"#78C850", こおり:"#98D8D8", かくとう:"#C03028", どく:"#A040A0",
-  じめん:"#E0C068", ひこう:"#A890F0", エスパー:"#F85888", むし:"#A8B820",
-  いわ:"#B8A038", ゴースト:"#705898", ドラゴン:"#7038F8", あく:"#705848",
-  はがね:"#B8B8D0", フェアリー:"#EE99AC",
-};
+const TYPE_COLORS={ノーマル:"#A8A878",ほのお:"#F08030",みず:"#6890F0",でんき:"#F8D030",くさ:"#78C850",こおり:"#98D8D8",かくとう:"#C03028",どく:"#A040A0",じめん:"#E0C068",ひこう:"#A890F0",エスパー:"#F85888",むし:"#A8B820",いわ:"#B8A038",ゴースト:"#705898",ドラゴン:"#7038F8",あく:"#705848",はがね:"#B8B8D0",フェアリー:"#EE99AC"};
 
-const TYPE_CHART = {
-  normal:   { weak:["fighting"],                          resist:[],                                                            immune:["ghost"] },
-  fire:     { weak:["water","ground","rock"],             resist:["fire","grass","ice","bug","steel","fairy"],                  immune:[] },
-  water:    { weak:["electric","grass"],                  resist:["fire","water","ice","steel"],                                immune:[] },
-  electric: { weak:["ground"],                            resist:["electric","flying","steel"],                                 immune:[] },
-  grass:    { weak:["fire","ice","poison","flying","bug"],resist:["water","electric","grass","ground"],                         immune:[] },
-  ice:      { weak:["fire","fighting","rock","steel"],    resist:["ice"],                                                       immune:[] },
-  fighting: { weak:["flying","psychic","fairy"],          resist:["bug","rock","dark"],                                         immune:[] },
-  poison:   { weak:["ground","psychic"],                  resist:["grass","fighting","poison","bug","fairy"],                   immune:[] },
-  ground:   { weak:["water","grass","ice"],               resist:["poison","rock"],                                             immune:["electric"] },
-  flying:   { weak:["electric","ice","rock"],             resist:["grass","fighting","bug"],                                    immune:["ground"] },
-  psychic:  { weak:["bug","ghost","dark"],                resist:["fighting","psychic"],                                        immune:[] },
-  bug:      { weak:["fire","flying","rock"],              resist:["grass","fighting","ground"],                                 immune:[] },
-  rock:     { weak:["water","grass","fighting","ground","steel"], resist:["normal","fire","poison","flying"],                   immune:[] },
-  ghost:    { weak:["ghost","dark"],                      resist:["poison","bug"],                                              immune:["normal","fighting"] },
-  dragon:   { weak:["ice","dragon","fairy"],              resist:["fire","water","electric","grass"],                           immune:[] },
-  dark:     { weak:["fighting","bug","fairy"],            resist:["ghost","dark"],                                              immune:["psychic"] },
-  steel:    { weak:["fire","fighting","ground"],          resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"], immune:["poison"] },
-  fairy:    { weak:["poison","steel"],                    resist:["fighting","bug","dark"],                                     immune:["dragon"] },
-};
+const TYPE_CHART={normal:{weak:["fighting"],resist:[],immune:["ghost"]},fire:{weak:["water","ground","rock"],resist:["fire","grass","ice","bug","steel","fairy"],immune:[]},water:{weak:["electric","grass"],resist:["fire","water","ice","steel"],immune:[]},electric:{weak:["ground"],resist:["electric","flying","steel"],immune:[]},grass:{weak:["fire","ice","poison","flying","bug"],resist:["water","electric","grass","ground"],immune:[]},ice:{weak:["fire","fighting","rock","steel"],resist:["ice"],immune:[]},fighting:{weak:["flying","psychic","fairy"],resist:["bug","rock","dark"],immune:[]},poison:{weak:["ground","psychic"],resist:["grass","fighting","poison","bug","fairy"],immune:[]},ground:{weak:["water","grass","ice"],resist:["poison","rock"],immune:["electric"]},flying:{weak:["electric","ice","rock"],resist:["grass","fighting","bug"],immune:["ground"]},psychic:{weak:["bug","ghost","dark"],resist:["fighting","psychic"],immune:[]},bug:{weak:["fire","flying","rock"],resist:["grass","fighting","ground"],immune:[]},rock:{weak:["water","grass","fighting","ground","steel"],resist:["normal","fire","poison","flying"],immune:[]},ghost:{weak:["ghost","dark"],resist:["poison","bug"],immune:["normal","fighting"]},dragon:{weak:["ice","dragon","fairy"],resist:["fire","water","electric","grass"],immune:[]},dark:{weak:["fighting","bug","fairy"],resist:["ghost","dark"],immune:["psychic"]},steel:{weak:["fire","fighting","ground"],resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"],immune:["poison"]},fairy:{weak:["poison","steel"],resist:["fighting","bug","dark"],immune:["dragon"]}};
 
-const TYPE_JA_TO_EN = {
-  ノーマル:"normal", ほのお:"fire", みず:"water", でんき:"electric", くさ:"grass",
-  こおり:"ice", かくとう:"fighting", どく:"poison", じめん:"ground", ひこう:"flying",
-  エスパー:"psychic", むし:"bug", いわ:"rock", ゴースト:"ghost", ドラゴン:"dragon",
-  あく:"dark", はがね:"steel", フェアリー:"fairy",
-};
-const TYPE_EN_TO_JA = Object.fromEntries(Object.entries(TYPE_JA_TO_EN).map(([j,e])=>[e,j]));
+const TYPE_JA_TO_EN={ノーマル:"normal",ほのお:"fire",みず:"water",でんき:"electric",くさ:"grass",こおり:"ice",かくとう:"fighting",どく:"poison",じめん:"ground",ひこう:"flying",エスパー:"psychic",むし:"bug",いわ:"rock",ゴースト:"ghost",ドラゴン:"dragon",あく:"dark",はがね:"steel",フェアリー:"fairy"};
+const TYPE_EN_TO_JA=Object.fromEntries(Object.entries(TYPE_JA_TO_EN).map(([j,e])=>[e,j]));
 
-const NAME_JA_TO_EN = {
-  "ピカチュウ":"pikachu","ライチュウ":"raichu",
-  "フシギダネ":"bulbasaur","フシギソウ":"ivysaur","フシギバナ":"venusaur",
-  "ヒトカゲ":"charmander","リザード":"charmeleon","リザードン":"charizard",
-  "ゼニガメ":"squirtle","カメール":"wartortle","カメックス":"blastoise",
-  "ミニリュウ":"dratini","ハクリュー":"dragonair","カイリュー":"dragonite",
-  "イーブイ":"eevee","シャワーズ":"vaporeon","サンダース":"jolteon",
-  "ブースター":"flareon","エーフィ":"espeon","ブラッキー":"umbreon",
-  "リーフィア":"leafeon","グレイシア":"glaceon","ニンフィア":"sylveon",
-  "ガブリアス":"garchomp","ルカリオ":"lucario","ゲンガー":"gengar",
-  "カビゴン":"snorlax","ミミッキュ":"mimikyu","ドラパルト":"dragapult",
-  "サーナイト":"gardevoir","メタグロス":"metagross","バンギラス":"tyranitar",
-  "ゲッコウガ":"greninja","エースバーン":"cinderace","ハピナス":"blissey",
-  "ラプラス":"lapras","ギャラドス":"gyarados","ボーマンダ":"salamence",
-  "ヘラクロス":"heracross","マリルリ":"azumarill","カイリキー":"machamp",
-  "フーディン":"alakazam","ハッサム":"scizor","グライオン":"gliscor",
-  "ローブシン":"conkeldurr","ウルガモス":"volcarona","ランドロス":"landorus-incarnate",
-  "ドリュウズ":"excadrill","ウーラオス":"urshifu","ザシアン":"zacian-crowned",
-  "コライドン":"koraidon","ミライドン":"miraidon","ハバタクカミ":"flutter-mane",
-  "チオンジェン":"chien-pao","テツノブジン":"iron-valiant","パオジアン":"chien-pao",
-  "サーフゴー":"gholdengo","イーユイ":"chi-yu","ディンルー":"ting-lu",
-  "セグレイブ":"baxcalibur","カイナ":"iron-hands","ブリムオン":"hatterene",
-};
+const NAME_JA_TO_EN={"ピカチュウ":"pikachu","ライチュウ":"raichu","フシギダネ":"bulbasaur","フシギソウ":"ivysaur","フシギバナ":"venusaur","ヒトカゲ":"charmander","リザード":"charmeleon","リザードン":"charizard","ゼニガメ":"squirtle","カメール":"wartortle","カメックス":"blastoise","ミニリュウ":"dratini","ハクリュー":"dragonair","カイリュー":"dragonite","イーブイ":"eevee","シャワーズ":"vaporeon","サンダース":"jolteon","ブースター":"flareon","エーフィ":"espeon","ブラッキー":"umbreon","リーフィア":"leafeon","グレイシア":"glaceon","ニンフィア":"sylveon","ガブリアス":"garchomp","ルカリオ":"lucario","ゲンガー":"gengar","カビゴン":"snorlax","ミミッキュ":"mimikyu","ドラパルト":"dragapult","サーナイト":"gardevoir","メタグロス":"metagross","バンギラス":"tyranitar","ゲッコウガ":"greninja","エースバーン":"cinderace","ハピナス":"blissey","ラプラス":"lapras","ギャラドス":"gyarados","ボーマンダ":"salamence","ヘラクロス":"heracross","マリルリ":"azumarill","カイリキー":"machamp","フーディン":"alakazam","ハッサム":"scizor","グライオン":"gliscor","ローブシン":"conkeldurr","ウルガモス":"volcarona","ランドロス":"landorus-incarnate","ドリュウズ":"excadrill","ウーラオス":"urshifu","ザシアン":"zacian-crowned","コライドン":"koraidon","ミライドン":"miraidon","ハバタクカミ":"flutter-mane","チオンジェン":"chien-pao","テツノブジン":"iron-valiant","サーフゴー":"gholdengo","イーユイ":"chi-yu","ディンルー":"ting-lu","セグレイブ":"baxcalibur","カイナ":"iron-hands","ブリムオン":"hatterene"};
 
-const FALLBACK_TYPES = {
-  "リザードン":["fire","flying"],"カメックス":["water"],"フシギバナ":["grass","poison"],
-  "ピカチュウ":["electric"],"カイリュー":["dragon","flying"],"ガブリアス":["dragon","ground"],
-  "ルカリオ":["fighting","steel"],"ゲンガー":["ghost","poison"],"ミミッキュ":["ghost","fairy"],
-  "ハバタクカミ":["ghost","fairy"],"チオンジェン":["dark","ice"],"コライドン":["fighting","dragon"],
-  "ミライドン":["electric","dragon"],"イーユイ":["dark","fire"],"ディンルー":["ground","dark"],
-  "サーフゴー":["steel","ghost"],"セグレイブ":["dragon","ice"],"カイナ":["electric","fighting"],
-  "ドラパルト":["dragon","ghost"],"バンギラス":["rock","dark"],"メタグロス":["steel","psychic"],
-  "ザシアン":["fairy","steel"],"ブリムオン":["psychic","fairy"],
-};
+const FALLBACK_TYPES={"リザードン":["fire","flying"],"カメックス":["water"],"フシギバナ":["grass","poison"],"ピカチュウ":["electric"],"カイリュー":["dragon","flying"],"ガブリアス":["dragon","ground"],"ルカリオ":["fighting","steel"],"ゲンガー":["ghost","poison"],"ミミッキュ":["ghost","fairy"],"ハバタクカミ":["ghost","fairy"],"チオンジェン":["dark","ice"],"コライドン":["fighting","dragon"],"ミライドン":["electric","dragon"],"イーユイ":["dark","fire"],"ディンルー":["ground","dark"],"サーフゴー":["steel","ghost"],"セグレイブ":["dragon","ice"],"カイナ":["electric","fighting"],"ドラパルト":["dragon","ghost"],"バンギラス":["rock","dark"],"メタグロス":["steel","psychic"],"ザシアン":["fairy","steel"],"ブリムオン":["psychic","fairy"]};
 
-function calcMult(defTypes, atkType) {
-  let m = 1;
-  for (const t of defTypes) {
-    const c = TYPE_CHART[t]; if (!c) continue;
-    if (c.immune.includes(atkType)) m *= 0;
-    else if (c.weak.includes(atkType)) m *= 2;
-    else if (c.resist.includes(atkType)) m *= 0.5;
-  }
-  return m;
+function calcMult(defTypes,atkType){let m=1;for(const t of defTypes){const c=TYPE_CHART[t];if(!c)continue;if(c.immune.includes(atkType))m*=0;else if(c.weak.includes(atkType))m*=2;else if(c.resist.includes(atkType))m*=0.5;}return m;}
+
+const apiCache={};
+async function fetchPokemon(jaName){
+  if(apiCache[jaName])return apiCache[jaName];
+  const en=NAME_JA_TO_EN[jaName];if(!en)return null;
+  try{const r=await fetch(`https://pokeapi.co/api/v2/pokemon/${en}`);if(!r.ok)return null;const d=await r.json();const result={types:d.types.map(t=>t.type.name),sprite:d.sprites?.front_default||null};apiCache[jaName]=result;return result;}catch{return null;}
 }
 
-const apiCache = {};
-async function fetchPokemon(jaName) {
-  if (apiCache[jaName]) return apiCache[jaName];
-  const en = NAME_JA_TO_EN[jaName]; if (!en) return null;
-  try {
-    const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${en}`);
-    if (!r.ok) return null;
-    const d = await r.json();
-    const result = { types: d.types.map(t=>t.type.name), sprite: d.sprites?.front_default||null };
-    apiCache[jaName] = result; return result;
-  } catch { return null; }
+const GAMES=["SV","剣盾","BDSP","PLA","SM/USUM","XY/ORAS","BW/BW2","DPt","HGSS","その他"];
+
+function TypeBadge({type,small}){
+  return React.createElement('span',{style:{background:TYPE_COLORS[type]||"#888",color:"#fff",fontSize:small?"10px":"11px",fontWeight:"700",padding:small?"1px 5px":"2px 7px",borderRadius:"4px",textShadow:"0 1px 2px rgba(0,0,0,0.4)",display:"inline-block",marginRight:"2px",marginBottom:"2px"}},type);
 }
 
-const TypeBadge = ({ type, small }) => (
-  <span style={{
-    background:TYPE_COLORS[type]||"#888", color:"#fff",
-    fontSize:small?"10px":"11px", fontWeight:"700",
-    padding:small?"1px 5px":"2px 7px", borderRadius:"4px",
-    textShadow:"0 1px 2px rgba(0,0,0,0.4)", display:"inline-block",
-  }}>{type}</span>
-);
+function Msg({msg}){
+  return React.createElement('div',{style:{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",marginBottom:"10px",animation:"fadeIn 0.2s ease"}},
+    msg.role==="assistant"&&React.createElement('div',{style:{width:"28px",height:"28px",borderRadius:"50%",background:"linear-gradient(135deg,#ffd700,#ff8c00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",flexShrink:0,marginRight:"8px",alignSelf:"flex-end"}},"🤖"),
+    React.createElement('div',{style:{maxWidth:"80%",background:msg.role==="user"?"linear-gradient(135deg,#ffd700,#ff8c00)":"rgba(255,255,255,0.08)",color:msg.role==="user"?"#1a1a2e":"#e8e8f0",padding:"10px 14px",fontSize:"13px",lineHeight:"1.6",borderRadius:msg.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",border:msg.role==="assistant"?"1px solid rgba(255,255,255,0.1)":"none",whiteSpace:"pre-wrap"}},msg.content)
+  );
+}
 
-const Msg = ({ msg }) => (
-  <div style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start",marginBottom:"10px"}}>
-    {msg.role==="assistant" && (
-      <div style={{width:"28px",height:"28px",borderRadius:"50%",background:"linear-gradient(135deg,#ffd700,#ff8c00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",flexShrink:0,marginRight:"8px",alignSelf:"flex-end"}}>🤖</div>
-    )}
-    <div style={{
-      maxWidth:"80%",
-      background:msg.role==="user"?"linear-gradient(135deg,#ffd700,#ff8c00)":"rgba(255,255,255,0.08)",
-      color:msg.role==="user"?"#1a1a2e":"#e8e8f0",
-      padding:"10px 14px", fontSize:"13px", lineHeight:"1.6",
-      borderRadius:msg.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",
-      border:msg.role==="assistant"?"1px solid rgba(255,255,255,0.1)":"none",
-      whiteSpace:"pre-wrap",
-    }}>{msg.content}</div>
-  </div>
-);
+function App(){
+  const[tab,setTab]=useState("party");
+  const[members,setMembers]=useState(["","","","","",""]);
+  const[pName,setPName]=useState("");
+  const[pGame,setPGame]=useState("");
+  const[pTags,setPTags]=useState("");
+  const[pNotes,setPNotes]=useState("");
+  const[sprites,setSprites]=useState({});
+  const[apiTypes,setApiTypes]=useState({});
+  const[parties,setParties]=useState(()=>{try{return JSON.parse(localStorage.getItem("pkm_v2"))||[];}catch{return[];}});
+  const[editId,setEditId]=useState(null);
+  const[filterGame,setFilterGame]=useState("");
+  const[searchKw,setSearchKw]=useState("");
+  const[analysis,setAnalysis]=useState(null);
+  const[msgs,setMsgs]=useState([{role:"assistant",content:"こんにちは！🎮 ポケモンチャンピオンズの構築相談はお任せください。\n\n① 「構築」タブでメンバーを入力\n② 「分析」タブで弱点チェック\n③ 「AI」タブで相談\n\n…の流れがおすすめです！"}]);
+  const[chatIn,setChatIn]=useState("");
+  const[chatLoading,setChatLoading]=useState(false);
+  const[status,setStatus]=useState("");
+  const chatEndRef=useRef(null);
+  const fileRef=useRef(null);
 
-const GAMES = ["SV","剣盾","BDSP","PLA","SM/USUM","XY/ORAS","BW/BW2","DPt","HGSS","その他"];
+  useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+  useEffect(()=>{localStorage.setItem("pkm_v2",JSON.stringify(parties));},[parties]);
 
-export default function App() {
-  const [tab, setTab] = useState("party");
-  const [members, setMembers] = useState(["","","","","",""]);
-  const [pName, setPName] = useState("");
-  const [pGame, setPGame] = useState("");
-  const [pTags, setPTags] = useState("");
-  const [pNotes, setPNotes] = useState("");
-  const [sprites, setSprites] = useState({});
-  const [apiTypes, setApiTypes] = useState({});
-  const [parties, setParties] = useState(()=>{ try{return JSON.parse(localStorage.getItem("pkm_v2"))||[];}catch{return[];} });
-  const [editId, setEditId] = useState(null);
-  const [filterGame, setFilterGame] = useState("");
-  const [searchKw, setSearchKw] = useState("");
-  const [analysis, setAnalysis] = useState(null);
-  const [msgs, setMsgs] = useState([{role:"assistant",content:"こんにちは！🎮 ポケモンチャンピオンズの構築相談はお任せください。\n\n① 「構築」タブでメンバーを入力\n② 「分析」タブで弱点チェック\n③ 「AI」タブで相談\n\n…の流れがおすすめです！"}]);
-  const [chatIn, setChatIn] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const [status, setStatus] = useState("");
-  const chatEndRef = useRef(null);
-  const fileRef = useRef(null);
+  const toast=(m)=>{setStatus(m);setTimeout(()=>setStatus(""),2500);};
+  const getEnTypes=(name)=>apiTypes[name]||FALLBACK_TYPES[name]||null;
 
-  useEffect(()=>{ chatEndRef.current?.scrollIntoView({behavior:"smooth"}); },[msgs]);
-  useEffect(()=>{ localStorage.setItem("pkm_v2",JSON.stringify(parties)); },[parties]);
-
-  const toast = (m) => { setStatus(m); setTimeout(()=>setStatus(""),2500); };
-
-  // Fetch sprites on member change
   useEffect(()=>{
     members.filter(Boolean).forEach(async n=>{
-      if(sprites[n]!==undefined) return;
-      const d = await fetchPokemon(n);
-      if(d){
-        setSprites(p=>({...p,[n]:d.sprite}));
-        setApiTypes(p=>({...p,[n]:d.types}));
-      } else {
-        setSprites(p=>({...p,[n]:null}));
-      }
+      if(sprites[n]!==undefined)return;
+      const d=await fetchPokemon(n);
+      if(d){setSprites(p=>({...p,[n]:d.sprite}));setApiTypes(p=>({...p,[n]:d.types}));}
+      else setSprites(p=>({...p,[n]:null}));
     });
   },[members]);
 
-  const getEnTypes = (name) => apiTypes[name] || FALLBACK_TYPES[name] || null;
-
-  const analyze = useCallback(()=>{
-    const filled = members.filter(Boolean);
-    if(!filled.length){ setAnalysis(null); return; }
-    const weakCount={}, quadNames={};
-    Object.keys(TYPE_JA_TO_EN).forEach(t=>{ weakCount[t]=0; quadNames[t]=[]; });
+  const analyze=useCallback(()=>{
+    const filled=members.filter(Boolean);
+    if(!filled.length){setAnalysis(null);return;}
+    const weakCount={},quadNames={};
+    Object.keys(TYPE_JA_TO_EN).forEach(t=>{weakCount[t]=0;quadNames[t]=[];});
     const unknown=[];
     members.forEach(name=>{
-      if(!name) return;
-      const et = getEnTypes(name);
-      if(!et){ unknown.push(name); return; }
+      if(!name)return;
+      const et=getEnTypes(name);
+      if(!et){unknown.push(name);return;}
       Object.keys(TYPE_CHART).forEach(atkEn=>{
-        const m = calcMult(et,atkEn);
-        const jaAtk = TYPE_EN_TO_JA[atkEn]; if(!jaAtk) return;
-        if(m>=4){ weakCount[jaAtk]++; quadNames[jaAtk].push(name); }
-        else if(m>1) weakCount[jaAtk]++;
+        const m=calcMult(et,atkEn);const jaAtk=TYPE_EN_TO_JA[atkEn];if(!jaAtk)return;
+        if(m>=4){weakCount[jaAtk]++;quadNames[jaAtk].push(name);}
+        else if(m>1)weakCount[jaAtk]++;
       });
     });
-    const sorted = Object.entries(weakCount).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]);
-    const quads = Object.entries(quadNames).filter(([,n])=>n.length>0);
-    const coverage = [...new Set(filled.flatMap(n=>{ const et=getEnTypes(n)||[]; return et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean); }))];
+    const sorted=Object.entries(weakCount).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]);
+    const quads=Object.entries(quadNames).filter(([,n])=>n.length>0);
+    const coverage=[...new Set(filled.flatMap(n=>{const et=getEnTypes(n)||[];return et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);}))];
     setAnalysis({sorted,quads,coverage,unknown});
   },[members,apiTypes]);
 
-  useEffect(()=>{ if(tab==="analyze") analyze(); },[tab,analyze]);
+  useEffect(()=>{if(tab==="analyze")analyze();},[tab,analyze]);
 
-  const saveParty = () => {
-    if(!pName.trim()){ toast("⚠️ パーティ名を入力してください"); return; }
-    const entry = { id:editId||"p_"+Date.now(), name:pName.trim(), game:pGame, members:members.filter(Boolean), tags:pTags.split(",").map(t=>t.trim()).filter(Boolean), notes:pNotes.trim(), updatedAt:new Date().toISOString() };
-    setParties(prev=>{ const i=prev.findIndex(p=>p.id===entry.id); if(i>=0){const n=[...prev];n[i]=entry;return n;} return [entry,...prev]; });
-    setEditId(entry.id);
-    toast(editId?"✅ 更新しました":"✅ 保存しました");
+  const saveParty=()=>{
+    if(!pName.trim()){toast("⚠️ パーティ名を入力してください");return;}
+    const entry={id:editId||"p_"+Date.now(),name:pName.trim(),game:pGame,members:members.filter(Boolean),tags:pTags.split(",").map(t=>t.trim()).filter(Boolean),notes:pNotes.trim(),updatedAt:new Date().toISOString()};
+    setParties(prev=>{const i=prev.findIndex(p=>p.id===entry.id);if(i>=0){const n=[...prev];n[i]=entry;return n;}return[entry,...prev];});
+    setEditId(entry.id);toast(editId?"✅ 更新しました":"✅ 保存しました");
   };
 
-  const loadParty = (p) => {
-    setEditId(p.id); setPName(p.name||""); setPGame(p.game||"");
+  const loadParty=(p)=>{
+    setEditId(p.id);setPName(p.name||"");setPGame(p.game||"");
     const m=[...(p.members||[]),...["","","","","",""]].slice(0,6);
-    setMembers(m); setPTags((p.tags||[]).join(", ")); setPNotes(p.notes||"");
-    setSprites({}); setApiTypes({}); setTab("party"); toast("📋 読み込みました");
+    setMembers(m);setPTags((p.tags||[]).join(", "));setPNotes(p.notes||"");
+    setSprites({});setApiTypes({});setTab("party");toast("📋 読み込みました");
   };
 
-  const deleteParty = (id,name) => {
-    if(!confirm(`「${name||"このパーティ"}」を削除しますか？`)) return;
+  const deleteParty=(id,name)=>{
+    if(!confirm(`「${name||"このパーティ"}」を削除しますか？`))return;
     setParties(prev=>prev.filter(p=>p.id!==id));
-    if(editId===id) clearForm();
-    toast("🗑️ 削除しました");
+    if(editId===id)clearForm();toast("🗑️ 削除しました");
   };
 
-  const clearForm = () => {
-    setEditId(null); setPName(""); setPGame(""); setMembers(["","","","","",""]); setPTags(""); setPNotes(""); setSprites({}); setApiTypes({});
+  const clearForm=()=>{setEditId(null);setPName("");setPGame("");setMembers(["","","","","",""]);setPTags("");setPNotes("");setSprites({});setApiTypes({});};
+
+  const exportData=()=>{
+    const blob=new Blob([JSON.stringify(parties,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`pkm_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
   };
 
-  const exportData = () => {
-    const blob = new Blob([JSON.stringify(parties,null,2)],{type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href=url; a.download=`pkm_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+  const importData=(file)=>{
+    const r=new FileReader();r.onload=e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw 0;const ids=new Set(parties.map(p=>p.id));const add=data.filter(p=>!ids.has(p.id));setParties(prev=>[...add,...prev]);toast(`✅ ${add.length}件インポート`);}catch{toast("❌ 読み込み失敗");}};r.readAsText(file);
   };
 
-  const importData = (file) => {
-    const r = new FileReader();
-    r.onload = e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        if(!Array.isArray(data)) throw 0;
-        const ids = new Set(parties.map(p=>p.id));
-        const add = data.filter(p=>!ids.has(p.id));
-        setParties(prev=>[...add,...prev]);
-        toast(`✅ ${add.length}件インポート`);
-      } catch { toast("❌ 読み込み失敗"); }
-    };
-    r.readAsText(file);
-  };
-
-  const sendChat = async () => {
-    if(!chatIn.trim()||chatLoading) return;
-    const userMsg = chatIn.trim(); setChatIn("");
-    const filled = members.filter(Boolean);
-    const partyCtx = filled.length>0 ? `\n\n【現在のパーティ】\n${filled.map(n=>{const et=getEnTypes(n)||[];const jt=et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);return`・${n}${jt.length?`（${jt.join("/")}）`:""}`;}).join("\n")}` : "";
-    const newMsgs = [...msgs,{role:"user",content:userMsg}];
-    setMsgs(newMsgs); setChatLoading(true);
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000,
-          system:`あなたはポケモンチャンピオンズの構築アドバイザーです。タイプ相性・環境メタ・役割分担を踏まえて日本語で簡潔にアドバイスしてください。${partyCtx}`,
-          messages:newMsgs.map(m=>({role:m.role,content:m.content})),
-        }),
-      });
-      const d = await res.json();
+  const sendChat=async()=>{
+    if(!chatIn.trim()||chatLoading)return;
+    const userMsg=chatIn.trim();setChatIn("");
+    const filled=members.filter(Boolean);
+    const partyCtx=filled.length>0?`\n\n【現在のパーティ】\n${filled.map(n=>{const et=getEnTypes(n)||[];const jt=et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);return`・${n}${jt.length?`（${jt.join("/")}）`:""}`;}).join("\n")}`:"";
+    const newMsgs=[...msgs,{role:"user",content:userMsg}];
+    setMsgs(newMsgs);setChatLoading(true);
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:`あなたはポケモンチャンピオンズの構築アドバイザーです。タイプ相性・環境メタ・役割分担を踏まえて日本語で簡潔にアドバイスしてください。${partyCtx}`,messages:newMsgs.map(m=>({role:m.role,content:m.content}))})});
+      const d=await res.json();
       setMsgs([...newMsgs,{role:"assistant",content:d.content?.[0]?.text||"エラー"}]);
-    } catch { setMsgs([...newMsgs,{role:"assistant",content:"通信エラーが発生しました"}]); }
-    finally { setChatLoading(false); }
+    }catch{setMsgs([...newMsgs,{role:"assistant",content:"通信エラーが発生しました"}]);}
+    finally{setChatLoading(false);}
   };
 
-  const filtered = parties.filter(p=>{
-    if(filterGame&&p.game!==filterGame) return false;
-    if(searchKw){ const kw=searchKw.toLowerCase(); return [p.name,p.game,...(p.members||[]),...(p.tags||[]),p.notes].join(" ").toLowerCase().includes(kw); }
+  const filtered=parties.filter(p=>{
+    if(filterGame&&p.game!==filterGame)return false;
+    if(searchKw){const kw=searchKw.toLowerCase();return[p.name,p.game,...(p.members||[]),...(p.tags||[]),p.notes].join(" ").toLowerCase().includes(kw);}
     return true;
   });
 
-  const filled = members.filter(Boolean);
+  const filled=members.filter(Boolean);
 
-  const inp = { width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:"10px", color:"#fff", padding:"9px 12px", fontSize:"14px", outline:"none", boxSizing:"border-box" };
-  const card = { background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"16px", padding:"14px" };
-  const lbl = { fontSize:"11px", color:"rgba(255,200,0,0.8)", fontWeight:"700", marginBottom:"5px", letterSpacing:"0.5px", display:"block" };
-  const btn = (v="d") => ({ padding:"9px 16px", borderRadius:"10px", border:"none", fontWeight:"700", fontSize:"13px", cursor:"pointer",
-    background:v==="p"?"linear-gradient(135deg,#ffd700,#ff8c00)":v==="r"?"rgba(255,80,80,0.15)":"rgba(255,255,255,0.08)",
-    color:v==="p"?"#1a1a2e":v==="r"?"#ff6b6b":"rgba(255,255,255,0.7)",
-    border:v==="r"?"1px solid rgba(255,80,80,0.3)":"none",
-  });
+  // styles
+  const BG={minHeight:"100vh",background:"linear-gradient(160deg,#0d0d1a 0%,#1a1030 50%,#0a1520 100%)"};
+  const WRAP={maxWidth:"430px",margin:"0 auto",display:"flex",flexDirection:"column",minHeight:"100vh",position:"relative"};
+  const inp={width:"100%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"10px",color:"#fff",padding:"9px 12px",fontSize:"14px",outline:"none",boxSizing:"border-box"};
+  const card={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"16px",padding:"14px"};
+  const lbl={fontSize:"11px",color:"rgba(255,200,0,0.8)",fontWeight:"700",marginBottom:"5px",letterSpacing:"0.5px",display:"block"};
+  const btn=(v="d")=>({padding:"9px 16px",borderRadius:"10px",border:"none",fontWeight:"700",fontSize:"13px",cursor:"pointer",background:v==="p"?"linear-gradient(135deg,#ffd700,#ff8c00)":v==="r"?"rgba(255,80,80,0.15)":"rgba(255,255,255,0.08)",color:v==="p"?"#1a1a2e":v==="r"?"#ff6b6b":"rgba(255,255,255,0.7)",border:v==="r"?"1px solid rgba(255,80,80,0.3)":"none"});
 
-  return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0d0d1a 0%,#1a1030 50%,#0a1520 100%)",fontFamily:"'Noto Sans JP',sans-serif",color:"#fff",maxWidth:"430px",margin:"0 auto",display:"flex",flexDirection:"column"}}>
-      <div style={{position:"fixed",top:"-80px",right:"-80px",width:"250px",height:"250px",borderRadius:"50%",background:"radial-gradient(circle,rgba(255,200,0,0.07),transparent 70%)",pointerEvents:"none"}}/>
-      <div style={{position:"fixed",bottom:"80px",left:"-60px",width:"180px",height:"180px",borderRadius:"50%",background:"radial-gradient(circle,rgba(100,120,255,0.07),transparent 70%)",pointerEvents:"none"}}/>
+  const e=React.createElement;
 
-      {/* Header */}
-      <div style={{padding:"16px 16px 12px",background:"rgba(0,0,0,0.35)",backdropFilter:"blur(20px)",borderBottom:"1px solid rgba(255,255,255,0.06)",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
-          <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"linear-gradient(135deg,#ffd700,#ff8c00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px"}}>⚔️</div>
-          <div>
-            <div style={{fontSize:"15px",fontWeight:"800"}}>PokéChampions</div>
-            <div style={{fontSize:"10px",color:"rgba(255,200,0,0.7)",fontWeight:"600"}}>構築マネージャー</div>
-          </div>
-          <div style={{marginLeft:"auto",fontSize:"11px",color:"rgba(255,255,255,0.35)"}}>{filled.length}/6</div>
-        </div>
-        <div style={{display:"flex",gap:"5px"}}>
-          {[["party","🛡️ 構築"],["analyze","🔬 分析"],["saved","📁 保存"],["chat","🤖 AI"]].map(([k,l])=>(
-            <button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"7px 2px",background:tab===k?"linear-gradient(135deg,#ffd700,#ff8c00)":"rgba(255,255,255,0.06)",border:"none",borderRadius:"9px",color:tab===k?"#1a1a2e":"rgba(255,255,255,0.45)",fontWeight:"700",fontSize:"11px",cursor:"pointer"}}>{l}</button>
-          ))}
-        </div>
-      </div>
+  return e('div',{style:BG},
+    e('div',{style:WRAP},
+      // deco
+      e('div',{style:{position:"fixed",top:"-80px",right:"-80px",width:"250px",height:"250px",borderRadius:"50%",background:"radial-gradient(circle,rgba(255,200,0,0.07),transparent 70%)",pointerEvents:"none"}}),
+      e('div',{style:{position:"fixed",bottom:"80px",left:"-60px",width:"180px",height:"180px",borderRadius:"50%",background:"radial-gradient(circle,rgba(100,120,255,0.07),transparent 70%)",pointerEvents:"none"}}),
 
-      <div style={{flex:1,overflow:"auto",padding:"14px"}}>
+      // Header
+      e('div',{style:{padding:"16px 16px 12px",background:"rgba(0,0,0,0.35)",backdropFilter:"blur(20px)",borderBottom:"1px solid rgba(255,255,255,0.06)",flexShrink:0,position:"sticky",top:0,zIndex:10}},
+        e('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}},
+          e('div',{style:{width:"34px",height:"34px",borderRadius:"10px",background:"linear-gradient(135deg,#ffd700,#ff8c00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px"}},"⚔️"),
+          e('div',null,e('div',{style:{fontSize:"15px",fontWeight:"800"}},"PokéChampions"),e('div',{style:{fontSize:"10px",color:"rgba(255,200,0,0.7)",fontWeight:"600"}},"構築マネージャー")),
+          e('div',{style:{marginLeft:"auto",fontSize:"11px",color:"rgba(255,255,255,0.35)"}},`${filled.length}/6`)
+        ),
+        e('div',{style:{display:"flex",gap:"5px"}},
+          [["party","🛡️ 構築"],["analyze","🔬 分析"],["saved","📁 保存"],["chat","🤖 AI"]].map(([k,l])=>
+            e('button',{key:k,onClick:()=>setTab(k),style:{flex:1,padding:"7px 2px",background:tab===k?"linear-gradient(135deg,#ffd700,#ff8c00)":"rgba(255,255,255,0.06)",border:"none",borderRadius:"9px",color:tab===k?"#1a1a2e":"rgba(255,255,255,0.45)",fontWeight:"700",fontSize:"11px",cursor:"pointer"}},l)
+          )
+        )
+      ),
 
-        {/* ── PARTY ── */}
-        {tab==="party" && (
-          <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-            {status && <div style={{background:"rgba(255,200,0,0.12)",border:"1px solid rgba(255,200,0,0.3)",borderRadius:"10px",padding:"8px 12px",fontSize:"13px",color:"#ffd700",textAlign:"center"}}>{status}</div>}
-            <div style={card}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-                <div><span style={lbl}>パーティ名</span><input style={inp} value={pName} onChange={e=>setPName(e.target.value)} placeholder="例：チャンピオンズ用"/></div>
-                <div><span style={lbl}>作品</span><select style={{...inp,appearance:"none"}} value={pGame} onChange={e=>setPGame(e.target.value)}><option value="">未設定</option>{GAMES.map(g=><option key={g} value={g}>{g}</option>)}</select></div>
-              </div>
-            </div>
+      // Content
+      e('div',{style:{flex:1,overflow:"auto",padding:"14px",paddingBottom:tab==="chat"?"80px":"14px"}},
 
-            <div style={card}>
-              <span style={lbl}>メンバー（日本語名で入力）</span>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
-                {members.map((m,i)=>(
-                  <div key={i} style={{position:"relative"}}>
-                    <input style={{...inp,paddingLeft:sprites[m]?"38px":"12px"}} value={m}
-                      onChange={e=>{const n=[...members];n[i]=e.target.value;setMembers(n);}}
-                      placeholder={`${i+1}体目`}/>
-                    {sprites[m] && <img src={sprites[m]} alt={m} style={{position:"absolute",left:"2px",top:"50%",transform:"translateY(-50%)",width:"32px",height:"32px",imageRendering:"pixelated",pointerEvents:"none"}}/>}
-                  </div>
-                ))}
-              </div>
-              {filled.length>0 && (
-                <div style={{marginTop:"10px",display:"flex",flexWrap:"wrap",gap:"3px"}}>
-                  {[...new Set(filled.flatMap(n=>{const et=getEnTypes(n)||[];return et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);}))].map(t=><TypeBadge key={t} type={t} small/>)}
-                </div>
-              )}
-            </div>
-
-            <div style={card}>
-              <span style={lbl}>タグ（カンマ区切り）</span>
-              <input style={inp} value={pTags} onChange={e=>setPTags(e.target.value)} placeholder="例：ランクマ, 雨パ, 受けループ"/>
-              <span style={{...lbl,marginTop:"10px"}}>構築メモ</span>
-              <textarea style={{...inp,minHeight:"70px",resize:"vertical",lineHeight:"1.5"}} value={pNotes} onChange={e=>setPNotes(e.target.value)} placeholder="役割・技・持ち物・育成メモなど"/>
-            </div>
-
-            <div style={{display:"flex",gap:"8px"}}>
-              <button style={{...btn("p"),flex:1}} onClick={saveParty}>💾 保存</button>
-              <button style={btn()} onClick={clearForm}>クリア</button>
-              {editId && <button style={btn("r")} onClick={()=>deleteParty(editId,pName)}>削除</button>}
-            </div>
-            <button style={{...btn(),padding:"10px",width:"100%",color:"rgba(255,200,0,0.8)",border:"1px solid rgba(255,200,0,0.2)"}} onClick={()=>{setTab("analyze");analyze();}}>🔬 弱点を分析する</button>
-            <button style={{...btn(),padding:"10px",width:"100%",color:"rgba(150,180,255,0.8)",border:"1px solid rgba(150,180,255,0.2)"}} onClick={()=>{setChatIn(filled.length>0?`現在のパーティ：${filled.join("、")}\nこのパーティを評価して改善点を教えてください`:"ポケモンチャンピオンズで強いパーティを教えてください");setTab("chat");}}>🤖 AIに相談する</button>
-          </div>
-        )}
-
-        {/* ── ANALYZE ── */}
-        {tab==="analyze" && (
-          <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-            <button style={{...btn("p"),padding:"11px"}} onClick={analyze}>🔄 分析を更新</button>
-            {!analysis ? (
-              <div style={{...card,textAlign:"center",color:"rgba(255,255,255,0.3)",padding:"30px"}}>「構築」タブでメンバーを入力してください</div>
-            ) : (
-              <>
-                {filled.length>0 && (
-                  <div style={card}>
-                    <span style={lbl}>スプライト</span>
-                    <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"4px"}}>
-                      {filled.map(name=>(
-                        <div key={name} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}>
-                          {sprites[name]
-                            ? <img src={sprites[name]} alt={name} style={{width:"56px",height:"56px",imageRendering:"pixelated"}}/>
-                            : <div style={{width:"56px",height:"56px",background:"rgba(255,255,255,0.06)",borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}}>❓</div>
-                          }
-                          <span style={{fontSize:"9px",color:"rgba(255,255,255,0.5)"}}>{name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div style={card}>
-                  <span style={lbl}>タイプカバレッジ</span>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"4px"}}>
-                    {analysis.coverage.length ? analysis.coverage.map(t=><TypeBadge key={t} type={t}/>) : <span style={{fontSize:"12px",color:"rgba(255,255,255,0.3)"}}>データなし</span>}
-                  </div>
-                </div>
-
-                {analysis.quads.length>0 && (
-                  <div style={{background:"rgba(220,50,50,0.12)",border:"1px solid rgba(220,50,50,0.4)",borderRadius:"12px",padding:"12px"}}>
-                    <div style={{fontSize:"13px",fontWeight:"700",color:"#ff7070",marginBottom:"8px"}}>⚠️ 4倍弱点あり！</div>
-                    {analysis.quads.map(([t,names])=>(
-                      <div key={t} style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px",fontSize:"12px",color:"rgba(255,180,180,0.9)"}}>
-                        <TypeBadge type={t} small/> <span>→ {names.join("、")}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={card}>
-                  <span style={lbl}>弱点まとめ（多い順）</span>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:"5px",marginTop:"6px"}}>
-                    {analysis.sorted.length===0
-                      ? <span style={{fontSize:"12px",color:"rgba(255,255,255,0.3)"}}>大きな弱点なし 🎉</span>
-                      : analysis.sorted.map(([t,c])=>{
-                          const isQ = analysis.quads.some(([qt])=>qt===t);
-                          return (
-                            <span key={t} style={{background:isQ?"rgba(200,50,50,0.3)":c>=3?"rgba(230,120,30,0.25)":"rgba(255,255,255,0.08)",border:`1px solid ${isQ?"rgba(200,50,50,0.5)":c>=3?"rgba(230,120,30,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:"8px",padding:"4px 8px",fontSize:"12px",fontWeight:"700",color:isQ?"#ff7070":c>=3?"#f0a060":"rgba(255,255,255,0.6)"}}>
-                              {t} <span style={{opacity:0.6}}>{c}体</span>
-                            </span>
-                          );
-                        })
-                    }
-                  </div>
-                </div>
-
-                {analysis.unknown.length>0 && <div style={{fontSize:"11px",color:"rgba(255,255,255,0.3)",textAlign:"center"}}>タイプ未取得: {analysis.unknown.join("、")}</div>}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ── SAVED ── */}
-        {tab==="saved" && (
-          <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-            <div style={card}>
-              <span style={lbl}>バックアップ</span>
-              <div style={{display:"flex",gap:"8px",marginTop:"6px"}}>
-                <button style={{...btn(),flex:1,fontSize:"12px"}} onClick={exportData}>📤 エクスポート</button>
-                <button style={{...btn(),flex:1,fontSize:"12px"}} onClick={()=>fileRef.current.click()}>📥 インポート</button>
-                <input ref={fileRef} type="file" accept=".json" style={{display:"none"}} onChange={e=>{if(e.target.files[0]){importData(e.target.files[0]);e.target.value="";}}}/>
-              </div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
-              <div><span style={lbl}>作品で絞り込み</span><select style={{...inp,appearance:"none",fontSize:"12px"}} value={filterGame} onChange={e=>setFilterGame(e.target.value)}><option value="">すべて</option>{GAMES.map(g=><option key={g} value={g}>{g}</option>)}</select></div>
-              <div><span style={lbl}>検索</span><input style={{...inp,fontSize:"12px"}} value={searchKw} onChange={e=>setSearchKw(e.target.value)} placeholder="名前・タグ・メンバー"/></div>
-            </div>
-            {status && <div style={{background:"rgba(255,200,0,0.12)",border:"1px solid rgba(255,200,0,0.3)",borderRadius:"10px",padding:"8px 12px",fontSize:"12px",color:"#ffd700",textAlign:"center"}}>{status}</div>}
-            {filtered.length===0
-              ? <div style={{...card,textAlign:"center",color:"rgba(255,255,255,0.3)",padding:"30px"}}>パーティがありません</div>
-              : filtered.map(p=>(
-                <div key={p.id} style={{...card,borderColor:editId===p.id?"rgba(255,200,0,0.3)":"rgba(255,255,255,0.08)"}}>
-                  <div style={{fontWeight:"700",fontSize:"14px",marginBottom:"3px"}}>{p.name||"無名パーティ"}</div>
-                  <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)",marginBottom:"6px"}}>{p.game||"未設定"}</div>
-                  <div style={{fontSize:"12px",color:"rgba(255,255,255,0.6)",marginBottom:"6px"}}>{(p.members||[]).join(" / ")||"メンバー未入力"}</div>
-                  {p.tags?.length>0 && <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginBottom:"6px"}}>{p.tags.map(t=><span key={t} style={{background:"rgba(255,255,255,0.07)",borderRadius:"6px",padding:"2px 7px",fontSize:"10px",color:"rgba(255,255,255,0.5)"}}>{t}</span>)}</div>}
-                  {p.notes && <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",whiteSpace:"pre-wrap",marginBottom:"8px"}}>{p.notes.slice(0,80)}{p.notes.length>80?"…":""}</div>}
-                  <div style={{display:"flex",gap:"8px"}}>
-                    <button style={{...btn("p"),flex:1,fontSize:"12px",padding:"7px"}} onClick={()=>loadParty(p)}>✏️ 編集</button>
-                    <button style={{...btn("r"),fontSize:"12px",padding:"7px 12px"}} onClick={()=>deleteParty(p.id,p.name)}>削除</button>
-                  </div>
-                </div>
+        // ── PARTY ──
+        tab==="party"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
+          status&&e('div',{style:{background:"rgba(255,200,0,0.12)",border:"1px solid rgba(255,200,0,0.3)",borderRadius:"10px",padding:"8px 12px",fontSize:"13px",color:"#ffd700",textAlign:"center",animation:"fadeIn 0.2s"}},status),
+          e('div',{style:card},
+            e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}},
+              e('div',null,e('span',{style:lbl},"パーティ名"),e('input',{style:inp,value:pName,onChange:ev=>setPName(ev.target.value),placeholder:"例：チャンピオンズ用"})),
+              e('div',null,e('span',{style:lbl},"作品"),e('select',{style:{...inp,appearance:"none"},value:pGame,onChange:ev=>setPGame(ev.target.value)},e('option',{value:""},"未設定"),...GAMES.map(g=>e('option',{key:g,value:g},g))))
+            )
+          ),
+          e('div',{style:card},
+            e('span',{style:lbl},"メンバー（日本語名で入力）"),
+            e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},
+              members.map((m,i)=>e('div',{key:i,style:{position:"relative"}},
+                e('input',{style:{...inp,paddingLeft:sprites[m]?"38px":"12px"},value:m,onChange:ev=>{const n=[...members];n[i]=ev.target.value;setMembers(n);},placeholder:`${i+1}体目`}),
+                sprites[m]&&e('img',{src:sprites[m],alt:m,style:{position:"absolute",left:"2px",top:"50%",transform:"translateY(-50%)",width:"32px",height:"32px",imageRendering:"pixelated",pointerEvents:"none"}})
               ))
-            }
-          </div>
-        )}
+            ),
+            filled.length>0&&e('div',{style:{marginTop:"10px",display:"flex",flexWrap:"wrap",gap:"2px"}},
+              [...new Set(filled.flatMap(n=>{const et=getEnTypes(n)||[];return et.map(e2=>TYPE_EN_TO_JA[e2]).filter(Boolean);}))].map(t=>e(TypeBadge,{key:t,type:t,small:true}))
+            )
+          ),
+          e('div',{style:card},
+            e('span',{style:lbl},"タグ（カンマ区切り）"),
+            e('input',{style:inp,value:pTags,onChange:ev=>setPTags(ev.target.value),placeholder:"例：ランクマ, 雨パ, 受けループ"}),
+            e('span',{style:{...lbl,marginTop:"10px"}},"構築メモ"),
+            e('textarea',{style:{...inp,minHeight:"70px",resize:"vertical",lineHeight:"1.5"},value:pNotes,onChange:ev=>setPNotes(ev.target.value),placeholder:"役割・技・持ち物・育成メモなど"})
+          ),
+          e('div',{style:{display:"flex",gap:"8px"}},
+            e('button',{style:{...btn("p"),flex:1},onClick:saveParty},"💾 保存"),
+            e('button',{style:btn(),onClick:clearForm},"クリア"),
+            editId&&e('button',{style:btn("r"),onClick:()=>deleteParty(editId,pName)},"削除")
+          ),
+          e('button',{style:{...btn(),padding:"10px",width:"100%",color:"rgba(255,200,0,0.8)",border:"1px solid rgba(255,200,0,0.2)"},onClick:()=>{setTab("analyze");analyze();}},"🔬 弱点を分析する"),
+          e('button',{style:{...btn(),padding:"10px",width:"100%",color:"rgba(150,180,255,0.8)",border:"1px solid rgba(150,180,255,0.2)"},onClick:()=>{setChatIn(filled.length>0?`現在のパーティ：${filled.join("、")}\nこのパーティを評価して改善点を教えてください`:"ポケモンチャンピオンズで強いパーティを教えてください");setTab("chat");}},"🤖 AIに相談する")
+        ),
 
-        {/* ── CHAT ── */}
-        {tab==="chat" && (
-          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
-            {msgs.map((m,i)=><Msg key={i} msg={m}/>)}
-            {chatLoading && (
-              <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0"}}>
-                <div style={{width:"28px",height:"28px",borderRadius:"50%",background:"linear-gradient(135deg,#ffd700,#ff8c00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px"}}>🤖</div>
-                <div style={{display:"flex",gap:"4px"}}>
-                  {[0,1,2].map(i=><div key={i} style={{width:"7px",height:"7px",borderRadius:"50%",background:"#ffd700",animation:`bounce 1s ease-in-out ${i*0.15}s infinite`}}/>)}
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef}/>
-          </div>
-        )}
-      </div>
+        // ── ANALYZE ──
+        tab==="analyze"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
+          e('button',{style:{...btn("p"),padding:"11px"},onClick:analyze},"🔄 分析を更新"),
+          !analysis?e('div',{style:{...card,textAlign:"center",color:"rgba(255,255,255,0.3)",padding:"30px"}},"「構築」タブでメンバーを入力してください"):
+          e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
+            filled.length>0&&e('div',{style:card},
+              e('span',{style:lbl},"スプライト"),
+              e('div',{style:{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"4px"}},
+                filled.map(name=>e('div',{key:name,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}},
+                  sprites[name]?e('img',{src:sprites[name],alt:name,style:{width:"56px",height:"56px",imageRendering:"pixelated"}}):e('div',{style:{width:"56px",height:"56px",background:"rgba(255,255,255,0.06)",borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}},"❓"),
+                  e('span',{style:{fontSize:"9px",color:"rgba(255,255,255,0.5)"}},name)
+                ))
+              )
+            ),
+            e('div',{style:card},
+              e('span',{style:lbl},"タイプカバレッジ"),
+              e('div',{style:{display:"flex",flexWrap:"wrap",gap:"2px",marginTop:"4px"}},
+                analysis.coverage.length?analysis.coverage.map(t=>e(TypeBadge,{key:t,type:t})):e('span',{style:{fontSize:"12px",color:"rgba(255,255,255,0.3)"}},"データなし")
+              )
+            ),
+            analysis.quads.length>0&&e('div',{style:{background:"rgba(220,50,50,0.12)",border:"1px solid rgba(220,50,50,0.4)",borderRadius:"12px",padding:"12px"}},
+              e('div',{style:{fontSize:"13px",fontWeight:"700",color:"#ff7070",marginBottom:"8px"}},"⚠️ 4倍弱点あり！"),
+              ...analysis.quads.map(([t,names])=>e('div',{key:t,style:{display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px",fontSize:"12px",color:"rgba(255,180,180,0.9)"}},
+                e(TypeBadge,{type:t,small:true}),e('span',null,"→ "+names.join("、"))
+              ))
+            ),
+            e('div',{style:card},
+              e('span',{style:lbl},"弱点まとめ（多い順）"),
+              e('div',{style:{display:"flex",flexWrap:"wrap",gap:"5px",marginTop:"6px"}},
+                analysis.sorted.length===0?e('span',{style:{fontSize:"12px",color:"rgba(255,255,255,0.3)"}},"大きな弱点なし 🎉"):
+                analysis.sorted.map(([t,c])=>{
+                  const isQ=analysis.quads.some(([qt])=>qt===t);
+                  return e('span',{key:t,style:{background:isQ?"rgba(200,50,50,0.3)":c>=3?"rgba(230,120,30,0.25)":"rgba(255,255,255,0.08)",border:`1px solid ${isQ?"rgba(200,50,50,0.5)":c>=3?"rgba(230,120,30,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:"8px",padding:"4px 8px",fontSize:"12px",fontWeight:"700",color:isQ?"#ff7070":c>=3?"#f0a060":"rgba(255,255,255,0.6)"}},t," ",e('span',{style:{opacity:0.6}},c+"体"));
+                })
+              )
+            ),
+            analysis.unknown.length>0&&e('div',{style:{fontSize:"11px",color:"rgba(255,255,255,0.3)",textAlign:"center"}},"タイプ未取得: "+analysis.unknown.join("、"))
+          )
+        ),
 
-      {tab==="chat" && (
-        <div style={{padding:"12px 14px",background:"rgba(0,0,0,0.4)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.06)",display:"flex",gap:"8px"}}>
-          <input value={chatIn} onChange={e=>setChatIn(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&sendChat()} placeholder="構築について質問する..."
-            style={{flex:1,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"12px",color:"#fff",padding:"10px 14px",fontSize:"14px",outline:"none"}}/>
-          <button onClick={sendChat} disabled={chatLoading||!chatIn.trim()} style={{background:"linear-gradient(135deg,#ffd700,#ff8c00)",border:"none",borderRadius:"12px",width:"44px",height:"44px",cursor:"pointer",fontSize:"18px",display:"flex",alignItems:"center",justifyContent:"center",opacity:chatLoading||!chatIn.trim()?0.4:1}}>↑</button>
-        </div>
-      )}
+        // ── SAVED ──
+        tab==="saved"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
+          e('div',{style:card},
+            e('span',{style:lbl},"バックアップ"),
+            e('div',{style:{display:"flex",gap:"8px",marginTop:"6px"}},
+              e('button',{style:{...btn(),flex:1,fontSize:"12px"},onClick:exportData},"📤 エクスポート"),
+              e('button',{style:{...btn(),flex:1,fontSize:"12px"},onClick:()=>fileRef.current.click()},"📥 インポート"),
+              e('input',{ref:fileRef,type:"file",accept:".json",style:{display:"none"},onChange:ev=>{if(ev.target.files[0]){importData(ev.target.files[0]);ev.target.value="";}}})
+            )
+          ),
+          e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},
+            e('div',null,e('span',{style:lbl},"作品で絞り込み"),e('select',{style:{...inp,appearance:"none",fontSize:"12px"},value:filterGame,onChange:ev=>setFilterGame(ev.target.value)},e('option',{value:""},"すべて"),...GAMES.map(g=>e('option',{key:g,value:g},g)))),
+            e('div',null,e('span',{style:lbl},"検索"),e('input',{style:{...inp,fontSize:"12px"},value:searchKw,onChange:ev=>setSearchKw(ev.target.value),placeholder:"名前・タグ・メンバー"}))
+          ),
+          status&&e('div',{style:{background:"rgba(255,200,0,0.12)",border:"1px solid rgba(255,200,0,0.3)",borderRadius:"10px",padding:"8px 12px",fontSize:"12px",color:"#ffd700",textAlign:"center"}},status),
+          filtered.length===0?e('div',{style:{...card,textAlign:"center",color:"rgba(255,255,255,0.3)",padding:"30px"}},"パーティがありません"):
+          filtered.map(p=>e('div',{key:p.id,style:{...card,borderColor:editId===p.id?"rgba(255,200,0,0.3)":"rgba(255,255,255,0.08)",animation:"fadeIn 0.2s"}},
+            e('div',{style:{fontWeight:"700",fontSize:"14px",marginBottom:"3px"}},p.name||"無名パーティ"),
+            e('div',{style:{fontSize:"11px",color:"rgba(255,255,255,0.4)",marginBottom:"6px"}},p.game||"未設定"),
+            e('div',{style:{fontSize:"12px",color:"rgba(255,255,255,0.6)",marginBottom:"6px"}},(p.members||[]).join(" / ")||"メンバー未入力"),
+            p.tags?.length>0&&e('div',{style:{display:"flex",flexWrap:"wrap",gap:"4px",marginBottom:"6px"}},...p.tags.map(t=>e('span',{key:t,style:{background:"rgba(255,255,255,0.07)",borderRadius:"6px",padding:"2px 7px",fontSize:"10px",color:"rgba(255,255,255,0.5)"}},t))),
+            p.notes&&e('div',{style:{fontSize:"11px",color:"rgba(255,255,255,0.35)",whiteSpace:"pre-wrap",marginBottom:"8px"}},p.notes.slice(0,80)+(p.notes.length>80?"…":"")),
+            e('div',{style:{display:"flex",gap:"8px"}},
+              e('button',{style:{...btn("p"),flex:1,fontSize:"12px",padding:"7px"},onClick:()=>loadParty(p)},"✏️ 編集"),
+              e('button',{style:{...btn("r"),fontSize:"12px",padding:"7px 12px"},onClick:()=>deleteParty(p.id,p.name)},"削除")
+            )
+          ))
+        ),
 
-      <style>{`
-        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-        *{box-sizing:border-box}
-        input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.25)}
-        select option{background:#1a1030;color:#fff}
-        ::-webkit-scrollbar{width:3px}
-        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px}
-      `}</style>
-    </div>
+        // ── CHAT ──
+        tab==="chat"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"4px"}},
+          ...msgs.map((m,i)=>e(Msg,{key:i,msg:m})),
+          chatLoading&&e('div',{style:{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0"}},
+            e('div',{style:{width:"28px",height:"28px",borderRadius:"50%",background:"linear-gradient(135deg,#ffd700,#ff8c00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px"}},"🤖"),
+            e('div',{style:{display:"flex",gap:"4px"}},...[0,1,2].map(i=>e('div',{key:i,style:{width:"7px",height:"7px",borderRadius:"50%",background:"#ffd700",animation:`bounce 1s ease-in-out ${i*0.15}s infinite`}})))
+          ),
+          e('div',{ref:chatEndRef})
+        )
+      ),
+
+      // Chat input (fixed bottom)
+      tab==="chat"&&e('div',{style:{padding:"12px 14px",background:"rgba(0,0,0,0.5)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.06)",display:"flex",gap:"8px",position:"sticky",bottom:0}},
+        e('input',{value:chatIn,onChange:ev=>setChatIn(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&!ev.shiftKey&&sendChat(),placeholder:"構築について質問する...",style:{flex:1,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"12px",color:"#fff",padding:"10px 14px",fontSize:"14px",outline:"none"}}),
+        e('button',{onClick:sendChat,disabled:chatLoading||!chatIn.trim(),style:{background:"linear-gradient(135deg,#ffd700,#ff8c00)",border:"none",borderRadius:"12px",width:"44px",height:"44px",cursor:"pointer",fontSize:"18px",display:"flex",alignItems:"center",justifyContent:"center",opacity:chatLoading||!chatIn.trim()?0.4:1}},"↑")
+      )
+    )
   );
 }
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
