@@ -5,32 +5,393 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>趣味管理アプリ</title>
   <link rel="stylesheet" href="./style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Override base for main page only ── */
+    :root {
+      --neon-cyan:  #00e5ff;
+      --neon-gold:  #ffd600;
+      --neon-purp:  #d500f9;
+      --neon-red:   #ff1744;
+      --deep:       #04060f;
+      --panel:      rgba(255,255,255,0.035);
+      --panel-border: rgba(255,255,255,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--deep);
+      color: #e8f0ff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── Animated grid background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: gridDrift 20s linear infinite;
+      z-index: 0;
+      pointer-events: none;
+    }
+    @keyframes gridDrift {
+      from { background-position: 0 0; }
+      to   { background-position: 48px 48px; }
+    }
+
+    /* ── Glow blobs ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 900px; height: 500px;
+      background: radial-gradient(ellipse at center,
+        rgba(0,229,255,0.07) 0%,
+        rgba(213,0,249,0.05) 40%,
+        transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: blobPulse 6s ease-in-out infinite alternate;
+    }
+    @keyframes blobPulse {
+      from { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      to   { opacity: 1;   transform: translateX(-50%) scale(1.08); }
+    }
+
+    /* ── Scanline overlay ── */
+    .scanlines {
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Floating particles ── */
+    .particles {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      width: 2px; height: 2px;
+      border-radius: 50%;
+      background: var(--neon-cyan);
+      animation: floatUp linear infinite;
+      opacity: 0;
+    }
+    .particle:nth-child(2)  { left: 15%; width:3px; height:3px; animation-duration:12s; animation-delay:-3s; background: var(--neon-gold); }
+    .particle:nth-child(3)  { left: 30%; animation-duration:18s; animation-delay:-7s; }
+    .particle:nth-child(4)  { left: 50%; width:3px; height:3px; animation-duration:14s; animation-delay:-1s; background: var(--neon-purp); }
+    .particle:nth-child(5)  { left: 65%; animation-duration:20s; animation-delay:-9s; }
+    .particle:nth-child(6)  { left: 80%; width:2px; height:2px; animation-duration:16s; animation-delay:-5s; background: var(--neon-gold); }
+    .particle:nth-child(7)  { left: 90%; animation-duration:11s; animation-delay:-2s; background: var(--neon-purp); }
+    .particle:nth-child(8)  { left: 5%;  animation-duration:22s; animation-delay:-14s; }
+    @keyframes floatUp {
+      0%   { opacity: 0;   transform: translateY(100vh) scale(0); }
+      10%  { opacity: 0.8; }
+      90%  { opacity: 0.4; }
+      100% { opacity: 0;   transform: translateY(-100px) scale(1.5); }
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(4,6,15,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,229,255,0.15);
+      box-shadow: 0 1px 40px rgba(0,229,255,0.06);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto;
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .header-icon {
+      width: 38px; height: 38px;
+      border: 2px solid var(--neon-cyan);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 14px rgba(0,229,255,0.4), inset 0 0 8px rgba(0,229,255,0.1);
+      animation: iconPulse 3s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes iconPulse {
+      0%,100% { box-shadow: 0 0 14px rgba(0,229,255,0.4), inset 0 0 8px rgba(0,229,255,0.1); }
+      50%      { box-shadow: 0 0 24px rgba(0,229,255,0.7), inset 0 0 14px rgba(0,229,255,0.2); }
+    }
+    header h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: 18px; font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--neon-cyan), #fff, var(--neon-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+    }
+    header .sub {
+      font-size: 11px; color: rgba(0,229,255,0.6);
+      letter-spacing: 3px; text-transform: uppercase;
+      font-weight: 600; margin-top: 1px;
+    }
+
+    /* ── Main layout ── */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 20px 80px; position: relative; z-index: 2; }
+
+    /* ── Section title ── */
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px; letter-spacing: 4px;
+      color: rgba(0,229,255,0.5);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-title::before, .section-title::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,229,255,0.2), transparent);
+    }
+
+    /* ── Game cards grid ── */
+    .game-grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+    }
+    @media(min-width: 600px) {
+      .game-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media(min-width: 900px) {
+      .game-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* ── Game card ── */
+    .game-card {
+      position: relative;
+      display: block;
+      text-decoration: none;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      overflow: hidden;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s;
+      animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .game-card:nth-child(1) { animation-delay: 0.05s; }
+    .game-card:nth-child(2) { animation-delay: 0.15s; }
+    .game-card:nth-child(3) { animation-delay: 0.25s; }
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(30px) scale(0.94); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    /* Glow border per card via pseudo-element */
+    .game-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 20px;
+      padding: 1px;
+      background: var(--card-glow);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0.5;
+      transition: opacity 0.25s;
+    }
+    .game-card:hover::before { opacity: 1; }
+
+    /* Corner accent */
+    .game-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 80px; height: 80px;
+      background: var(--card-glow);
+      border-radius: 0 20px 0 100%;
+      opacity: 0.06;
+      transition: opacity 0.25s;
+    }
+    .game-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: var(--card-shadow);
+    }
+    .game-card:hover::after { opacity: 0.14; }
+
+    /* ── Per-card color themes ── */
+    .card-pokemon {
+      --card-glow: linear-gradient(135deg, #ffcb05, #e3350d);
+      --card-shadow: 0 20px 50px rgba(255,203,5,0.2), 0 8px 20px rgba(227,53,13,0.15);
+      --card-accent: #ffcb05;
+    }
+    .card-yugioh {
+      --card-glow: linear-gradient(135deg, #d500f9, #ffd600);
+      --card-shadow: 0 20px 50px rgba(213,0,249,0.2), 0 8px 20px rgba(255,214,0,0.15);
+      --card-accent: #d500f9;
+    }
+    .card-other {
+      --card-glow: linear-gradient(135deg, #00e5ff, #1de9b6);
+      --card-shadow: 0 20px 50px rgba(0,229,255,0.2), 0 8px 20px rgba(29,233,182,0.15);
+      --card-accent: #00e5ff;
+    }
+
+    /* ── Card icon ── */
+    .card-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      display: block;
+      filter: drop-shadow(0 0 12px var(--card-accent));
+      transition: transform 0.2s;
+    }
+    .game-card:hover .card-icon { transform: scale(1.15) rotate(-3deg); }
+
+    /* ── Card text ── */
+    .card-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 16px; font-weight: 700;
+      letter-spacing: 1px;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 12px;
+      color: rgba(200,220,255,0.5);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Card badge ── */
+    .card-badge {
+      position: absolute;
+      top: 18px; right: 18px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--card-accent);
+      border: 1px solid var(--card-accent);
+      border-radius: 999px;
+      padding: 2px 8px;
+      opacity: 0.7;
+      font-family: 'Orbitron', monospace;
+    }
+
+    /* ── Card tag line ── */
+    .card-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 14px;
+      font-size: 11px; color: var(--card-accent);
+      font-weight: 700; letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+    .card-tag::before {
+      content: '';
+      width: 16px; height: 1px;
+      background: var(--card-accent);
+    }
+
+    /* ── Bottom status bar ── */
+    .status-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(4,6,15,0.92);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(0,229,255,0.1);
+      padding: 8px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .status-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-family: 'Orbitron', monospace;
+      color: rgba(0,229,255,0.5); letter-spacing: 1px;
+    }
+    .status-dot::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.2; }
+    }
+  </style>
 </head>
 <body>
+  <div class="scanlines"></div>
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
   <header>
-    <div class="wrap">
-      <h1>趣味管理アプリ</h1>
-      <div class="small">シリーズを選択</div>
+    <div class="header-inner">
+      <div class="header-icon">🎮</div>
+      <div>
+        <h1>HOBBY HUB</h1>
+        <div class="sub">趣味管理アプリ</div>
+      </div>
     </div>
   </header>
 
   <main class="wrap">
-    <div class="menu">
-      <a class="menu-card" href="./pokemon/">
-        <h2>ポケモン</h2>
-        <div class="small">図鑑 / パーティ管理</div>
+    <div class="section-title">SELECT YOUR GAME</div>
+
+    <div class="game-grid">
+
+      <a class="game-card card-pokemon" href="./pokemon/">
+        <span class="card-badge">ACTIVE</span>
+        <span class="card-icon">⚡</span>
+        <div class="card-title">POKÉMON</div>
+        <div class="card-desc">図鑑 / パーティ管理 / 構築分析</div>
+        <div class="card-tag">ENTER →</div>
       </a>
 
-      <a class="menu-card" href="./yugioh/">
-        <h2>遊戯王</h2>
-        <div class="small">カード検索 / デッキ管理</div>
+      <a class="game-card card-yugioh" href="./yugioh/">
+        <span class="card-badge">COMING</span>
+        <span class="card-icon">🃏</span>
+        <div class="card-title">遊戯王</div>
+        <div class="card-desc">カード検索 / デッキ管理</div>
+        <div class="card-tag">ENTER →</div>
       </a>
 
-      <a class="menu-card" href="./other/">
-        <h2>その他</h2>
-        <div class="small">あとから追加するページ</div>
+      <a class="game-card card-other" href="./other/">
+        <span class="card-badge">OPEN</span>
+        <span class="card-icon">✦</span>
+        <div class="card-title">OTHER</div>
+        <div class="card-desc">あとから追加するページ</div>
+        <div class="card-tag">ENTER →</div>
       </a>
+
     </div>
   </main>
+
+  <div class="status-bar">
+    <div class="status-dot">SYSTEM ONLINE</div>
+    <div class="status-dot" style="font-size:10px; opacity:0.4;">v1.0.0</div>
+  </div>
 </body>
 </html>
