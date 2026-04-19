@@ -4,155 +4,430 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ポケモン図鑑</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0c12;
-      --card: #0f1219;
-      --line: #1e2435;
-      --accent: #6c8cff;
-      --accent2: #ff6b9d;
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --success: #4ade80;
-      --warning: #facc15;
+      --sky:    #5bb8f5;
+      --sky2:   #a8d8f0;
+      --grass:  #5ab552;
+      --red:    #e3350d;
+      --yellow: #ffcb05;
+      --white:  #ffffff;
+      --card:   #ffffff;
+      --text:   #1a2a3a;
+      --muted:  #6b8fa8;
+      --line:   #d4e8f5;
+      --shadow: rgba(50,120,180,0.12);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
 
-    header { border-bottom: 1px solid var(--line); padding: 18px 0; }
-    header h1 { font-size: 20px; font-weight: 700; }
-    header .small { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    /* ── Sky + grass background with Pokeball watermark ── */
+    body {
+      font-family: 'Nunito', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        /* Subtle hex dot grid */
+        radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px),
+        /* Sky gradient */
+        linear-gradient(180deg, #5bb8f5 0%, #a8d8f0 55%, #c8eac0 75%, #5ab552 100%);
+      background-size: 28px 28px, 100% 100%;
+      position: relative;
+    }
 
-    main { padding: 20px 0 60px; }
-    .back { color: var(--accent); text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 16px; }
+    /* Pokeball decorative circle top-right */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -140px; right: -140px;
+      width: 380px; height: 380px;
+      border-radius: 50%;
+      border: 42px solid rgba(255,255,255,0.18);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* Pokeball center bar */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 48px; right: -140px;
+      width: 380px; height: 24px;
+      background: rgba(255,255,255,0.18);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Floating cloud puffs */
+    .cloud {
+      position: fixed;
+      border-radius: 50px;
+      background: rgba(255,255,255,0.55);
+      pointer-events: none;
+      z-index: 0;
+      animation: drift linear infinite;
+    }
+    .cloud::before, .cloud::after {
+      content: ''; position: absolute;
+      background: rgba(255,255,255,0.55);
+      border-radius: 50%;
+    }
+    .cloud-1 { width:100px; height:30px; top:8%; left:-120px; animation-duration:38s; animation-delay:-10s; }
+    .cloud-1::before { width:50px; height:44px; top:-22px; left:14px; }
+    .cloud-1::after  { width:36px; height:36px; top:-16px; left:44px; }
+    .cloud-2 { width:70px; height:22px; top:16%; left:-90px; animation-duration:52s; animation-delay:-28s; }
+    .cloud-2::before { width:36px; height:32px; top:-16px; left:10px; }
+    .cloud-2::after  { width:28px; height:28px; top:-12px; left:32px; }
+    .cloud-3 { width:130px; height:34px; top:5%; left:-160px; animation-duration:44s; animation-delay:-5s; }
+    .cloud-3::before { width:60px; height:50px; top:-26px; left:20px; }
+    .cloud-3::after  { width:44px; height:44px; top:-20px; left:60px; }
+    @keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 200px)); } }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--red) 0%, #c0280a 100%);
+      box-shadow: 0 4px 20px rgba(180,30,0,0.35);
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+      z-index: 10;
+    }
+    header::before {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      border: 28px solid rgba(255,255,255,0.12);
+    }
+    header::after {
+      content: '';
+      position: absolute; top: 28px; right: -60px;
+      width: 180px; height: 12px;
+      background: rgba(255,255,255,0.12);
+    }
+    .header-inner {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px;
+    }
+    .header-ball {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(180deg, #fff 50%, #222 50%);
+      border: 3px solid #333;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      position: relative;
+    }
+    .header-ball::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #333;
+    }
+    header h1 {
+      font-size: 22px; font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      letter-spacing: 0.5px;
+    }
+    header .small {
+      color: rgba(255,255,255,0.75);
+      font-size: 12px; margin-top: 1px; font-weight: 600;
+    }
+
+    main { padding: 22px 0 70px; }
+
+    .back {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.85);
+      color: var(--red); text-decoration: none;
+      font-size: 13px; font-weight: 700;
+      padding: 6px 14px; border-radius: 999px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: all .15s;
+      border: 2px solid rgba(255,255,255,0.9);
+    }
+    .back:hover { background: #fff; transform: translateX(-2px); }
 
     .grid { display: grid; gap: 16px; }
     @media(min-width: 800px) { .grid { grid-template-columns: 340px 1fr; } }
 
-    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
-    h2 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
-    .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    /* ── Cards ── */
+    .card {
+      background: rgba(255,255,255,0.92);
+      border: 2px solid rgba(255,255,255,0.95);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 24px var(--shadow), 0 1px 4px rgba(0,0,0,0.06);
+      backdrop-filter: blur(6px);
+    }
+    h2 {
+      font-size: 15px; font-weight: 800; margin-bottom: 14px;
+      color: var(--text);
+      display: flex; align-items: center; gap: 7px;
+    }
+    h2::before {
+      content: '';
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--red), var(--yellow));
+      flex-shrink: 0;
+    }
+    .label {
+      font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .1em;
+      margin-bottom: 6px; font-weight: 700;
+    }
 
     input, select {
-      width: 100%; background: #0a0c14; border: 1px solid var(--line);
-      border-radius: 8px; color: var(--text); padding: 9px 12px; font-size: 14px;
-      outline: none; transition: border-color .2s;
+      width: 100%;
+      background: #f0f7ff;
+      border: 2px solid var(--line);
+      border-radius: 10px; color: var(--text);
+      padding: 9px 12px; font-size: 14px;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+      font-family: 'Nunito', sans-serif;
     }
-    input:focus, select:focus { border-color: var(--accent); }
+    input:focus, select:focus {
+      border-color: var(--sky);
+      box-shadow: 0 0 0 3px rgba(91,184,245,0.2);
+    }
+    select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%236b8fa8'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 
     .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
     button {
-      padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; border: 1px solid var(--line); background: #1a1e2e; color: var(--text);
-      transition: all .15s;
+      padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; border: 2px solid var(--line);
+      background: #f0f7ff; color: var(--muted);
+      transition: all .15s; font-family: 'Nunito', sans-serif;
     }
-    button:hover { background: #232840; }
-    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    button.primary:hover { background: #5a7aee; }
-    button.secondary { background: transparent; border-color: var(--accent); color: var(--accent); }
-    button.secondary:hover { background: rgba(108,140,255,.1); }
+    button:hover { background: #e0f0ff; border-color: var(--sky); color: var(--text); }
+    button.primary {
+      background: linear-gradient(135deg, var(--red), #c0280a);
+      border-color: var(--red); color: #fff;
+      box-shadow: 0 3px 10px rgba(180,30,0,0.3);
+    }
+    button.primary:hover {
+      background: linear-gradient(135deg, #f04020, var(--red));
+      transform: translateY(-1px);
+      box-shadow: 0 5px 14px rgba(180,30,0,0.35);
+    }
+    button.secondary {
+      background: transparent; border-color: var(--sky); color: var(--sky);
+    }
+    button.secondary:hover { background: rgba(91,184,245,.1); }
 
     .result-card { display: none; }
     .result-card.show { display: block; }
-    .error-box { color: #fda4af; margin-top: 10px; font-size: 13px; }
-    .loading { color: var(--muted); margin-top: 10px; font-size: 13px; }
-    .section-gap { margin-top: 14px; }
+
+    .error-box {
+      color: var(--red); margin-top: 10px; font-size: 13px; font-weight: 700;
+      background: #fff0ed; border: 1px solid #ffc8c0; border-radius: 8px;
+      padding: 8px 12px; display: none;
+    }
+    .error-box:not(:empty) { display: block; }
+    .loading {
+      color: var(--sky); margin-top: 10px; font-size: 13px; font-weight: 700;
+    }
+    .section-gap { margin-top: 16px; }
     .preline { white-space: pre-wrap; }
 
-    .result-card img { width: 180px; max-width: 100%; display: block; margin: 0 auto 14px; }
+    /* Detail card pokemon image with decorative circle */
+    .poke-img-wrap {
+      position: relative;
+      width: 180px; margin: 0 auto 16px;
+    }
+    .poke-img-wrap::before {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 160px; height: 160px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(91,184,245,0.18), rgba(255,203,5,0.18));
+      z-index: 0;
+    }
+    .result-card img {
+      width: 180px; max-width: 100%; display: block;
+      margin: 0 auto; position: relative; z-index: 1;
+      filter: drop-shadow(0 6px 16px rgba(50,120,180,0.25));
+      transition: transform .2s;
+    }
+    .result-card img:hover { transform: scale(1.06) translateY(-4px); }
+
     .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
     @media(min-width:700px){ .stat-grid { grid-template-columns: repeat(3,1fr); } }
-    .mini-card { background: #10131b; border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+
+    .mini-card {
+      background: linear-gradient(135deg, #f0f7ff, #e8f4ff);
+      border: 2px solid var(--line); border-radius: 12px; padding: 10px;
+      font-weight: 600;
+    }
+    .mini-card strong { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; font-weight: 700; }
+    .mini-card div { font-size: 15px; font-weight: 800; color: var(--text); }
+
     .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .badge {
-      display: inline-block; padding: 5px 10px; border: 1px solid var(--line);
-      border-radius: 999px; font-size: 12px; background: #0f1117;
+      display: inline-flex; align-items: center;
+      padding: 5px 12px;
+      border: 2px solid var(--line);
+      border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: #f4f9ff; color: var(--text);
+      transition: all .12s;
+    }
+    .badge:hover { border-color: var(--sky); background: #e8f4ff; }
+    .badge-hidden {
+      background: linear-gradient(135deg, #fff0f8, #ffe8f5);
+      border-color: #f0a0c0; color: #c0408a;
     }
 
-    /* ── Advanced Search Panel ── */
-    #advPanel { display: none; margin-top: 14px; }
-    #advPanel.open { display: block; }
+    /* ── Advanced Search ── */
     .adv-toggle {
-      width: 100%; text-align: left; background: transparent; border: 1px dashed var(--line);
-      color: var(--muted); font-size: 13px; padding: 8px 12px; border-radius: 8px;
+      width: 100%; text-align: left; background: #f0f7ff;
+      border: 2px dashed var(--line);
+      color: var(--muted); font-size: 13px; font-weight: 700;
+      padding: 8px 12px; border-radius: 10px;
       cursor: pointer; transition: all .2s; margin-top: 12px;
     }
-    .adv-toggle:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,140,255,.05); }
-    .adv-toggle.active { border-color: var(--accent); color: var(--accent); }
+    .adv-toggle:hover { border-color: var(--sky); color: var(--sky); background: #e8f4ff; }
+    .adv-toggle.active { border-color: var(--sky); color: var(--sky); background: #e8f4ff; }
 
     .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .stat-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-    .stat-filter-item label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .stat-filter-item label { font-size: 11px; color: var(--muted); font-weight: 700; display: block; margin-bottom: 4px; }
     .stat-filter-item input { padding: 7px 10px; font-size: 13px; }
 
-    /* ── Search Results List ── */
+    /* ── Search Results ── */
     #searchResultsCard { display: none; }
     #searchResultsCard.show { display: block; }
     .results-list { max-height: 460px; overflow-y: auto; margin-top: 10px; }
-    .results-list::-webkit-scrollbar { width: 4px; }
-    .results-list::-webkit-scrollbar-track { background: transparent; }
-    .results-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+    .results-list::-webkit-scrollbar { width: 5px; }
+    .results-list::-webkit-scrollbar-track { background: #f0f7ff; border-radius: 4px; }
+    .results-list::-webkit-scrollbar-thumb { background: var(--sky2); border-radius: 4px; }
 
     .poke-result-item {
       display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-      border-radius: 10px; cursor: pointer; transition: background .15s;
-      border-bottom: 1px solid var(--line);
+      border-radius: 12px; cursor: pointer; transition: all .15s;
+      border-bottom: 2px solid var(--line);
     }
     .poke-result-item:last-child { border-bottom: none; }
-    .poke-result-item:hover { background: rgba(108,140,255,.08); }
-    .poke-result-item img { width: 48px; height: 48px; object-fit: contain; }
-    .poke-result-item .poke-no { font-size: 11px; color: var(--muted); min-width: 36px; }
-    .poke-result-item .poke-name { font-size: 14px; font-weight: 600; }
-    .poke-result-item .poke-types { display: flex; gap: 4px; flex-wrap: wrap; }
+    .poke-result-item:hover {
+      background: linear-gradient(90deg, rgba(91,184,245,0.1), rgba(255,203,5,0.06));
+      transform: translateX(3px);
+    }
+    .poke-result-item img { width: 52px; height: 52px; object-fit: contain; }
+    .poke-result-item .poke-no { font-size: 11px; color: var(--muted); min-width: 36px; font-weight: 700; }
+    .poke-result-item .poke-name { font-size: 14px; font-weight: 800; color: var(--text); }
+    .poke-result-item .poke-types { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+
     /* Evolution chain */
     .evo-chain { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
     .evo-btn {
-      background: #0f1117; border: 1px solid var(--line); border-radius: 999px;
-      color: var(--accent); font-size: 13px; font-weight: 600; padding: 5px 12px;
+      background: #f0f7ff; border: 2px solid var(--line); border-radius: 999px;
+      color: var(--sky); font-size: 13px; font-weight: 700; padding: 5px 14px;
       cursor: pointer; transition: all .15s;
     }
-    .evo-btn:hover { background: rgba(108,140,255,.12); border-color: var(--accent); }
-    .evo-btn.current { background: rgba(108,140,255,.18); border-color: var(--accent); color: #fff; cursor: default; }
-    .evo-arrow { color: var(--muted); font-size: 14px; }
+    .evo-btn:hover { background: #e8f4ff; border-color: var(--sky); }
+    .evo-btn.current {
+      background: linear-gradient(135deg, var(--sky), #3a9ee0);
+      border-color: var(--sky); color: #fff; cursor: default;
+      box-shadow: 0 2px 8px rgba(91,184,245,0.35);
+    }
+    .evo-arrow { color: var(--yellow); font-size: 16px; font-weight: 900; }
 
     .poke-result-item .type-chip {
-      font-size: 10px; padding: 2px 7px; border-radius: 999px;
-      border: 1px solid var(--line); background: #0f1117;
+      font-size: 10px; padding: 2px 8px; border-radius: 999px;
+      font-weight: 700;
     }
-    .results-count { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .results-loading { color: var(--muted); font-size: 13px; padding: 12px 0; text-align: center; }
+    .results-count { font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
 
-    .pager { display: flex; align-items: center; gap: 8px; margin-top: 10px; justify-content: center; }
-    .pager button { padding: 6px 12px; font-size: 12px; }
-    .pager .page-info { font-size: 12px; color: var(--muted); }
+    .pager { display: flex; align-items: center; gap: 8px; margin-top: 12px; justify-content: center; }
+    .pager button { padding: 6px 14px; font-size: 12px; }
+    .pager .page-info { font-size: 12px; color: var(--muted); font-weight: 700; }
 
-    /* Type color chips */
-    .type-normal   { border-color: #a8a878 !important; color: #a8a878; }
-    .type-fire     { border-color: #f08030 !important; color: #f08030; }
-    .type-water    { border-color: #6890f0 !important; color: #6890f0; }
-    .type-electric { border-color: #f8d030 !important; color: #f8d030; }
-    .type-grass    { border-color: #78c850 !important; color: #78c850; }
-    .type-ice      { border-color: #98d8d8 !important; color: #98d8d8; }
-    .type-fighting { border-color: #c03028 !important; color: #c03028; }
-    .type-poison   { border-color: #a040a0 !important; color: #a040a0; }
-    .type-ground   { border-color: #e0c068 !important; color: #e0c068; }
-    .type-flying   { border-color: #a890f0 !important; color: #a890f0; }
-    .type-psychic  { border-color: #f85888 !important; color: #f85888; }
-    .type-bug      { border-color: #a8b820 !important; color: #a8b820; }
-    .type-rock     { border-color: #b8a038 !important; color: #b8a038; }
-    .type-ghost    { border-color: #705898 !important; color: #705898; }
-    .type-dragon   { border-color: #7038f8 !important; color: #7038f8; }
-    .type-dark     { border-color: #705848 !important; color: #705848; }
-    .type-steel    { border-color: #b8b8d0 !important; color: #b8b8d0; }
-    .type-fairy    { border-color: #ee99ac !important; color: #ee99ac; }
+    /* ── Type color chips (solid fills for bright theme) ── */
+    .type-chip { border: none !important; color: #fff !important; }
+    .type-chip.type-normal   { background: #a0a070; }
+    .type-chip.type-fire     { background: #e07020; }
+    .type-chip.type-water    { background: #4878e8; }
+    .type-chip.type-electric { background: #d0a800; }
+    .type-chip.type-grass    { background: #50a030; }
+    .type-chip.type-ice      { background: #60b8c8; }
+    .type-chip.type-fighting { background: #b02020; }
+    .type-chip.type-poison   { background: #882898; }
+    .type-chip.type-ground   { background: #c09028; }
+    .type-chip.type-flying   { background: #7870d8; }
+    .type-chip.type-psychic  { background: #d83870; }
+    .type-chip.type-bug      { background: #809010; }
+    .type-chip.type-rock     { background: #988028; }
+    .type-chip.type-ghost    { background: #503870; }
+    .type-chip.type-dragon   { background: #5018e8; }
+    .type-chip.type-dark     { background: #504038; }
+    .type-chip.type-steel    { background: #9090a8; }
+    .type-chip.type-fairy    { background: #d868a8; }
+
+    /* badge type colors (outline style) */
+    .badge.type-normal   { border-color: #a0a070; color: #6a6a40; }
+    .badge.type-fire     { border-color: #e07020; color: #c05010; }
+    .badge.type-water    { border-color: #4878e8; color: #3060c0; }
+    .badge.type-electric { border-color: #d0a800; color: #907800; }
+    .badge.type-grass    { border-color: #50a030; color: #307810; }
+    .badge.type-ice      { border-color: #60b8c8; color: #308898; }
+    .badge.type-fighting { border-color: #b02020; color: #901010; }
+    .badge.type-poison   { border-color: #882898; color: #681878; }
+    .badge.type-ground   { border-color: #c09028; color: #906008; }
+    .badge.type-flying   { border-color: #7870d8; color: #5050b8; }
+    .badge.type-psychic  { border-color: #d83870; color: #b02050; }
+    .badge.type-bug      { border-color: #809010; color: #587000; }
+    .badge.type-rock     { border-color: #988028; color: #786008; }
+    .badge.type-ghost    { border-color: #503870; color: #382858; }
+    .badge.type-dragon   { border-color: #5018e8; color: #3808c0; }
+    .badge.type-dark     { border-color: #706050; color: #504038; }
+    .badge.type-steel    { border-color: #9090a8; color: #606078; }
+    .badge.type-fairy    { border-color: #d868a8; color: #b04888; }
+
+    /* ── Party button ── */
+    #addToPartyBtn {
+      background: linear-gradient(135deg, var(--grass), #3a8530);
+      border-color: var(--grass); color: #fff;
+      box-shadow: 0 3px 10px rgba(40,140,40,0.3);
+    }
+    #addToPartyBtn:hover {
+      background: linear-gradient(135deg, #6ac560, var(--grass));
+      transform: translateY(-1px);
+    }
+
+    /* ── Muted help text ── */
+    .help-text { color: var(--muted); font-size: 12px; padding: 0 4px; font-weight: 600; }
+
+    /* Page load fade-in */
+    .card { animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
   </style>
 </head>
 <body>
+  <!-- Floating clouds -->
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  <div class="cloud cloud-3"></div>
+
   <header>
     <div class="wrap">
-      <h1>ポケモン図鑑</h1>
-      <div class="small">API + 補完データ連携版</div>
+      <div class="header-inner">
+        <div class="header-ball"></div>
+        <div>
+          <h1>ポケモン図鑑</h1>
+          <div class="small">API + 補完データ連携版</div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -290,7 +565,7 @@
           <div class="error-box" id="advErrorText"></div>
         </section>
 
-        <div class="small" style="color:var(--muted);font-size:12px;padding:0 4px;">
+        <div class="help-text">
           補完データ管理ページで入れた地方図鑑番号・作品別データ・補足メモも表示されます。
         </div>
       </div>
@@ -312,7 +587,9 @@
         <!-- Pokemon Detail Card -->
         <section class="card result-card" id="resultCard">
           <h2 id="pokeTitle">検索結果</h2>
-          <img id="pokeImage" alt="pokemon image">
+          <div class="poke-img-wrap">
+            <img id="pokeImage" alt="pokemon image">
+          </div>
           <div class="small preline" id="pokeFlavor"></div>
 
           <div class="section-gap">
@@ -570,18 +847,32 @@
       );
     }
 
+    // ── ★ FIX: 特性の重複を除去してまとめて表示 ──
     async function renderAbilities(abilities) {
       abilityList.innerHTML = "";
-      for (const a of abilities.sort((a,b)=>a.slot-b.slot)) {
+
+      // 特性名（日本語）→ {isHidden} のマップで重複排除
+      // 同じ名前・同じ隠れ特性フラグのものは1つにまとめる
+      const seen = new Map(); // key: "name|hidden" → display label
+
+      for (const a of abilities.sort((a, b) => a.slot - b.slot)) {
         let name = a.ability.name;
         try {
           const d = await cachedFetchJson(a.ability.url);
-          const ja = d.names.find(n=>n.language.name==="ja"||n.language.name==="ja-Hrkt");
+          const ja = d.names.find(n => n.language.name === "ja" || n.language.name === "ja-Hrkt");
           if (ja) name = ja.name;
-        } catch(_) {}
+        } catch (_) {}
+
+        const label = a.is_hidden ? `${name}（隠れ特性）` : name;
+        const key   = `${name}|${a.is_hidden}`;
+        if (!seen.has(key)) seen.set(key, { label, isHidden: a.is_hidden });
+      }
+
+      // 重複排除後に描画
+      for (const { label, isHidden } of seen.values()) {
         const s = document.createElement("span");
-        s.className = "badge";
-        s.textContent = a.is_hidden ? `${name}（隠れ特性）` : name;
+        s.className = isHidden ? "badge badge-hidden" : "badge";
+        s.textContent = label;
         abilityList.appendChild(s);
       }
     }
@@ -794,30 +1085,16 @@
     //  Advanced Search Logic
     // ════════════════════════════════════════
 
-    // Returns set of pokemon species names for a type
     async function fetchPokemonByType(typeName) {
       const data = await cachedFetchJson(`${API_BASE}/type/${typeName}`);
-      // includes both pokemon.pokemon.name (form names) — use species instead if available
-      return new Set(
-        (data.pokemon || []).map(p => {
-          // strip form suffixes to get base name for matching
-          return p.pokemon.name;
-        })
-      );
+      return new Set((data.pokemon || []).map(p => p.pokemon.name));
     }
 
-    // Returns all pokemon names in a generation (by national dex range)
     async function fetchPokemonByGen(genNum) {
-      const [min, max] = GEN_RANGES[genNum];
-      // fetch species list and filter by id
-      const data = await cachedFetchJson(`${API_BASE}/pokemon?limit=2000&offset=0`);
-      // pokemon endpoint doesn't give id directly, but names follow pattern
-      // More reliably: fetch generation endpoint
       const genData = await cachedFetchJson(`${API_BASE}/generation/${genNum}`);
       return new Set((genData.pokemon_species||[]).map(s=>s.name));
     }
 
-    // Fetch lightweight pokemon data for list display
     async function fetchPokemonSummary(name) {
       const p = await cachedFetchJson(`${API_BASE}/pokemon/${name}`);
       return {
@@ -875,9 +1152,8 @@
       searchResultsCard.classList.remove("show");
 
       try {
-        let candidateNames = null; // null = no restriction yet
+        let candidateNames = null;
 
-        // ── Type filter ──
         if (t1) {
           const s1 = await fetchPokemonByType(t1);
           candidateNames = candidateNames ? new Set([...candidateNames].filter(n=>s1.has(n))) : s1;
@@ -887,24 +1163,17 @@
           candidateNames = candidateNames ? new Set([...candidateNames].filter(n=>s2.has(n))) : s2;
         }
 
-        // ── Generation filter ──
         if (gen) {
           const genSet = await fetchPokemonByGen(gen);
-          // genSet contains species names; candidateNames contains pokemon form names
-          // Map: species name → all forms. For simplicity, filter by matching base name.
           if (candidateNames === null) {
-            // Build from gen set — fetch all pokemon in range
             const [min, max] = GEN_RANGES[gen];
             const ids = [];
             for (let i = min; i <= max; i++) ids.push(String(i));
             candidateNames = new Set(ids);
           } else {
-            // Filter existing set: keep if the species name matches
-            // Pokemon names often match species names (base forms)
             const genData = await cachedFetchJson(`${API_BASE}/generation/${gen}`);
             const genSpecies = new Set((genData.pokemon_species||[]).map(s=>s.name));
             candidateNames = new Set([...candidateNames].filter(n => {
-              // strip form suffix
               const base = n.replace(/-(?:mega|alola|galar|hisui|paldea|attack|defense|speed|plant|sandy|trash|heat|wash|frost|fan|mow|origin|altered|land|sky|red-striped|blue-striped|normal|zen|standard|incarnate|therian|white|black|resolute|ordinary|pirouette|aria|star|unbound|complete|midday|midnight|dusk|dusk-mane|dawn-wings|ultra|school|solo|disguised|busted|original|hangry|ice|noice|crowned|eternamax|single-strike|rapid-strike|ice-rider|shadow-rider|hero|teal-mask|wellspring-mask|hearthflame-mask|cornerstone-mask|combat-breed|blaze-breed|aqua-breed)$/,"").replace(/-\d+$/,"");
               return genSpecies.has(n) || genSpecies.has(base);
             }));
@@ -918,15 +1187,12 @@
         }
 
         const nameList = [...candidateNames];
-
-        // ── Stat filter (requires fetching each pokemon) ──
         const needStats = hasStatFilters();
         let filtered = [];
 
         if (needStats) {
           advLoadingText.textContent = `フィルター適用中 (0/${nameList.length})...`;
           let done = 0;
-          // Fetch in small batches to avoid flooding
           const BATCH = 10;
           for (let i = 0; i < nameList.length; i += BATCH) {
             const batch = nameList.slice(i, i + BATCH);
@@ -940,7 +1206,6 @@
             advLoadingText.textContent = `フィルター適用中 (${Math.min(done, nameList.length)}/${nameList.length})...`;
           }
         } else {
-          // Just get basic info
           advLoadingText.textContent = `リスト取得中 (0/${nameList.length})...`;
           const BATCH = 20;
           let done = 0;
@@ -955,10 +1220,8 @@
           }
         }
 
-        // Sort by id
         filtered.sort((a,b) => a.id - b.id);
 
-        // Apply strict dual-type filter (both types must exactly match)
         if (t1 && t2) {
           filtered = filtered.filter(p => p.types.includes(t1) && p.types.includes(t2));
         } else if (t1) {
@@ -1023,7 +1286,6 @@
         resultsList.appendChild(item);
       });
 
-      // Pager
       pager.innerHTML = "";
       if (pages > 1) {
         const prev = document.createElement("button");
