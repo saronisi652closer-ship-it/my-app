@@ -4,82 +4,274 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ポケモンメニュー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #172554;
-      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      color: #1a2a3a;
       min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.35) 1px, transparent 1px),
+        linear-gradient(180deg, #5bb8f5 0%, #a8d8f0 55%, #c8eac0 75%, #5ab552 100%);
+      background-size: 28px 28px, 100% 100%;
+      position: relative;
     }
 
+    /* Pokeball decoration top-right */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -140px; right: -140px;
+      width: 380px; height: 380px;
+      border-radius: 50%;
+      border: 42px solid rgba(255,255,255,0.18);
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      top: 48px; right: -140px;
+      width: 380px; height: 24px;
+      background: rgba(255,255,255,0.18);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Clouds */
+    .cloud {
+      position: fixed;
+      border-radius: 50px;
+      background: rgba(255,255,255,0.55);
+      pointer-events: none; z-index: 0;
+      animation: drift linear infinite;
+    }
+    .cloud::before, .cloud::after {
+      content: ''; position: absolute;
+      background: rgba(255,255,255,0.55);
+      border-radius: 50%;
+    }
+    .cloud-1 { width:100px; height:30px; top:8%; left:-120px; animation-duration:38s; animation-delay:-12s; }
+    .cloud-1::before { width:50px; height:44px; top:-22px; left:14px; }
+    .cloud-1::after  { width:36px; height:36px; top:-16px; left:44px; }
+    .cloud-2 { width:70px; height:22px; top:18%; left:-90px; animation-duration:52s; animation-delay:-30s; }
+    .cloud-2::before { width:36px; height:32px; top:-16px; left:10px; }
+    .cloud-2::after  { width:28px; height:28px; top:-12px; left:32px; }
+    @keyframes drift { from { transform:translateX(0); } to { transform:translateX(calc(100vw + 200px)); } }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #e3350d 0%, #c0280a 100%);
+      box-shadow: 0 4px 20px rgba(180,30,0,0.35);
+      position: relative; overflow: hidden; z-index: 10;
+    }
+    header::before {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      border: 28px solid rgba(255,255,255,0.12);
+    }
+    header::after {
+      content: '';
+      position: absolute; top: 28px; right: -60px;
+      width: 180px; height: 12px;
+      background: rgba(255,255,255,0.12);
+    }
+    .header-inner {
+      max-width: 860px; margin: 0 auto;
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .header-ball {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(180deg, #fff 50%, #222 50%);
+      border: 3px solid #333;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      flex-shrink: 0; position: relative;
+    }
+    .header-ball::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #fff; border: 3px solid #333;
+    }
+    header h1 {
+      font-size: 22px; font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      letter-spacing: 0.5px;
+    }
+    header .sub {
+      font-size: 11px; color: rgba(255,255,255,0.75);
+      font-weight: 600; margin-top: 1px;
+    }
+
+    /* ── Main ── */
     .wrap {
       max-width: 860px;
       margin: 0 auto;
-      padding: 24px 16px 48px;
+      padding: 28px 20px 60px;
+      position: relative; z-index: 1;
     }
 
     .back {
-      display: inline-block;
-      margin-bottom: 18px;
-      color: #bfdbfe;
-      text-decoration: none;
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.85);
+      color: #e3350d; text-decoration: none;
+      font-size: 13px; font-weight: 700;
+      padding: 6px 14px; border-radius: 999px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(50,120,180,0.12);
+      transition: all .15s;
+      border: 2px solid rgba(255,255,255,0.9);
+    }
+    .back:hover { background: #fff; transform: translateX(-2px); }
+
+    /* ── Section header ── */
+    .section-head {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+    }
+    .section-head .poke-ball-sm {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(180deg, #e3350d 50%, #fff 50%);
+      border: 3px solid #333;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: relative; flex-shrink: 0;
+    }
+    .section-head .poke-ball-sm::before {
+      content: '';
+      position: absolute; top: 50%; left: 0; right: 0;
+      height: 3px; background: #333;
+      transform: translateY(-50%);
+    }
+    .section-head .poke-ball-sm::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: #fff; border: 2px solid #333;
+    }
+    .section-head h2 {
+      font-size: 20px; font-weight: 900;
+      color: #1a2a3a;
     }
 
-    h1 {
-      margin: 0 0 18px;
-      font-size: 28px;
-    }
-
-    .menu {
-      display: grid;
-      gap: 16px;
-    }
+    /* ── Menu cards ── */
+    .menu { display: grid; gap: 16px; }
 
     .card {
       display: block;
       text-decoration: none;
-      color: #fff;
-      background: #1d4ed8;
-      border-radius: 18px;
-      padding: 20px;
-      border: 1px solid rgba(255,255,255,0.1);
-      transition: transform .15s ease, background .15s ease;
+      color: #1a2a3a;
+      background: rgba(255,255,255,0.9);
+      border: 2px solid rgba(255,255,255,0.95);
+      border-radius: 20px;
+      padding: 24px 22px;
+      box-shadow: 0 4px 24px rgba(50,120,180,0.12), 0 1px 4px rgba(0,0,0,0.06);
+      backdrop-filter: blur(6px);
+      transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
+      position: relative; overflow: hidden;
+      animation: cardIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.15s; }
+    .card:nth-child(3) { animation-delay: 0.25s; }
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(20px) scale(0.96); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
     }
 
-    .card:hover {
-      transform: translateY(-3px);
-      background: #2563eb;
+    /* Colored top-stripe per card */
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 5px;
+      background: var(--stripe);
+      border-radius: 20px 20px 0 0;
     }
+    /* Corner glow */
+    .card::after {
+      content: '';
+      position: absolute; bottom: -30px; right: -30px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: var(--glow);
+      opacity: 0.15;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 12px 40px rgba(50,120,180,0.18); }
+    .card:hover::after { opacity: 0.28; transform: scale(1.3); }
+
+    /* Card themes */
+    .card-zukan   { --stripe: linear-gradient(90deg,#ffcb05,#e3350d); --glow: #ffcb05; }
+    .card-party   { --stripe: linear-gradient(90deg,#5bb8f5,#5ab552); --glow: #5bb8f5; }
+    .card-extra   { --stripe: linear-gradient(90deg,#f85888,#a040a0); --glow: #f85888; }
+
+    .card-icon {
+      font-size: 36px; margin-bottom: 10px; display: block;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
+      transition: transform 0.2s;
+    }
+    .card:hover .card-icon { transform: scale(1.15) rotate(-4deg); }
 
     .card h2 {
-      margin: 0 0 8px;
-      font-size: 22px;
+      font-size: 20px; font-weight: 900;
+      margin-bottom: 6px; color: #1a2a3a;
     }
-
     .card p {
-      margin: 0;
-      color: #dbeafe;
-      line-height: 1.6;
+      font-size: 13px; font-weight: 600;
+      color: #6b8fa8; line-height: 1.6;
     }
+    .card-arrow {
+      position: absolute; right: 22px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px; color: #d4e8f5;
+      font-weight: 900; transition: all 0.2s;
+    }
+    .card:hover .card-arrow { color: #5bb8f5; transform: translateY(-50%) translateX(4px); }
   </style>
 </head>
 <body>
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+
+  <header>
+    <div class="header-inner">
+      <div class="header-ball"></div>
+      <div>
+        <h1>ポケモン</h1>
+        <div class="sub">図鑑 / パーティ管理</div>
+      </div>
+    </div>
+  </header>
+
   <div class="wrap">
     <a class="back" href="../">← ホームへ戻る</a>
-    <h1>ポケモン</h1>
+
+    <div class="section-head">
+      <div class="poke-ball-sm"></div>
+      <h2>何をする？</h2>
+    </div>
 
     <div class="menu">
-      <a class="card" href="./zukan/">
+      <a class="card card-zukan" href="./zukan/">
+        <span class="card-icon">📖</span>
         <h2>ポケモン図鑑</h2>
-        <p>ポケモン情報の確認ページ</p>
+        <p>ポケモン情報の確認・タイプ検索・種族値フィルター</p>
+        <span class="card-arrow">›</span>
       </a>
 
-      <a class="card" href="./party-manager/">
+      <a class="card card-party" href="./party-manager/">
+        <span class="card-icon">⚔️</span>
         <h2>パーティ管理</h2>
-        <p>手持ちや構築メモの管理ページ</p>
+        <p>手持ちや構築メモの管理・弱点分析・AIアドバイス</p>
+        <span class="card-arrow">›</span>
       </a>
     </div>
   </div>
