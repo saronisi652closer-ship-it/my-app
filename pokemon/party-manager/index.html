@@ -48,8 +48,7 @@
 <script type="text/babel">
 const{useState,useRef,useEffect,useCallback}=React;
 
-// APIキーはlocalStorageから取得（GitHubに公開しても安全）
-const STORAGE_KEY_API="pkm_api_key_v1";
+// APIキーは不要（AI機能をClaudeに委譲）
 
 const TYPE_COLORS={ノーマル:"#A8A878",ほのお:"#F08030",みず:"#6890F0",でんき:"#F8D030",くさ:"#78C850",こおり:"#98D8D8",かくとう:"#C03028",どく:"#A040A0",じめん:"#E0C068",ひこう:"#A890F0",エスパー:"#F85888",むし:"#A8B820",いわ:"#B8A038",ゴースト:"#705898",ドラゴン:"#7038F8",あく:"#705848",はがね:"#B8B8D0",フェアリー:"#EE99AC"};
 
@@ -214,6 +213,10 @@ const CHAMPIONS_MA=[
 "テツノカシラ","テツノドクガ","テツノイバラ","テツノワダチ","チヲハウハネ",
 ];
 
+const NATURES=["さみしがり","いじっぱり","やんちゃ","ゆうかん","ずぶとい","わんぱく","のうてんき","のんき","ひかえめ","おっとり","うっかりや","れいせい","おだやか","おとなしい","しんちょう","なまいき","おくびょう","せっかち","むじゃき","ようき","きまぐれ","ずぶとい","おっとり","しんちょう","てれや"];
+const NATURE_LIST=["がんばりや","さみしがり","ゆうかん","いじっぱり","やんちゃ","ずぶとい","わんぱく","のうてんき","のんき","ひかえめ","おっとり","れいせい","うっかりや","おだやか","おとなしい","しんちょう","なまいき","おくびょう","せっかち","むじゃき","ようき","きまぐれ","てれや","ひねくれ","まじめ"];
+const emptyDetail=()=>({item:"",nature:"",moves:["","","",""],evs:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0}});
+
 function TypeBadge({type,small}){
   return React.createElement('span',{style:{background:TYPE_COLORS[type]||"#888",color:"#fff",fontSize:small?"10px":"11px",fontWeight:"700",padding:small?"1px 5px":"2px 7px",borderRadius:"4px",textShadow:"0 1px 2px rgba(0,0,0,0.4)",display:"inline-block",marginRight:"2px",marginBottom:"2px"}},type);
 }
@@ -229,6 +232,8 @@ function Msg({msg}){
 function App(){
   const[tab,setTab]=useState("party");
   const[members,setMembers]=useState(["","","","","",""]);
+  const[details,setDetails]=useState(()=>Array(6).fill(null).map(emptyDetail));
+  const[expandedSlot,setExpandedSlot]=useState(null);
   const[pName,setPName]=useState("");
   const[pGame,setPGame]=useState("");
   const[pTags,setPTags]=useState("");
@@ -240,37 +245,29 @@ function App(){
   const[filterGame,setFilterGame]=useState("");
   const[searchKw,setSearchKw]=useState("");
   const[analysis,setAnalysis]=useState(null);
-  const[msgs,setMsgs]=useState([{role:"assistant",content:"こんにちは！🎮 ポケモンチャンピオンズの構築相談はお任せください。\n\n① 「構築」タブでメンバーを入力\n② 「分析」タブで弱点チェック\n③ 「AI」タブで相談\n\n…の流れがおすすめです！"}]);
-  const[chatIn,setChatIn]=useState("");
-  const[chatLoading,setChatLoading]=useState(false);
   const[status,setStatus]=useState("");
+  const[copied,setCopied]=useState(false);
   const[pickerSlot,setPickerSlot]=useState(null);
   const[pickerSearch,setPickerSearch]=useState("");
-  // APIキー管理
-  const[apiKey,setApiKey]=useState(()=>localStorage.getItem(STORAGE_KEY_API)||"");
-  const[showKeyModal,setShowKeyModal]=useState(false);
-  const[keyInput,setKeyInput]=useState("");
-  const chatEndRef=useRef(null);
   const fileRef=useRef(null);
 
   const isChampions=pGame==="ポケモンチャンピオンズ (M-A)";
 
-  useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
   useEffect(()=>{localStorage.setItem("pkm_v2",JSON.stringify(parties));},[parties]);
 
   const toast=(m)=>{setStatus(m);setTimeout(()=>setStatus(""),2500);};
   const getEnTypes=(name)=>apiTypes[name]||FALLBACK_TYPES[name]||null;
 
-  const saveApiKey=()=>{
-    const k=keyInput.trim();
-    if(!k){toast("⚠️ キーを入力してください");return;}
-    localStorage.setItem(STORAGE_KEY_API,k);
-    setApiKey(k);setShowKeyModal(false);setKeyInput("");
-    toast("🔑 APIキーを保存しました");
+  // detail helpers
+  const setDetail=(i,field,val)=>{
+    setDetails(prev=>{const n=[...prev];n[i]={...n[i],[field]:val};return n;});
   };
-  const clearApiKey=()=>{
-    localStorage.removeItem(STORAGE_KEY_API);
-    setApiKey("");toast("🗑️ APIキーを削除しました");
+  const setMove=(i,mi,val)=>{
+    setDetails(prev=>{const n=[...prev];const d={...n[i]};const mv=[...d.moves];mv[mi]=val;d.moves=mv;n[i]=d;return n;});
+  };
+  const setEv=(i,stat,val)=>{
+    const v=Math.max(0,Math.min(252,parseInt(val)||0));
+    setDetails(prev=>{const n=[...prev];const d={...n[i]};d.evs={...d.evs,[stat]:v};n[i]=d;return n;});
   };
 
   const openPicker=(slotIdx)=>{
@@ -325,7 +322,9 @@ function App(){
 
   const saveParty=()=>{
     if(!pName.trim()){toast("⚠️ パーティ名を入力してください");return;}
-    const entry={id:editId||"p_"+Date.now(),name:pName.trim(),game:pGame,members:members.filter(Boolean),tags:pTags.split(",").map(t=>t.trim()).filter(Boolean),notes:pNotes.trim(),updatedAt:new Date().toISOString()};
+    const filledMembers=members.filter(Boolean);
+    const filledDetails=details.filter((_,i)=>members[i]);
+    const entry={id:editId||"p_"+Date.now(),name:pName.trim(),game:pGame,members:filledMembers,details:filledDetails,tags:pTags.split(",").map(t=>t.trim()).filter(Boolean),notes:pNotes.trim(),updatedAt:new Date().toISOString()};
     setParties(prev=>{const i=prev.findIndex(p=>p.id===entry.id);if(i>=0){const n=[...prev];n[i]=entry;return n;}return[entry,...prev];});
     setEditId(entry.id);toast(editId?"✅ 更新しました":"✅ 保存しました");
   };
@@ -333,8 +332,11 @@ function App(){
   const loadParty=(p)=>{
     setEditId(p.id);setPName(p.name||"");setPGame(p.game||"");
     const m=[...(p.members||[]),...["","","","","",""]].slice(0,6);
-    setMembers(m);setPTags((p.tags||[]).join(", "));setPNotes(p.notes||"");
-    setSprites({});setApiTypes({});setTab("party");toast("📋 読み込みました");
+    setMembers(m);
+    const d=[...(p.details||[]),...Array(6).fill(null).map(emptyDetail)].slice(0,6).map(x=>x||emptyDetail());
+    setDetails(d);
+    setPTags((p.tags||[]).join(", "));setPNotes(p.notes||"");
+    setSprites({});setApiTypes({});setTab("party");setExpandedSlot(null);toast("📋 読み込みました");
   };
 
   const deleteParty=(id,name)=>{
@@ -343,7 +345,7 @@ function App(){
     if(editId===id)clearForm();toast("🗑️ 削除しました");
   };
 
-  const clearForm=()=>{setEditId(null);setPName("");setPGame("");setMembers(["","","","","",""]);setPTags("");setPNotes("");setSprites({});setApiTypes({});};
+  const clearForm=()=>{setEditId(null);setPName("");setPGame("");setMembers(["","","","","",""]);setDetails(Array(6).fill(null).map(emptyDetail));setPTags("");setPNotes("");setSprites({});setApiTypes({});setExpandedSlot(null);};
 
   const exportData=()=>{
     const blob=new Blob([JSON.stringify(parties,null,2)],{type:"application/json"});
@@ -354,57 +356,33 @@ function App(){
     const r=new FileReader();r.onload=e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw 0;const ids=new Set(parties.map(p=>p.id));const add=data.filter(p=>!ids.has(p.id));setParties(prev=>[...add,...prev]);toast(`✅ ${add.length}件インポート`);}catch{toast("❌ 読み込み失敗");}};r.readAsText(file);
   };
 
-  const sendChat=async()=>{
-    if(!chatIn.trim()||chatLoading)return;
-    if(!apiKey){setShowKeyModal(true);setKeyInput("");return;}
-    const userMsg=chatIn.trim();setChatIn("");
+  // Claudeに貼り付けるプロンプトを生成
+  const generatePrompt=()=>{
     const filled=members.filter(Boolean);
-    const partyCtx=filled.length>0?`\n\n【現在のパーティ】\n${filled.map(n=>{const et=getEnTypes(n)||[];const jt=et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);return`・${n}${jt.length?`（${jt.join("/")}）`:""}`;}).join("\n")}`:"";
-
-    // 会話履歴をGemini形式に変換（systemメッセージは最初のuserに統合）
-    const systemPrompt=`あなたはポケモンチャンピオンズの構築アドバイザーです。タイプ相性・環境メタ・役割分担を踏まえて日本語で簡潔にアドバイスしてください。${partyCtx}`;
-    const history=[...msgs,{role:"user",content:userMsg}];
-    // Gemini形式: [{role:"user",parts:[{text:"..."}]}, {role:"model",parts:[{text:"..."}]}]
-    const geminiContents=history.map((m,i)=>({
-      role:m.role==="user"?"user":"model",
-      parts:[{text: i===0&&m.role==="user" ? systemPrompt+"\n\n"+m.content : m.content}]
-    }));
-
-    const newMsgs=[...msgs,{role:"user",content:userMsg}];
-    setMsgs(newMsgs);setChatLoading(true);
-    try{
-      const res=await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`,
-        {
-          method:"POST",
-          headers:{
-            "Content-Type":"application/json",
-            "x-goog-api-key": apiKey
-          },
-          body:JSON.stringify({
-            contents: geminiContents,
-            generationConfig:{maxOutputTokens:1000,temperature:0.7}
-          })
-        }
-      );
-      if(!res.ok){
-        const err=await res.json().catch(()=>({}));
-        const msg=err?.error?.message||`HTTPエラー: ${res.status}`;
-        if(res.status===400||res.status===403){
-          setMsgs([...newMsgs,{role:"assistant",content:"⚠️ APIキーが無効です。Gemini APIキーを確認して再設定してください。"}]);
-          setShowKeyModal(true);setKeyInput("");
-        }else{
-          setMsgs([...newMsgs,{role:"assistant",content:`⚠️ エラー: ${msg}`}]);
-        }
-        return;
-      }
-      const d=await res.json();
-      const text=d?.candidates?.[0]?.content?.parts?.[0]?.text||"応答を取得できませんでした";
-      setMsgs([...newMsgs,{role:"assistant",content:text}]);
-    }catch(err){
-      setMsgs([...newMsgs,{role:"assistant",content:`⚠️ 通信エラー: ${err.message||"不明なエラー"}`}]);
-    }
-    finally{setChatLoading(false);}
+    if(!filled.length) return "まずパーティにポケモンを追加してください。";
+    const EV_LABELS={hp:"HP",atk:"こうげき",def:"ぼうぎょ",spa:"とくこう",spd:"とくぼう",spe:"すばやさ"};
+    const lines=[];
+    lines.push("以下のポケモンチャンピオンズのパーティを評価して、改善点をアドバイスしてください。");
+    lines.push("");
+    if(pName) lines.push(`【パーティ名】${pName}`);
+    if(pGame) lines.push(`【作品】${pGame}`);
+    lines.push("");
+    lines.push("【メンバー】");
+    members.forEach((name,i)=>{
+      if(!name) return;
+      const d=details[i];
+      const et=getEnTypes(name)||[];
+      const jt=et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);
+      lines.push(`\n■ ${name}${jt.length?` (${jt.join("/")})`:""}`);
+      if(d.nature) lines.push(`  性格: ${d.nature}`);
+      if(d.item) lines.push(`  持ち物: ${d.item}`);
+      const moves=d.moves.filter(Boolean);
+      if(moves.length) lines.push(`  技: ${moves.join(" / ")}`);
+      const evEntries=Object.entries(d.evs).filter(([,v])=>v>0);
+      if(evEntries.length) lines.push(`  努力値: ${evEntries.map(([k,v])=>`${EV_LABELS[k]}${v}`).join(" / ")}`);
+    });
+    if(pNotes){lines.push(""); lines.push(`【構築メモ】\n${pNotes}`);}
+    return lines.join("\n");
   };
 
   const filtered=parties.filter(p=>{
@@ -454,14 +432,14 @@ function App(){
           e('div',{style:{marginLeft:"auto",fontSize:"11px",fontWeight:"700",color:"rgba(255,255,255,0.8)",background:"rgba(255,255,255,0.15)",borderRadius:"999px",padding:"2px 10px"}},`${filled.length}/6`)
         ),
         e('div',{style:{display:"flex",gap:"5px",position:"relative"}},
-          [["party","🛡️ 構築"],["analyze","🔬 分析"],["saved","📁 保存"],["chat","🤖 AI"]].map(([k,l])=>
+          [["party","🛡️ 構築"],["analyze","🔬 分析"],["saved","📁 保存"],["ask","💬 相談"]].map(([k,l])=>
             e('button',{key:k,onClick:()=>setTab(k),style:{flex:1,padding:"7px 2px",background:tab===k?"rgba(255,255,255,0.95)":"rgba(255,255,255,0.15)",border:"none",borderRadius:"9px",color:tab===k?RED:"rgba(255,255,255,0.85)",fontWeight:"700",fontSize:"11px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:tab===k?"0 2px 6px rgba(0,0,0,0.15)":"none"}},l)
           )
         )
       ),
 
       // Content
-      e('div',{style:{flex:1,overflow:"auto",padding:"14px",paddingBottom:tab==="chat"?"80px":"14px"}},
+      e('div',{style:{flex:1,overflow:"auto",padding:"14px",paddingBottom:"14px"}},
 
         // ── PARTY ──
         tab==="party"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
@@ -479,19 +457,58 @@ function App(){
             ),
             isChampions&&e('p',{style:{fontSize:"11px",color:MUTED,marginBottom:"8px"}},"🎯 スロットをタップしてM-A使用可能ポケモンから選択できます"),
             e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},
-              members.map((m,i)=>e('div',{key:i,style:{position:"relative"}},
-                isChampions
-                  ? e('div',{style:{display:"flex",gap:"4px"}},
-                      sprites[m]&&e('img',{src:sprites[m],alt:m,style:{width:"36px",height:"36px",imageRendering:"pixelated",flexShrink:0,alignSelf:"center"}}),
-                      e('button',{
-                        onClick:()=>openPicker(i),
-                        style:{flex:1,background:m?"rgba(227,53,13,0.06)":"#f0f7ff",border:`2px solid ${m?"rgba(227,53,13,0.3)":"#d4e8f5"}`,borderRadius:"10px",color:m?RED:MUTED,padding:"9px 8px",fontSize:"13px",fontWeight:m?"700":"600",cursor:"pointer",textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"'Nunito',sans-serif"}
-                      },m||`${i+1}体目を選ぶ`)
+              members.map((m,i)=>e('div',{key:i},
+                // Name input row
+                e('div',{style:{position:"relative",display:"flex",gap:"4px",alignItems:"center"}},
+                  isChampions
+                    ? e('div',{style:{display:"flex",gap:"4px",flex:1}},
+                        sprites[m]&&e('img',{src:sprites[m],alt:m,style:{width:"36px",height:"36px",imageRendering:"pixelated",flexShrink:0,alignSelf:"center"}}),
+                        e('button',{onClick:()=>openPicker(i),style:{flex:1,background:m?"rgba(227,53,13,0.06)":"#f0f7ff",border:`2px solid ${m?"rgba(227,53,13,0.3)":"#d4e8f5"}`,borderRadius:"10px",color:m?RED:MUTED,padding:"9px 8px",fontSize:"13px",fontWeight:m?"700":"600",cursor:"pointer",textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"'Nunito',sans-serif"}},m||`${i+1}体目を選ぶ`)
+                      )
+                    : e('div',{style:{position:"relative",flex:1}},
+                        e('input',{style:{...inp,paddingLeft:sprites[m]?"38px":"12px"},value:m,onChange:ev=>{const n=[...members];n[i]=ev.target.value;setMembers(n);},placeholder:`${i+1}体目`}),
+                        sprites[m]&&e('img',{src:sprites[m],alt:m,style:{position:"absolute",left:"2px",top:"50%",transform:"translateY(-50%)",width:"32px",height:"32px",imageRendering:"pixelated",pointerEvents:"none"}})
+                      ),
+                  m&&e('button',{onClick:()=>setExpandedSlot(expandedSlot===i?null:i),style:{width:"28px",height:"36px",flexShrink:0,background:expandedSlot===i?"rgba(227,53,13,0.1)":"#f0f7ff",border:`2px solid ${expandedSlot===i?"rgba(227,53,13,0.3)":"#d4e8f5"}`,borderRadius:"8px",cursor:"pointer",fontSize:"12px",color:expandedSlot===i?RED:MUTED,fontWeight:"700"}},expandedSlot===i?"▲":"▼")
+                ),
+                // Detail panel
+                m&&expandedSlot===i&&e('div',{style:{background:"#f8fcff",border:"2px solid #d4e8f5",borderRadius:"12px",padding:"10px",marginTop:"6px",display:"flex",flexDirection:"column",gap:"8px"}},
+                  // 持ち物
+                  e('div',null,
+                    e('span',{style:{...lbl,fontSize:"10px"}},"持ち物"),
+                    e('input',{style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].item,onChange:ev=>setDetail(i,"item",ev.target.value),placeholder:"例：こだわりスカーフ"})
+                  ),
+                  // 性格
+                  e('div',null,
+                    e('span',{style:{...lbl,fontSize:"10px"}},"性格"),
+                    e('select',{style:{...inp,fontSize:"12px",padding:"6px 10px",appearance:"none"},value:details[i].nature,onChange:ev=>setDetail(i,"nature",ev.target.value)},
+                      e('option',{value:""},"-- 選択 --"),
+                      ...NATURE_LIST.map(n=>e('option',{key:n,value:n},n))
                     )
-                  : e('div',null,
-                      e('input',{style:{...inp,paddingLeft:sprites[m]?"38px":"12px"},value:m,onChange:ev=>{const n=[...members];n[i]=ev.target.value;setMembers(n);},placeholder:`${i+1}体目`}),
-                      sprites[m]&&e('img',{src:sprites[m],alt:m,style:{position:"absolute",left:"2px",top:"50%",transform:"translateY(-50%)",width:"32px",height:"32px",imageRendering:"pixelated",pointerEvents:"none"}})
+                  ),
+                  // 技
+                  e('div',null,
+                    e('span',{style:{...lbl,fontSize:"10px"}},"技（1〜4）"),
+                    e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}},
+                      [0,1,2,3].map(mi=>e('input',{key:mi,style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].moves[mi],onChange:ev=>setMove(i,mi,ev.target.value),placeholder:`技${mi+1}`}))
                     )
+                  ),
+                  // 努力値
+                  e('div',null,
+                    e('span',{style:{...lbl,fontSize:"10px"}},"努力値（各0〜252）"),
+                    e('div',{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"4px"}},
+                      [["hp","HP"],["atk","こうげき"],["def","ぼうぎょ"],["spa","とくこう"],["spd","とくぼう"],["spe","すばやさ"]].map(([key,label])=>
+                        e('div',{key:key},
+                          e('div',{style:{fontSize:"9px",color:MUTED,fontWeight:"700",marginBottom:"2px",textAlign:"center"}},label),
+                          e('input',{type:"number",min:0,max:252,style:{...inp,fontSize:"12px",padding:"4px 6px",textAlign:"center"},value:details[i].evs[key],onChange:ev=>setEv(i,key,ev.target.value)})
+                        )
+                      )
+                    ),
+                    e('div',{style:{fontSize:"10px",color:details[i].evs.hp+details[i].evs.atk+details[i].evs.def+details[i].evs.spa+details[i].evs.spd+details[i].evs.spe>510?"#c03030":MUTED,textAlign:"right",marginTop:"3px",fontWeight:"700"}},
+                      `合計: ${details[i].evs.hp+details[i].evs.atk+details[i].evs.def+details[i].evs.spa+details[i].evs.spd+details[i].evs.spe}/510`
+                    )
+                  )
+                )
               ))
             ),
             filled.length>0&&e('div',{style:{marginTop:"10px",display:"flex",flexWrap:"wrap",gap:"2px"}},
@@ -510,7 +527,7 @@ function App(){
             editId&&e('button',{style:btn("r"),onClick:()=>deleteParty(editId,pName)},"削除")
           ),
           e('button',{style:{...btn(),padding:"10px",width:"100%",color:"#1a6fa8",border:"2px solid rgba(26,111,168,0.35)",background:"rgba(91,184,245,0.12)",fontWeight:"800"},onClick:()=>{setTab("analyze");analyze();}},"🔬 弱点を分析する"),
-          e('button',{style:{...btn(),padding:"10px",width:"100%",color:"#1e6b18",border:"2px solid rgba(30,107,24,0.35)",background:"rgba(90,181,82,0.12)",fontWeight:"800"},onClick:()=>{setChatIn(filled.length>0?`現在のパーティ：${filled.join("、")}\nこのパーティを評価して改善点を教えてください`:"ポケモンチャンピオンズで強いパーティを教えてください");setTab("chat");}},"🤖 AIに相談する"),
+          e('button',{style:{...btn(),padding:"10px",width:"100%",color:"#1e6b18",border:"2px solid rgba(30,107,24,0.35)",background:"rgba(90,181,82,0.12)",fontWeight:"800"},onClick:()=>setTab("ask")},"💬 Claudeに相談するプロンプトを作る"),
 
           // ── M-Aピッカーモーダル ──
           pickerSlot!==null&&e('div',{style:{position:"fixed",inset:0,background:"rgba(91,184,245,0.15)",backdropFilter:"blur(12px)",zIndex:200,display:"flex",flexDirection:"column",maxWidth:"430px",margin:"0 auto"}},
@@ -616,57 +633,32 @@ function App(){
           ))
         ),
 
-        // ── CHAT ──
-        tab==="chat"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"4px"}},
-          // APIキー状態バー
-          e('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(255,255,255,0.85)",borderRadius:"12px",padding:"8px 12px",marginBottom:"4px",border:"2px solid rgba(255,255,255,0.95)"}},
-            e('div',{style:{display:"flex",alignItems:"center",gap:"6px",fontSize:"12px",fontWeight:"700"}},
-              e('span',{style:{width:"8px",height:"8px",borderRadius:"50%",background:apiKey?"#5ab552":"#e3350d",display:"inline-block",boxShadow:apiKey?"0 0 6px rgba(90,181,82,0.6)":"0 0 6px rgba(227,53,13,0.6)"}}),
-              e('span',{style:{color:apiKey?"#1e6b18":"#c03030"}},apiKey?"APIキー設定済み ✓":"APIキー未設定")
-            ),
-            e('button',{
-              onClick:()=>{setShowKeyModal(true);setKeyInput(apiKey);},
-              style:{fontSize:"11px",fontWeight:"700",padding:"4px 10px",borderRadius:"8px",border:`2px solid ${apiKey?"#d4e8f5":"rgba(227,53,13,0.3)"}`,background:apiKey?"#f0f7ff":"rgba(227,53,13,0.06)",color:apiKey?MUTED:RED,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}
-            },apiKey?"変更":"🔑 設定する")
+        // ── ASK ──
+        tab==="ask"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
+          e('div',{style:{...card,background:"linear-gradient(135deg,rgba(90,181,82,0.08),rgba(91,184,245,0.08))"}},
+            e('div',{style:{fontWeight:"900",fontSize:"14px",color:TEXT,marginBottom:"6px"}},"💬 Claudeに相談する"),
+            e('div',{style:{fontSize:"12px",color:MUTED,lineHeight:"1.7",fontWeight:"600"}},
+              "① 下のテキストをコピーする\n② Claudeアプリを開く\n③ 貼り付けて送信する"
+            )
           ),
-          ...msgs.map((m,i)=>e(Msg,{key:i,msg:m})),
-          chatLoading&&e('div',{style:{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0"}},
-            e('div',{style:{width:"28px",height:"28px",borderRadius:"50%",background:"linear-gradient(135deg,#e3350d,#c0280a)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",boxShadow:"0 2px 8px rgba(180,30,0,0.3)"}},"🤖"),
-            e('div',{style:{display:"flex",gap:"4px"}},...[0,1,2].map(i=>e('div',{key:i,style:{width:"7px",height:"7px",borderRadius:"50%",background:RED,animation:`bounce 1s ease-in-out ${i*0.15}s infinite`}})))
-          ),
-          e('div',{ref:chatEndRef})
-        ),
-
-        // ── APIキー入力モーダル ──
-        showKeyModal&&e('div',{style:{position:"fixed",inset:0,background:"rgba(91,184,245,0.2)",backdropFilter:"blur(10px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",maxWidth:"430px",margin:"0 auto"}},
-          e('div',{style:{background:"rgba(255,255,255,0.98)",borderRadius:"20px",padding:"24px",width:"100%",boxShadow:"0 8px 40px rgba(50,120,180,0.2)",border:"2px solid rgba(255,255,255,0.95)"}},
-            e('div',{style:{fontWeight:"900",fontSize:"16px",color:TEXT,marginBottom:"6px"}},"🔑 Gemini APIキーの設定"),
-            e('div',{style:{fontSize:"12px",color:MUTED,marginBottom:"16px",lineHeight:"1.6",fontWeight:"600"}},
-              "Google AI Studio（aistudio.google.com）で\n取得した無料のAPIキーを入力してください。\nキーはこの端末のブラウザにのみ保存されます。"
-            ),
-            e('input',{
-              value:keyInput,
-              onChange:ev=>setKeyInput(ev.target.value),
-              placeholder:"AIzaSy-xxxxxxxxxx...",
-              autoFocus:true,
-              style:{...inp,fontSize:"13px",fontFamily:"monospace",marginBottom:"12px",letterSpacing:"0.5px"}
-            }),
-            e('div',{style:{display:"flex",gap:"8px",marginBottom:apiKey?"10px":"0"}},
-              e('button',{onClick:saveApiKey,style:{...btn("p"),flex:1}},"💾 保存"),
-              e('button',{onClick:()=>{setShowKeyModal(false);setKeyInput("");},style:btn()},"キャンセル")
-            ),
-            apiKey&&e('button',{
-              onClick:()=>{clearApiKey();setShowKeyModal(false);},
-              style:{...btn("r"),width:"100%",fontSize:"12px",marginTop:"4px"}
-            },"🗑️ 保存済みキーを削除する")
-          )
+          filled.length===0
+            ? e('div',{style:{...card,textAlign:"center",color:MUTED,padding:"30px",fontSize:"14px"}},"先に「構築」タブでメンバーを入力してください")
+            : e('div',{style:{display:"flex",flexDirection:"column",gap:"10px"}},
+                e('textarea',{
+                  readOnly:true,
+                  value:generatePrompt(),
+                  style:{...inp,minHeight:"280px",resize:"none",fontSize:"12px",lineHeight:"1.7",fontFamily:"monospace",cursor:"text"}
+                }),
+                e('button',{
+                  onClick:()=>{
+                    navigator.clipboard.writeText(generatePrompt()).then(()=>{
+                      setCopied(true);setTimeout(()=>setCopied(false),2000);
+                    }).catch(()=>{});
+                  },
+                  style:{...btn("p"),padding:"12px",fontSize:"14px",width:"100%",boxShadow:"0 4px 14px rgba(180,30,0,0.3)"}
+                },copied?"✅ コピーしました！":"📋 テキストをコピー")
+              )
         )
-      ),
-
-      // Chat input (fixed bottom)
-      tab==="chat"&&e('div',{style:{padding:"12px 14px",background:"rgba(255,255,255,0.92)",backdropFilter:"blur(20px)",borderTop:"2px solid rgba(255,255,255,0.95)",display:"flex",gap:"8px",position:"sticky",bottom:0,boxShadow:"0 -4px 16px rgba(50,120,180,0.1)"}},
-        e('input',{value:chatIn,onChange:ev=>setChatIn(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&!ev.shiftKey&&sendChat(),placeholder:apiKey?"構築について質問する...":"先にAPIキーを設定してください",style:{flex:1,...inp,borderRadius:"12px"}}),
-        e('button',{onClick:apiKey?sendChat:()=>setShowKeyModal(true),disabled:chatLoading||(apiKey&&!chatIn.trim()),style:{background:apiKey?"linear-gradient(135deg,#e3350d,#c0280a)":"linear-gradient(135deg,#e3350d,#c0280a)",border:"none",borderRadius:"12px",width:"44px",height:"44px",cursor:"pointer",fontSize:"18px",display:"flex",alignItems:"center",justifyContent:"center",opacity:chatLoading||(apiKey&&!chatIn.trim())?0.4:1,boxShadow:"0 3px 10px rgba(180,30,0,0.3)"}},apiKey?"↑":"🔑")
       )
     )
   );
