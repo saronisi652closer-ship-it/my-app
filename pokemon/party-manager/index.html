@@ -18,10 +18,8 @@
       linear-gradient(180deg,#5bb8f5 0%,#a8d8f0 55%,#c8eac0 75%,#5ab552 100%);
     background-size:28px 28px,100% 100%;
   }
-  /* Pokeball deco */
   body::before{content:'';position:fixed;top:-140px;right:-140px;width:380px;height:380px;border-radius:50%;border:42px solid rgba(255,255,255,0.18);pointer-events:none;z-index:0;}
   body::after{content:'';position:fixed;top:48px;right:-140px;width:380px;height:24px;background:rgba(255,255,255,0.18);pointer-events:none;z-index:0;}
-  /* Clouds */
   .cloud{position:fixed;border-radius:50px;background:rgba(255,255,255,0.55);pointer-events:none;z-index:0;animation:drift linear infinite;}
   .cloud::before,.cloud::after{content:'';position:absolute;background:rgba(255,255,255,0.55);border-radius:50%;}
   .cloud-1{width:100px;height:30px;top:6%;left:-120px;animation-duration:40s;animation-delay:-8s;}
@@ -48,8 +46,6 @@
 <script type="text/babel">
 const{useState,useRef,useEffect,useCallback}=React;
 
-// APIキーは不要（AI機能をClaudeに委譲）
-
 const TYPE_COLORS={ノーマル:"#A8A878",ほのお:"#F08030",みず:"#6890F0",でんき:"#F8D030",くさ:"#78C850",こおり:"#98D8D8",かくとう:"#C03028",どく:"#A040A0",じめん:"#E0C068",ひこう:"#A890F0",エスパー:"#F85888",むし:"#A8B820",いわ:"#B8A038",ゴースト:"#705898",ドラゴン:"#7038F8",あく:"#705848",はがね:"#B8B8D0",フェアリー:"#EE99AC"};
 
 const TYPE_CHART={normal:{weak:["fighting"],resist:[],immune:["ghost"]},fire:{weak:["water","ground","rock"],resist:["fire","grass","ice","bug","steel","fairy"],immune:[]},water:{weak:["electric","grass"],resist:["fire","water","ice","steel"],immune:[]},electric:{weak:["ground"],resist:["electric","flying","steel"],immune:[]},grass:{weak:["fire","ice","poison","flying","bug"],resist:["water","electric","grass","ground"],immune:[]},ice:{weak:["fire","fighting","rock","steel"],resist:["ice"],immune:[]},fighting:{weak:["flying","psychic","fairy"],resist:["bug","rock","dark"],immune:[]},poison:{weak:["ground","psychic"],resist:["grass","fighting","poison","bug","fairy"],immune:[]},ground:{weak:["water","grass","ice"],resist:["poison","rock"],immune:["electric"]},flying:{weak:["electric","ice","rock"],resist:["grass","fighting","bug"],immune:["ground"]},psychic:{weak:["bug","ghost","dark"],resist:["fighting","psychic"],immune:[]},bug:{weak:["fire","flying","rock"],resist:["grass","fighting","ground"],immune:[]},rock:{weak:["water","grass","fighting","ground","steel"],resist:["normal","fire","poison","flying"],immune:[]},ghost:{weak:["ghost","dark"],resist:["poison","bug"],immune:["normal","fighting"]},dragon:{weak:["ice","dragon","fairy"],resist:["fire","water","electric","grass"],immune:[]},dark:{weak:["fighting","bug","fairy"],resist:["ghost","dark"],immune:["psychic"]},steel:{weak:["fire","fighting","ground"],resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"],immune:["poison"]},fairy:{weak:["poison","steel"],resist:["fighting","bug","dark"],immune:["dragon"]}};
@@ -63,19 +59,23 @@ const NAME_JA_TO_EN={
 // Gen 2
 "チコリータ":"chikorita","ベイリーフ":"bayleef","メガニウム":"meganium","ヒノアラシ":"cyndaquil","マグマラシ":"quilava","バクフーン":"typhlosion","ワニノコ":"totodile","アリゲイツ":"croconaw","オーダイル":"feraligatr","オタチ":"sentret","オオタチ":"furret","ホーホー":"hoothoot","ヨルノズク":"noctowl","レデイバ":"ledyba","レディアン":"ledian","イトマル":"spinarak","アリアドス":"ariados","クロバット":"crobat","チョンチー":"chinchou","ランターン":"lanturn","ピチュー":"pichu","ピィ":"cleffa","ブビィ":"igglybuff","トゲピー":"togepi","トゲチック":"togetic","ネイティ":"natu","ネイティオ":"xatu","メリープ":"mareep","モコシープ":"flaaffy","デンリュウ":"ampharos","キレイハナ":"bellossom","マリル":"marill","マリルリ":"azumarill","ウソッキー":"sudowoodo","ニョロトノ":"politoed","ハネッコ":"hoppip","スキップ":"skiploom","ワタッコ":"jumpluff","エイパム":"aipom","ヒマナッツ":"sunkern","キマワリ":"sunflora","ヤンヤンマ":"yanma","ウパー":"wooper","ヌオー":"quagsire","エーフィ":"espeon","ブラッキー":"umbreon","ヤミカラス":"murkrow","ヤドキング":"slowking","ムウマ":"misdreavus","アンノーン":"unown","ソーナンス":"wobbuffet","キリンリキ":"girafarig","クヌギダマ":"pineco","フォレトス":"forretress","ノコッチ":"dunsparce","グライガー":"gligar","ハガネール":"steelix","スナッブル":"snubbull","グランブル":"granbull","ハリーセン":"qwilfish","ハッサム":"scizor","ツボツボ":"shuckle","ヘラクロス":"heracross","ニューラ":"sneasel","クマシュン":"swinub","イノムー":"piloswine","サニーゴ":"corsola","テッポウオ":"remoraid","オクタン":"octillery","デリバード":"delibird","マンタイン":"mantine","エアームド":"skarmory","デルビル":"houndour","ヘルガー":"houndoom","キングドラ":"kingdra","ゴマゾウ":"phanpy","ドンファン":"donphan","ポリゴン2":"porygon2","オドシシ":"stantler","ドーブル":"smeargle","バルキー":"tyrogue","カポエラー":"hitmontop","ムチュール":"smoochum","エレキッド":"elekid","マグビー":"magby","ミルタンク":"miltank","ハピナス":"blissey","ライコウ":"raikou","エンテイ":"entei","スイクン":"suicune","ヨーギラス":"larvitar","サナギラス":"pupitar","バンギラス":"tyranitar","ルギア":"lugia","ホウオウ":"ho-oh","セレビィ":"celebi",
 // Gen 3
-"キモリ":"treecko","ジュプトル":"grovyle","ジュカイン":"sceptile","アチャモ":"torchic","ワカシャモ":"combusken","バシャーモ":"blaziken","ミズゴロウ":"mudkip","ヌマクロー":"marshtomp","ラグラージ":"swampert","ポチエナ":"poochyena","グラエナ":"mightyena","ジグザグマ":"zigzagoon","マッスグマ":"linoone","ケムッソ":"wurmple","カラサリス":"silcoon","アゲハント":"beautifly","マユルド":"cascoon","ドクケイル":"dustox","ハスボー":"lotad","ハスブレロ":"lombre","ルンパッパ":"ludicolo","タネキッス":"seedot","コノハナ":"nuzleaf","ダーテング":"shiftry","スバメ":"taillow","オオスバメ":"swellow","キャモメ":"wingull","ペリッパー":"pelipper","ラルトス":"ralts","キルリア":"kirlia","サーナイト":"gardevoir","アメタマ":"surskit","アメモース":"masquerain","キノコ":"shroomish","キノガッサ":"breloom","ツチニン":"nincada","テッカニン":"ninjask","ヌケニン":"shedinja","ゴニョニョ":"whismur","ドゴーム":"loudred","バクオング":"exploud","マクノシタ":"makuhita","ハリテヤマ":"hariyama","ルリリ":"azurill","ノズパス":"nosepass","エネコ":"skitty","エネコロロ":"delcatty","ヤミラミ":"sableye","マワイル":"mawile","アイアント":"aron","レアルダ":"lairon","ボスゴドラ":"aggron","アサナン":"meditite","チャーレム":"medicham","ラクライ":"electrike","ライボルト":"manectric","プラスル":"plusle","マイナン":"minun","バルビート":"volbeat","イルミーゼ":"illumise","ロゼリア":"roselia","ゴクリン":"gulpin","マルノーム":"swalot","キバニア":"carvanha","サメハダー":"sharpedo","ホエルコ":"wailmer","ホエルオー":"wailord","ドンメル":"numel","ボーバーン":"camerupt","コータス":"torkoal","バネブー":"spoink","ブーピッグ":"grumpig","パッチール":"spinda","ナックラー":"trapinch","ビブラーバ":"vibrava","フライゴン":"flygon","サボネア":"cacnea","ノクタス":"cacturne","ハネッコ":"hoppip","チルタリス":"altaria","ザングース":"zangoose","ハブネーク":"seviper","ルナトーン":"lunatone","ソルロック":"solrock","ドジョッチ":"barboach","ナマズン":"whiscash","ヘイガニ":"corphish","シザリガー":"crawdaunt","ヤジロン":"baltoy","ネンドール":"claydol","リリーラ":"lileep","ユレイドル":"cradily","アノプス":"anorith","アーマルド":"armaldo","ヒンバス":"feebas","ミロカロス":"milotic","ポワルン":"castform","カクレオン":"kecleon","カゲボウズ":"shuppet","ジュペッタ":"banette","ヨマワル":"duskull","ドusclops":"dusclops","トロピウス":"tropius","ユキワラシ":"snorunt","オニゴーリ":"glalie","タマザラシ":"spheal","トドグラー":"sealeo","トドゼルガ":"walrein","パールル":"clamperl","ハンテール":"huntail","サクラビス":"gorebyss","ジーランス":"relicanth","ラブカス":"luvdisc","タツベイ":"bagon","シェルゴン":"shelgon","ボーマンダ":"salamence","ダンバル":"beldum","メタング":"metang","メタグロス":"metagross","レジロック":"regirock","レジアイス":"regice","レジスチル":"registeel","ラティアス":"latias","ラティオス":"latios","レックウザ":"rayquaza","ジラーチ":"jirachi","デオキシス":"deoxys",
+"キモリ":"treecko","ジュプトル":"grovyle","ジュカイン":"sceptile","アチャモ":"torchic","ワカシャモ":"combusken","バシャーモ":"blaziken","ミズゴロウ":"mudkip","ヌマクロー":"marshtomp","ラグラージ":"swampert","ポチエナ":"poochyena","グラエナ":"mightyena","ジグザグマ":"zigzagoon","マッスグマ":"linoone","ケムッソ":"wurmple","カラサリス":"silcoon","アゲハント":"beautifly","マユルド":"cascoon","ドクケイル":"dustox","ハスボー":"lotad","ハスブレロ":"lombre","ルンパッパ":"ludicolo","タネキッス":"seedot","コノハナ":"nuzleaf","ダーテング":"shiftry","スバメ":"taillow","オオスバメ":"swellow","キャモメ":"wingull","ペリッパー":"pelipper","ラルトス":"ralts","キルリア":"kirlia","サーナイト":"gardevoir","アメタマ":"surskit","アメモース":"masquerain","キノコ":"shroomish","キノガッサ":"breloom","ツチニン":"nincada","テッカニン":"ninjask","ヌケニン":"shedinja","ゴニョニョ":"whismur","ドゴーム":"loudred","バクオング":"exploud","マクノシタ":"makuhita","ハリテヤマ":"hariyama","ルリリ":"azurill","ノズパス":"nosepass","エネコ":"skitty","エネコロロ":"delcatty","ヤミラミ":"sableye","マワイル":"mawile","アイアント":"aron","レアルダ":"lairon","ボスゴドラ":"aggron","アサナン":"meditite","チャーレム":"medicham","ラクライ":"electrike","ライボルト":"manectric","プラスル":"plusle","マイナン":"minun","バルビート":"volbeat","イルミーゼ":"illumise","ロゼリア":"roselia","ゴクリン":"gulpin","マルノーム":"swalot","キバニア":"carvanha","サメハダー":"sharpedo","ホエルコ":"wailmer","ホエルオー":"wailord","ドンメル":"numel","ボーバーン":"camerupt","コータス":"torkoal","バネブー":"spoink","ブーピッグ":"grumpig","パッチール":"spinda","ナックラー":"trapinch","ビブラーバ":"vibrava","フライゴン":"flygon","サボネア":"cacnea","ノクタス":"cacturne","チルタリス":"altaria","ザングース":"zangoose","ハブネーク":"seviper","ルナトーン":"lunatone","ソルロック":"solrock","ドジョッチ":"barboach","ナマズン":"whiscash","ヘイガニ":"corphish","シザリガー":"crawdaunt","ヤジロン":"baltoy","ネンドール":"claydol","リリーラ":"lileep","ユレイドル":"cradily","アノプス":"anorith","アーマルド":"armaldo","ヒンバス":"feebas","ミロカロス":"milotic","ポワルン":"castform","カクレオン":"kecleon","カゲボウズ":"shuppet","ジュペッタ":"banette","ヨマワル":"duskull","ドusclops":"dusclops","トロピウス":"tropius","ユキワラシ":"snorunt","オニゴーリ":"glalie","タマザラシ":"spheal","トドグラー":"sealeo","トドゼルガ":"walrein","パールル":"clamperl","ハンテール":"huntail","サクラビス":"gorebyss","ジーランス":"relicanth","ラブカス":"luvdisc","タツベイ":"bagon","シェルゴン":"shelgon","ボーマンダ":"salamence","ダンバル":"beldum","メタング":"metang","メタグロス":"metagross","レジロック":"regirock","レジアイス":"regice","レジスチル":"registeel","ラティアス":"latias","ラティオス":"latios","レックウザ":"rayquaza","ジラーチ":"jirachi","デオキシス":"deoxys",
 // Gen 4
 "ナエトル":"turtwig","ハヤシガメ":"grotle","ドダイトス":"torterra","ヒコザル":"chimchar","モウカザル":"monferno","ゴウカザル":"infernape","ポッチャマ":"piplup","ポッタイシ":"prinplup","エンペルト":"empoleon","ムックル":"starly","ムクバード":"staravia","ムクホーク":"staraptor","ビッパ":"bidoof","ビーダル":"bibarel","コロボーシ":"kricketot","コロトック":"kricketune","コリンク":"shinx","ルクシオ":"luxio","レントラー":"luxray","スボミー":"budew","ロズレイド":"roserade","ズガイドス":"cranidos","ラムパルド":"rampardos","タテトプス":"shieldon","トリデプス":"bastiodon","ミノムッチ":"burmy","ミノマダム":"wormadam","ガーメイル":"mothim","ミツハニー":"combee","ビークイン":"vespiquen","パチリス":"pachirisu","ブイゼル":"buizel","フローゼル":"floatzel","チェリンボ":"cherubi","チェリム":"cherrim","カラナクシ":"shellos","トリトドン":"gastrodon","エテボース":"ambipom","フワンテ":"drifloon","フワライド":"drifblim","ミミロル":"buneary","ミミロップ":"lopunny","ムウマージ":"mismagius","ドンカラス":"honchkrow","ニャルマー":"glameow","ブニャット":"purugly","リーシャン":"chingling","スカンプー":"stunky","スカタンク":"skuntank","ドーミラー":"bronzor","ドータクン":"bronzong","ウソハチ":"bonsly","マネネ":"mime-jr","ピンプク":"happiny","ペラップ":"chatot","ミカルゲ":"spiritomb","フカマル":"gible","ガバイト":"gabite","ガブリアス":"garchomp","ゴンベ":"munchlax","リオル":"riolu","ルカリオ":"lucario","ヒポポタス":"hippopotas","カバルドン":"hippowdon","スコルピ":"skorupi","ドラピオン":"drapion","グレッグル":"croagunk","ドクロッグ":"toxicroak","マスキッパ":"carnivine","ケイコウオ":"finneon","ネオラント":"lumineon","タマンタ":"mantyke","ユキカブリ":"snover","ユキノオー":"abomasnow","マニューラ":"weavile","ジバコイル":"magnezone","ベロベルト":"lickilicky","サイカイザー":"rhyperior","モジャンボ":"tangrowth","エレキブル":"electivire","ブーバーン":"magmortar","トゲキッス":"togekiss","メガヤンマ":"yanmega","リーフィア":"leafeon","グレイシア":"glaceon","グライオン":"gliscor","マンムー":"mamoswine","ポリゴンZ":"porygon-z","エルレイド":"gallade","ダイノーズ":"probopass","ヨノワール":"dusknoir","ユキメノコ":"froslass","ロトム":"rotom","ユクシー":"uxie","エムリット":"mesprit","アグノム":"azelf","ディアルガ":"dialga","パルキア":"palkia","ヒードラン":"heatran","レジギガス":"regigigas","ギラティナ":"giratina","クレセリア":"cresselia","フィオネ":"phione","マナフィ":"manaphy","ダークライ":"darkrai","シェイミ":"shaymin","アルセウス":"arceus",
 // Gen 5
-"ツタージャ":"snivy","ジャノビー":"servine","ジャローダ":"serperior","ポカブ":"tepig","チャオブー":"pignite","エンブオー":"emboar","ミジュマル":"oshawott","フタチマル":"dewott","ダイケンキ":"samurott","ミネズミ":"patrat","ミルホッグ":"watchog","ヨーテリー":"lillipup","ハーデリア":"herdier","ムーランド":"stoutland","チョロネコ":"purrloin","レパルダス":"liepard","ヤナップ":"pansage","ヤナッキー":"simisage","バオップ":"pansear","バオッキー":"simisear","ヒヤップ":"panpour","ヒヤッキー":"simipour","ムンナ":"munna","ムシャーナ":"musharna","マメパト":"pidove","ハトーボー":"tranquill","ケンホロウ":"unfezant","シマシマ":"blitzle","ゼブライカ":"zebstrika","ダンゴロ":"roggenrola","ガントル":"boldore","ギガイアス":"gigalith","コロモリ":"woobat","ソーナクル":"swoobat","モグリュー":"drilbur","ドリュウズ":"excadrill","タブンネ":"audino","ドッコラー":"timburr","ドテッコツ":"gurdurr","ローブシン":"conkeldurr","オタマロ":"tympole","ガマガル":"palpitoad","ガマゲロゲ":"seismitoad","ナゲキ":"throh","ダゲキ":"sawk","クルミル":"sewaddle","クルマユ":"swadloon","ハハコモリ":"leavanny","フシデ":"venipede","マルノーム":"whirlipede","ペンドラー":"scolipede","モンメン":"cottonee","エルフーン":"whimsicott","チュリネ":"petilil","ドレディア":"lilligant","バスラオ":"basculin","メグロコ":"sandile","ワルビル":"krokorok","ワルビアル":"krookodile","ダルマッカ":"darumaka","ヒヒダルマ":"darmanitan","マリラント":"maractus","イシズマイ":"dwebble","イワパレス":"crustle","ズルッグ":"scraggy","ズルズキン":"scrafty","シンボラー":"sigilyph","デスマス":"yamask","デスカーン":"cofagrigus","プロトーガ":"tirtouga","アバゴーラ":"carracosta","アーケン":"archen","アーケオス":"archeops","ヤブクロン":"trubbish","ダストダス":"garbodor","ゾロア":"zorua","ゾロアーク":"zoroark","チラーミィ":"minccino","チラチーノ":"cinccino","ゴチム":"gothita","ゴチミル":"gothorita","ゴチルゼル":"gothitelle","ユニラン":"solosis","ダブラン":"duosion","ランクルス":"reuniclus","コアルヒー":"ducklett","スワンナ":"swanna","バニプッチ":"vanillite","バニリッチ":"vanillish","バイバニラ":"vanilluxe","シキジカ":"deerling","メブキジカ":"sawsbuck","エモンガ":"emolga","カブルモ":"karrablast","シュバルゴ":"escavalier","タマゲタケ":"foongus","モロバレル":"amoonguss","プルリル":"frillish","ジェリセント":"jellicent","ママンボウ":"alomomola","シビシラス":"joltik","デンチュラ":"galvantula","テッシード":"ferroseed","ナットレイ":"ferrothorn","ギアル":"klink","ギギアル":"klang","ギギギアル":"klinklang","シビレゾタ":"tynamo","シビビール":"eelektrik","シビルドン":"eelektross","リグレー":"elgyem","オーベム":"beheeyem","ヒトモシ":"litwick","ランプラー":"lampent","シャンデラ":"chandelure","キバゴ":"axew","オノンド":"fraxure","オノノクス":"haxorus","クマシュン":"cubchoo","ツンベアー":"beartic","クリムガン":"deino","ジヘッド":"zweilous","サザンドラ":"hydreigon","タマゲタケ":"foongus","メラルバ":"larvesta","ウルガモス":"volcarona","コバルオン":"cobalion","テラキオン":"terrakion","ビリジオン":"virizion","トルネロス":"tornadus","ボルトロス":"thundurus","レシラム":"reshiram","ゼクロム":"zekrom","ランドロス":"landorus-incarnate","キュレム":"kyurem","ケルディオ":"keldeo","メロエッタ":"meloetta","ゲノセクト":"genesect","ビクティニ":"victini",
+"ツタージャ":"snivy","ジャノビー":"servine","ジャローダ":"serperior","ポカブ":"tepig","チャオブー":"pignite","エンブオー":"emboar","ミジュマル":"oshawott","フタチマル":"dewott","ダイケンキ":"samurott","ミネズミ":"patrat","ミルホッグ":"watchog","ヨーテリー":"lillipup","ハーデリア":"herdier","ムーランド":"stoutland","チョロネコ":"purrloin","レパルダス":"liepard","ヤナップ":"pansage","ヤナッキー":"simisage","バオップ":"pansear","バオッキー":"simisear","ヒヤップ":"panpour","ヒヤッキー":"simipour","ムンナ":"munna","ムシャーナ":"musharna","マメパト":"pidove","ハトーボー":"tranquill","ケンホロウ":"unfezant","シマシマ":"blitzle","ゼブライカ":"zebstrika","ダンゴロ":"roggenrola","ガントル":"boldore","ギガイアス":"gigalith","コロモリ":"woobat","ソーナクル":"swoobat","モグリュー":"drilbur","ドリュウズ":"excadrill","タブンネ":"audino","ドッコラー":"timburr","ドテッコツ":"gurdurr","ローブシン":"conkeldurr","オタマロ":"tympole","ガマガル":"palpitoad","ガマゲロゲ":"seismitoad","ナゲキ":"throh","ダゲキ":"sawk","クルミル":"sewaddle","クルマユ":"swadloon","ハハコモリ":"leavanny","フシデ":"venipede","マルノーム":"whirlipede","ペンドラー":"scolipede","モンメン":"cottonee","エルフーン":"whimsicott","チュリネ":"petilil","ドレディア":"lilligant","バスラオ":"basculin","メグロコ":"sandile","ワルビル":"krokorok","ワルビアル":"krookodile","ダルマッカ":"darumaka","ヒヒダルマ":"darmanitan","マリラント":"maractus","イシズマイ":"dwebble","イワパレス":"crustle","ズルッグ":"scraggy","ズルズキン":"scrafty","シンボラー":"sigilyph","デスマス":"yamask","デスカーン":"cofagrigus","プロトーガ":"tirtouga","アバゴーラ":"carracosta","アーケン":"archen","アーケオス":"archeops","ヤブクロン":"trubbish","ダストダス":"garbodor","ゾロア":"zorua","ゾロアーク":"zoroark","チラーミィ":"minccino","チラチーノ":"cinccino","ゴチム":"gothita","ゴチミル":"gothorita","ゴチルゼル":"gothitelle","ユニラン":"solosis","ダブラン":"duosion","ランクルス":"reuniclus","コアルヒー":"ducklett","スワンナ":"swanna","バニプッチ":"vanillite","バニリッチ":"vanillish","バイバニラ":"vanilluxe","シキジカ":"deerling","メブキジカ":"sawsbuck","エモンガ":"emolga","カブルモ":"karrablast","シュバルゴ":"escavalier","タマゲタケ":"foongus","モロバレル":"amoonguss","プルリル":"frillish","ジェリセント":"jellicent","ママンボウ":"alomomola","シビシラス":"joltik","デンチュラ":"galvantula","テッシード":"ferroseed","ナットレイ":"ferrothorn","ギアル":"klink","ギギアル":"klang","ギギギアル":"klinklang","シビレゾタ":"tynamo","シビビール":"eelektrik","シビルドン":"eelektross","リグレー":"elgyem","オーベム":"beheeyem","ヒトモシ":"litwick","ランプラー":"lampent","シャンデラ":"chandelure","キバゴ":"axew","オノンド":"fraxure","オノノクス":"haxorus","クマシュン":"cubchoo","ツンベアー":"beartic","クリムガン":"deino","ジヘッド":"zweilous","サザンドラ":"hydreigon","メラルバ":"larvesta","ウルガモス":"volcarona","コバルオン":"cobalion","テラキオン":"terrakion","ビリジオン":"virizion","トルネロス":"tornadus","ボルトロス":"thundurus","レシラム":"reshiram","ゼクロム":"zekrom","ランドロス":"landorus-incarnate","キュレム":"kyurem","ケルディオ":"keldeo","メロエッタ":"meloetta","ゲノセクト":"genesect","ビクティニ":"victini",
 // Gen 6
-"ハリマロン":"chespin","ハリボーグ":"quilladin","ブリガロン":"chesnaught","フォッコ":"fennekin","テールナー":"braixen","マフォクシー":"delphox","ケロマツ":"froakie","ゲコガシラ":"frogadier","ゲッコウガ":"greninja","ヤヤコマ":"fletchling","ヒノアシ":"fletchinder","ファイアロー":"talonflame","ホルビー":"scatterbug","コフキムシ":"spewpa","ビビヨン":"vivillon","シシコ":"litleo","カエンジシ":"pyroar","フラベベ":"flabebe","フラエッテ":"floette","フラージェス":"florges","メェークル":"skiddo","ゴーゴート":"gogoat","ヤンチャム":"pancham","ゴロンダ":"pangoro","カメテテ":"espurr","ニャスパー":"espurr","ニャオニクス":"meowstic","ニャオニクス(オス)":"meowstic","ニャオニクス(メス)":"meowstic-f","シュシュプ":"honedge","ドレディア":"doublade","ギルガルド":"aegislash","ブロスター":"clawitzer","エリキテル":"helioptile","エレザード":"heliolisk","チゴラス":"tyrunt","ガチゴラス":"tyrantrum","アマルス":"amaura","アマルルガ":"aurorus","ルチャブル":"hawlucha","デデンネ":"dedenne","メレシー":"carbink","ヌメラ":"goomy","ヌメイル":"sliggoo","ヌメルゴン":"goodra","クレッフィ":"klefki","ボクレー":"phantump","オーロット":"trevenant","バケッチャ":"pumpkaboo","パンプジン":"gourgeist","クズモー":"skrelp","ドラミドロ":"dragalge","クラッベ":"clauncher","ランターン":"clawitzer","ゴビット":"golett","ゴルーグ":"golurk","コマタナ":"pawniard","キリキザン":"bisharp","バッフロン":"bouffalant","ウォーグル":"braviary","ケルディオ":"keldeo","バケッチャ":"pumpkaboo","カラマネロ":"inkay","マーイーカ":"malamar","ニンフィア":"sylveon","トゲキッス":"togekiss","ゼルネアス":"xerneas","イベルタル":"yveltal","ジガルデ":"zygarde","ディアンシー":"diancie","フーパ":"hoopa","ボルケニオン":"volcanion",
+"ハリマロン":"chespin","ハリボーグ":"quilladin","ブリガロン":"chesnaught","フォッコ":"fennekin","テールナー":"braixen","マフォクシー":"delphox","ケロマツ":"froakie","ゲコガシラ":"frogadier","ゲッコウガ":"greninja","ヤヤコマ":"fletchling","ヒノアシ":"fletchinder","ファイアロー":"talonflame","ホルビー":"scatterbug","コフキムシ":"spewpa","ビビヨン":"vivillon","シシコ":"litleo","カエンジシ":"pyroar","フラベベ":"flabebe","フラエッテ":"floette","フラージェス":"florges","メェークル":"skiddo","ゴーゴート":"gogoat","ヤンチャム":"pancham","ゴロンダ":"pangoro","ニャスパー":"espurr","ニャオニクス":"meowstic","ニャオニクス(オス)":"meowstic","ニャオニクス(メス)":"meowstic-f","シュシュプ":"honedge","ギルガルド":"aegislash","エリキテル":"helioptile","エレザード":"heliolisk","チゴラス":"tyrunt","ガチゴラス":"tyrantrum","アマルス":"amaura","アマルルガ":"aurorus","ルチャブル":"hawlucha","デデンネ":"dedenne","メレシー":"carbink","ヌメラ":"goomy","ヌメイル":"sliggoo","ヌメルゴン":"goodra","クレッフィ":"klefki","ボクレー":"phantump","オーロット":"trevenant","バケッチャ":"pumpkaboo","パンプジン":"gourgeist","クズモー":"skrelp","ドラミドロ":"dragalge","クラッベ":"clauncher","カラマネロ":"inkay","マーイーカ":"malamar","ニンフィア":"sylveon","ゼルネアス":"xerneas","イベルタル":"yveltal","ジガルデ":"zygarde","ディアンシー":"diancie","フーパ":"hoopa","ボルケニオン":"volcanion",
 // Gen 7
-"モクロー":"rowlet","フクスロー":"dartrix","ジュナイパー":"decidueye","ニャビー":"litten","トラウマ":"torracat","ガオガエン":"incineroar","アシマリ":"popplio","オシャマリ":"brionne","アシレーヌ":"primarina","ピックル":"pikipek","ツツケラ":"trumbeak","ドデカバシ":"toucannon","アゴジムシ":"grubbin","ビビニョン":"charjabug","クワガノン":"vikavolt","ドラメシヤ":"cosmog","ルガルガン":"lycanroc","バリコオル":"wishiwashi","ヒドイデ":"mareanie","ドヒドイデ":"toxapex","カラマネロ":"inkay","マーイーカ":"malamar","エリキテル":"helioptile","ハギギシリ":"bruxish","カプ・コケコ":"tapu-koko","カプ・テテフ":"tapu-lele","カプ・ブルル":"tapu-bulu","カプ・レヒレ":"tapu-fini","コスモッグ":"cosmog","コスモウム":"cosmoem","ソルガレオ":"solgaleo","ルナアーラ":"lunala","ネクロズマ":"necrozma","マギアナ":"magearna","マーシャドー":"marshadow","ゼラオラ":"zeraora","ミミッキュ":"mimikyu","ニャイキング":"perrserker","アクジキング":"guzzlord","テッカグヤ":"celesteela","カミツルギ":"kartana","デンジュモク":"xurkitree","フェローチェ":"pheromosa","ニヒルゴン":"nihilego","ズガドーン":"blacephalon","ツンデツンデ":"stakataka","ベベノム":"poipole","アーゴヨン":"naganadel","イワンコ":"rockruff","ナゲツケサル":"passimian","ヤレユータン":"oranguru","アマカジ":"bounsweet","アマージョ":"tsareena","オドリドリ":"oricorio","ネッコアン":"comfey","シロデスナ":"palossand","コスモッグ":"cosmog","ハッカドラ":"drampa","ドラゴン":"turtonator","ジジーロン":"togedemaru","ミミッキュ":"mimikyu",
+"モクロー":"rowlet","フクスロー":"dartrix","ジュナイパー":"decidueye","ニャビー":"litten","トラウマ":"torracat","ガオガエン":"incineroar","アシマリ":"popplio","オシャマリ":"brionne","アシレーヌ":"primarina","ピックル":"pikipek","ツツケラ":"trumbeak","ドデカバシ":"toucannon","アゴジムシ":"grubbin","ビビニョン":"charjabug","クワガノン":"vikavolt","ルガルガン":"lycanroc","バリコオル":"wishiwashi","ヒドイデ":"mareanie","ドヒドイデ":"toxapex","ハギギシリ":"bruxish","カプ・コケコ":"tapu-koko","カプ・テテフ":"tapu-lele","カプ・ブルル":"tapu-bulu","カプ・レヒレ":"tapu-fini","コスモッグ":"cosmog","コスモウム":"cosmoem","ソルガレオ":"solgaleo","ルナアーラ":"lunala","ネクロズマ":"necrozma","マギアナ":"magearna","マーシャドー":"marshadow","ゼラオラ":"zeraora","ミミッキュ":"mimikyu","ナゲツケサル":"passimian","ヤレユータン":"oranguru","アマカジ":"bounsweet","アマージョ":"tsareena","オドリドリ":"oricorio","コスモッグ":"cosmog","ハッカドラ":"drampa","ジジーロン":"togedemaru","ニャイキング":"perrserker",
 // Gen 8
-"サルノリ":"grookey","バチンキー":"thwackey","ゴリランダー":"rillaboom","ヒバニー":"scorbunny","ラビフット":"raboot","エースバーン":"cinderace","メッソン":"sobble","ジメレオン":"drizzile","インテレオン":"inteleon","ヒメンカ":"gossifleur","ワタシラガ":"eldegoss","ウールー":"wooloo","ダイウール":"dubwool","ホシガリス":"skwovet","ヨクバリス":"greedent","アオガラス":"rookidee","ルーキー":"corvisquire","アーマーガア":"corviknight","サッチムシ":"blipbug","レドームシ":"dottler","イオルブ":"orbeetle","カジリガメ":"chewtle","カジリガメ":"drednaw","ドロバンコ":"mudbray","バリジャン":"mudsdale","ワンパチ":"yamper","パルスワン":"boltund","ザルード":"zarude","ワタシラガ":"eldegoss","コオリッポ":"eiscue","インテレオン":"inteleon","ウオノラゴン":"dracovish","パッチラゴン":"dracozolt","ウオチルドン":"arctovish","パッチルドン":"arctozolt","サダイジャ":"sandaconda","テッポウサカナ":"cramorant","ジュラルドン":"duraludon","ドラパルト":"dragapult","ドロンチ":"drakloak","ドラメシヤ":"dreepy","モスノウ":"frosmoth","ストリンダー":"toxtricity","モルペコ":"morpeko","ザシアン":"zacian-crowned","ザマゼンタ":"zamazenta-crowned","ムゲンダイナ":"eternatus","ウーラオス":"urshifu","ブリムオン":"hatterene","ニャイキング":"perrserker","タイレーツ":"falinks","サニゴーン":"cursola","バリコオル":"corsola-galar","ダクマ":"kubfu","バドレックス":"calyrex","レイスポス":"spectrier","ブリザポス":"glastrier","キュワワー":"comfey",
+"サルノリ":"grookey","バチンキー":"thwackey","ゴリランダー":"rillaboom","ヒバニー":"scorbunny","ラビフット":"raboot","エースバーン":"cinderace","メッソン":"sobble","ジメレオン":"drizzile","インテレオン":"inteleon","ヒメンカ":"gossifleur","ワタシラガ":"eldegoss","ウールー":"wooloo","ダイウール":"dubwool","ホシガリス":"skwovet","ヨクバリス":"greedent","アオガラス":"rookidee","ルーキー":"corvisquire","アーマーガア":"corviknight","サッチムシ":"blipbug","レドームシ":"dottler","イオルブ":"orbeetle","カジリガメ":"chewtle","ドロバンコ":"mudbray","バリジャン":"mudsdale","ワンパチ":"yamper","パルスワン":"boltund","ザルード":"zarude","コオリッポ":"eiscue","ウオノラゴン":"dracovish","パッチラゴン":"dracozolt","ウオチルドン":"arctovish","パッチルドン":"arctozolt","サダイジャ":"sandaconda","テッポウサカナ":"cramorant","ジュラルドン":"duraludon","ドラパルト":"dragapult","ドロンチ":"drakloak","ドラメシヤ":"dreepy","モスノウ":"frosmoth","ストリンダー":"toxtricity","モルペコ":"morpeko","ザシアン":"zacian-crowned","ザマゼンタ":"zamazenta-crowned","ムゲンダイナ":"eternatus","ウーラオス":"urshifu","ブリムオン":"hatterene","タイレーツ":"falinks","サニゴーン":"cursola","バリコオル":"corsola-galar","ダクマ":"kubfu","バドレックス":"calyrex","レイスポス":"spectrier","ブリザポス":"glastrier",
 // Gen 9
-"ニャオハ":"sprigatito","ニャローテ":"floragato","マスカーニャ":"meowscarada","ホゲータ":"fuecoco","アチゲータ":"crocalor","スコヴィランド":"skeledirge","クワッス":"quaxly","クワマシ":"quaxwell","ウェーニバル":"quaquaval","パモ":"pawmi","パモット":"pawmo","パーモット":"pawmot","ウミディグダ":"wiglett","ウミトリオ":"wugtrio","カイデン":"wattrel","タイカイデン":"kilowattrel","ナミイルカ":"finizen","イルカマン":"palafin","カルボウ":"charcadet","ソウブレイズ":"ceruledge","アーマーガア":"armarouge","グルトン":"greavard","ハカドッグ":"houndstone","フワンテ":"bombirdier","サケブシッポ":"ceruledge","イキリンコ":"squawkabilly","カラミンゴ":"flamigo","ノノクラゲ":"tentacool","コレクレー":"gimmighoul","コロモリ":"gimmighoul","ハラバリー":"bellibolt","ジバコイル":"magnezone","サーフゴー":"gholdengo","ハバタクカミ":"flutter-mane","テツノブジン":"iron-valiant","チオンジェン":"chien-pao","パオジアン":"chien-pao","ディンルー":"ting-lu","イーユイ":"chi-yu","カイナ":"iron-hands","コライドン":"koraidon","ミライドン":"miraidon","セグレイブ":"baxcalibur","テツノカシラ":"iron-bundle","テツノドクガ":"iron-moth","テツノイバラ":"iron-thorns","テツノワダチ":"iron-treads","チヲハウハネ":"wo-chien","バサギリ":"1001","テツノコウベ":"iron-crown","テツノイサハ":"1009","クエスパトラ":"espathra","グルトン":"greavard","スナノケガワ":"sandygast","パルデアサンド":"sandshrew-alola","タマンタ":"mantyke","ルガルガン":"lycanroc"
+"ニャオハ":"sprigatito","ニャローテ":"floragato","マスカーニャ":"meowscarada","ホゲータ":"fuecoco","アチゲータ":"crocalor","スコヴィランド":"skeledirge","クワッス":"quaxly","クワマシ":"quaxwell","ウェーニバル":"quaquaval","パモ":"pawmi","パモット":"pawmo","パーモット":"pawmot","ウミディグダ":"wiglett","ウミトリオ":"wugtrio","カイデン":"wattrel","タイカイデン":"kilowattrel","ナミイルカ":"finizen","イルカマン":"palafin","カルボウ":"charcadet","ソウブレイズ":"ceruledge","アーマーガア":"armarouge","グルトン":"greavard","ハカドッグ":"houndstone","イキリンコ":"squawkabilly","カラミンゴ":"flamigo","コレクレー":"gimmighoul","ハラバリー":"bellibolt","サーフゴー":"gholdengo","ハバタクカミ":"flutter-mane","テツノブジン":"iron-valiant","チオンジェン":"chien-pao","パオジアン":"chien-pao","ディンルー":"ting-lu","イーユイ":"chi-yu","カイナ":"iron-hands","コライドン":"koraidon","ミライドン":"miraidon","セグレイブ":"baxcalibur","テツノカシラ":"iron-crown","テツノドクガ":"iron-moth","テツノイバラ":"iron-thorns","テツノワダチ":"iron-treads","チヲハウハネ":"wo-chien",
+// ★ 修正: バサギリ = iron-leaves (ID:1010)、テツノイサハ = ID:1009
+"バサギリ":"iron-leaves",
+"テツノイサハ":"1009",
+"クエスパトラ":"espathra"
 };
 
 const FALLBACK_TYPES={
@@ -99,8 +99,7 @@ const FALLBACK_TYPES={
 "ドダイトス":["grass","ground"],"ムクホーク":["normal","flying"],
 "レントラー":["electric"],"ロズレイド":["grass","poison"],
 "ラムパルド":["rock"],"ドラピオン":["poison","dark"],
-"ルカリオ":["fighting","steel"],"カバルドン":["ground"],
-"フローゼル":["water"],"トリトドン":["water","ground"],
+"カバルドン":["ground"],"フローゼル":["water"],"トリトドン":["water","ground"],
 "ミミロップ":["normal"],"ドンカラス":["dark","flying"],
 "ブニャット":["normal"],"スカタンク":["poison","dark"],
 "ドータクン":["steel","psychic"],"ミカルゲ":["ghost","dark"],
@@ -130,15 +129,15 @@ const FALLBACK_TYPES={
 "モロバレル":["grass","poison"],"ジェリセント":["water","ghost"],
 "ガマゲロゲ":["water","ground"],"シビルドン":["electric"],
 "アーケオス":["rock","flying"],"デスカーン":["ghost"],
-"ゴチルゼル":["psychic"],"ゾロアーク":["dark"],
 "ジュナイパー":["grass","ghost"],"ガオガエン":["fire","dark"],
 "アシレーヌ":["water","fairy"],"カプ・コケコ":["electric","fairy"],
 "カプ・テテフ":["psychic","fairy"],"カプ・ブルル":["grass","fairy"],
-"カプ・レヒレ":["water","fairy"],"ネクロズマ":["psychic"],
-"ゴリランダー":["grass"],"エースバーン":["fire"],"インテレオン":["water"],
+"カプ・レヒレ":["water","fairy"],
+"ゴリランダー":["grass"],"インテレオン":["water"],
 "ドヒドイデ":["water","poison"],"マスカーニャ":["grass","dark"],
 "スコヴィランド":["fire","ghost"],"ウェーニバル":["water","fighting"],
 "テツノブジン":["fairy","fighting"],
+// ★ 修正: バサギリ = grass/psychic (Iron Leaves)
 "バサギリ":["grass","psychic"],
 "テツノイサハ":["rock","psychic"],
 "テツノコウベ":["psychic","steel"]
@@ -155,7 +154,6 @@ async function fetchPokemon(jaName){
 
 const GAMES=["ポケモンチャンピオンズ (M-A)","SV","剣盾","BDSP","PLA","SM/USUM","XY/ORAS","BW/BW2","DPt","HGSS","その他"];
 
-// レギュレーションM-A（2026/4/8〜6/17）使用可能ポケモン（213匹・姿違い含む）
 const CHAMPIONS_MA=[
 // Gen1
 "ピカチュウ","ライチュウ","アローラライチュウ","フシギバナ","リザードン","カメックス",
@@ -198,7 +196,7 @@ const CHAMPIONS_MA=[
 "ブリガロン","マフォクシー","ゲッコウガ","メガゲッコウガ","ファイアロー","ゴーゴート",
 "ゴロンダ","ギルガルド","ニャオニクス","エレザード","ガチゴラス","アマルルガ","ルチャブル","ニンフィア",
 "ヌメルゴン","パンプジン","パンプジン(S)","パンプジン(L)","パンプジン(XL)","オーロット",
-"ドラミドロ","マフォクシー","フラージェス",
+"ドラミドロ","フラージェス",
 // Gen7
 "ジュナイパー","ガオガエン","アシレーヌ","ドデカバシ","クワガノン","ルガルガン",
 "ルガルガン(真夜中)","ルガルガン(たそがれ)","ドヒドイデ","ミミッキュ","ナゲツケサル",
@@ -216,20 +214,11 @@ const CHAMPIONS_MA=[
 "テツノカシラ","テツノドクガ","テツノイバラ","テツノワダチ","チヲハウハネ","バサギリ",
 ];
 
-const NATURES=["さみしがり","いじっぱり","やんちゃ","ゆうかん","ずぶとい","わんぱく","のうてんき","のんき","ひかえめ","おっとり","うっかりや","れいせい","おだやか","おとなしい","しんちょう","なまいき","おくびょう","せっかち","むじゃき","ようき","きまぐれ","ずぶとい","おっとり","しんちょう","てれや"];
 const NATURE_LIST=["がんばりや","さみしがり","ゆうかん","いじっぱり","やんちゃ","ずぶとい","わんぱく","のうてんき","のんき","ひかえめ","おっとり","れいせい","うっかりや","おだやか","おとなしい","しんちょう","なまいき","おくびょう","せっかち","むじゃき","ようき","きまぐれ","てれや","ひねくれ","まじめ"];
 const emptyDetail=()=>({item:"",nature:"",ability:"",moves:["","","",""],evs:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0}});
 
 function TypeBadge({type,small}){
   return React.createElement('span',{style:{background:TYPE_COLORS[type]||"#888",color:"#fff",fontSize:small?"10px":"11px",fontWeight:"700",padding:small?"1px 5px":"2px 7px",borderRadius:"4px",textShadow:"0 1px 2px rgba(0,0,0,0.4)",display:"inline-block",marginRight:"2px",marginBottom:"2px"}},type);
-}
-
-function Msg({msg}){
-  const isUser=msg.role==="user";
-  return React.createElement('div',{style:{display:"flex",justifyContent:isUser?"flex-end":"flex-start",marginBottom:"10px",animation:"fadeIn 0.2s ease"}},
-    !isUser&&React.createElement('div',{style:{width:"30px",height:"30px",borderRadius:"50%",background:"linear-gradient(135deg,#e3350d,#c0280a)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",flexShrink:0,marginRight:"8px",alignSelf:"flex-end",boxShadow:"0 2px 6px rgba(180,30,0,0.25)"}},"🤖"),
-    React.createElement('div',{style:{maxWidth:"80%",background:isUser?"linear-gradient(135deg,#e3350d,#c0280a)":"rgba(255,255,255,0.92)",color:isUser?"#fff":"#1a2a3a",padding:"10px 14px",fontSize:"13px",lineHeight:"1.6",borderRadius:isUser?"16px 16px 4px 16px":"16px 16px 16px 4px",border:isUser?"none":"2px solid rgba(255,255,255,0.95)",whiteSpace:"pre-wrap",boxShadow:isUser?"0 3px 10px rgba(180,30,0,0.2)":"0 2px 10px rgba(50,120,180,0.1)",fontWeight:"600"}},msg.content)
-  );
 }
 
 function App(){
@@ -261,7 +250,6 @@ function App(){
   const toast=(m)=>{setStatus(m);setTimeout(()=>setStatus(""),2500);};
   const getEnTypes=(name)=>apiTypes[name]||FALLBACK_TYPES[name]||null;
 
-  // detail helpers
   const setDetail=(i,field,val)=>{
     setDetails(prev=>{const n=[...prev];n[i]={...n[i],[field]:val};return n;});
   };
@@ -276,7 +264,6 @@ function App(){
 
   const openPicker=(slotIdx)=>{
     setPickerSlot(slotIdx);setPickerSearch("");
-    // pre-fetch sprites for visible Champions pokemon
     CHAMPIONS_MA.forEach(async n=>{
       if(sprites[n]!==undefined)return;
       const d=await fetchPokemon(n);
@@ -360,7 +347,6 @@ function App(){
     const r=new FileReader();r.onload=e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw 0;const ids=new Set(parties.map(p=>p.id));const add=data.filter(p=>!ids.has(p.id));setParties(prev=>[...add,...prev]);toast(`✅ ${add.length}件インポート`);}catch{toast("❌ 読み込み失敗");}};r.readAsText(file);
   };
 
-  // Claudeに貼り付けるプロンプトを生成
   const generatePrompt=()=>{
     const filled=members.filter(Boolean);
     if(!filled.length) return "まずパーティにポケモンを追加してください。";
@@ -398,8 +384,7 @@ function App(){
 
   const filled=members.filter(Boolean);
 
-  // ── Light Pokemon theme styles ──
-  const SKY="#5bb8f5", RED="#e3350d", YELLOW="#ffcb05", TEXT="#1a2a3a", MUTED="#6b8fa8";
+  const SKY="#5bb8f5", RED="#e3350d", TEXT="#1a2a3a", MUTED="#6b8fa8";
   const BG={minHeight:"100vh",position:"relative",zIndex:1};
   const WRAP={maxWidth:"430px",margin:"0 auto",display:"flex",flexDirection:"column",minHeight:"100vh",position:"relative",zIndex:1};
   const inp={width:"100%",background:"#f0f7ff",border:"2px solid #d4e8f5",borderRadius:"10px",color:TEXT,padding:"9px 12px",fontSize:"14px",outline:"none",boxSizing:"border-box",fontFamily:"'Nunito',sans-serif"};
@@ -418,15 +403,11 @@ function App(){
     e('div',{className:"cloud cloud-1"}),
     e('div',{className:"cloud cloud-2"}),
     e('div',{style:WRAP},
-      // Header
       e('div',{style:{padding:"14px 16px 10px",background:"linear-gradient(135deg,#e3350d,#c0280a)",flexShrink:0,position:"sticky",top:0,zIndex:10,boxShadow:"0 4px 16px rgba(180,30,0,0.3)",overflow:"hidden"}},
-        // Pokeball ring deco
         e('div',{style:{position:"absolute",top:"-30px",right:"-30px",width:"100px",height:"100px",borderRadius:"50%",border:"16px solid rgba(255,255,255,0.12)",pointerEvents:"none"}}),
         e('div',{style:{position:"absolute",top:"18px",right:"-30px",width:"100px",height:"8px",background:"rgba(255,255,255,0.12)",pointerEvents:"none"}}),
         e('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"10px",position:"relative"}},
-          // Back button
           e('a',{href:"../",style:{display:"flex",alignItems:"center",justifyContent:"center",width:"30px",height:"30px",borderRadius:"50%",background:"rgba(255,255,255,0.2)",color:"#fff",textDecoration:"none",fontSize:"16px",flexShrink:0,fontWeight:"700",lineHeight:1}},"‹"),
-          // Mini pokeball icon
           e('div',{style:{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(180deg,#fff 50%,#333 50%)",border:"2px solid #333",flexShrink:0,position:"relative",boxShadow:"0 2px 6px rgba(0,0,0,0.3)"}},
             e('div',{style:{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"9px",height:"9px",borderRadius:"50%",background:"#fff",border:"2px solid #333"}})
           ),
@@ -443,10 +424,8 @@ function App(){
         )
       ),
 
-      // Content
       e('div',{style:{flex:1,overflow:"auto",padding:"14px",paddingBottom:"14px"}},
 
-        // ── PARTY ──
         tab==="party"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
           status&&e('div',{style:{background:"rgba(90,181,82,0.12)",border:"2px solid rgba(90,181,82,0.3)",borderRadius:"10px",padding:"8px 12px",fontSize:"13px",color:"#2a7a20",textAlign:"center",animation:"fadeIn 0.2s",fontWeight:"700"}},status),
           e('div',{style:card},
@@ -463,7 +442,6 @@ function App(){
             isChampions&&e('p',{style:{fontSize:"11px",color:MUTED,marginBottom:"8px"}},"🎯 スロットをタップしてM-A使用可能ポケモンから選択できます"),
             e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},
               members.map((m,i)=>e('div',{key:i},
-                // Name input row
                 e('div',{style:{position:"relative",display:"flex",gap:"4px",alignItems:"center"}},
                   isChampions
                     ? e('div',{style:{display:"flex",gap:"4px",flex:1}},
@@ -476,19 +454,15 @@ function App(){
                       ),
                   m&&e('button',{onClick:()=>setExpandedSlot(expandedSlot===i?null:i),style:{width:"28px",height:"36px",flexShrink:0,background:expandedSlot===i?"rgba(227,53,13,0.1)":"#f0f7ff",border:`2px solid ${expandedSlot===i?"rgba(227,53,13,0.3)":"#d4e8f5"}`,borderRadius:"8px",cursor:"pointer",fontSize:"12px",color:expandedSlot===i?RED:MUTED,fontWeight:"700"}},expandedSlot===i?"▲":"▼")
                 ),
-                // Detail panel
                 m&&expandedSlot===i&&e('div',{style:{background:"#f8fcff",border:"2px solid #d4e8f5",borderRadius:"12px",padding:"10px",marginTop:"6px",display:"flex",flexDirection:"column",gap:"8px"}},
-                  // 持ち物
                   e('div',null,
                     e('span',{style:{...lbl,fontSize:"10px"}},"持ち物"),
                     e('input',{style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].item,onChange:ev=>setDetail(i,"item",ev.target.value),placeholder:"例：こだわりスカーフ"})
                   ),
-                  // 特性
                   e('div',null,
                     e('span',{style:{...lbl,fontSize:"10px"}},"特性"),
                     e('input',{style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].ability,onChange:ev=>setDetail(i,"ability",ev.target.value),placeholder:"例：がんじょう、ふゆう"})
                   ),
-                  // 性格
                   e('div',null,
                     e('span',{style:{...lbl,fontSize:"10px"}},"性格"),
                     e('select',{style:{...inp,fontSize:"12px",padding:"6px 10px",appearance:"none"},value:details[i].nature,onChange:ev=>setDetail(i,"nature",ev.target.value)},
@@ -496,14 +470,12 @@ function App(){
                       ...NATURE_LIST.map(n=>e('option',{key:n,value:n},n))
                     )
                   ),
-                  // 技
                   e('div',null,
                     e('span',{style:{...lbl,fontSize:"10px"}},"技（1〜4）"),
                     e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}},
                       [0,1,2,3].map(mi=>e('input',{key:mi,style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].moves[mi],onChange:ev=>setMove(i,mi,ev.target.value),placeholder:`技${mi+1}`}))
                     )
                   ),
-                  // 努力値
                   e('div',null,
                     e('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}},
                       e('span',{style:{...lbl,fontSize:"10px",marginBottom:0}},isChampions?"努力値（各0〜32）":"努力値（各0〜252）"),
@@ -550,7 +522,6 @@ function App(){
           e('button',{style:{...btn(),padding:"10px",width:"100%",color:"#1a6fa8",border:"2px solid rgba(26,111,168,0.35)",background:"rgba(91,184,245,0.12)",fontWeight:"800"},onClick:()=>{setTab("analyze");analyze();}},"🔬 弱点を分析する"),
           e('button',{style:{...btn(),padding:"10px",width:"100%",color:"#1e6b18",border:"2px solid rgba(30,107,24,0.35)",background:"rgba(90,181,82,0.12)",fontWeight:"800"},onClick:()=>setTab("ask")},"💬 Claudeに相談するプロンプトを作る"),
 
-          // ── M-Aピッカーモーダル ──
           pickerSlot!==null&&e('div',{style:{position:"fixed",inset:0,background:"rgba(91,184,245,0.15)",backdropFilter:"blur(12px)",zIndex:200,display:"flex",flexDirection:"column",maxWidth:"430px",margin:"0 auto"}},
             e('div',{style:{padding:"16px 16px 10px",borderBottom:"2px solid #d4e8f5",background:"rgba(255,255,255,0.95)"}},
               e('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}},
@@ -560,13 +531,7 @@ function App(){
                 ),
                 e('button',{onClick:closePicker,style:{background:"#f0f7ff",border:"2px solid #d4e8f5",borderRadius:"8px",color:TEXT,width:"32px",height:"32px",cursor:"pointer",fontSize:"16px",fontFamily:"'Nunito',sans-serif"}},"✕")
               ),
-              e('input',{
-                value:pickerSearch,
-                onChange:ev=>setPickerSearch(ev.target.value),
-                autoFocus:true,
-                placeholder:"ポケモン名で検索...",
-                style:{...inp,fontSize:"14px"}
-              })
+              e('input',{value:pickerSearch,onChange:ev=>setPickerSearch(ev.target.value),autoFocus:true,placeholder:"ポケモン名で検索...",style:{...inp,fontSize:"14px"}})
             ),
             e('div',{style:{flex:1,overflow:"auto",padding:"10px 12px",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px",background:"rgba(255,255,255,0.85)"}},
               filteredPicker.map(name=>{
@@ -585,7 +550,6 @@ function App(){
           )
         ),
 
-        // ── ANALYZE ──
         tab==="analyze"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
           e('button',{style:{...btn("p"),padding:"11px"},onClick:analyze},"🔄 分析を更新"),
           !analysis?e('div',{style:{...card,textAlign:"center",color:MUTED,padding:"30px",fontSize:"14px"}},"「構築」タブでメンバーを入力してください"):
@@ -625,7 +589,6 @@ function App(){
           )
         ),
 
-        // ── SAVED ──
         tab==="saved"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
           e('div',{style:card},
             e('span',{style:lbl},"バックアップ"),
@@ -654,7 +617,6 @@ function App(){
           ))
         ),
 
-        // ── ASK ──
         tab==="ask"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
           e('div',{style:{...card,background:"linear-gradient(135deg,rgba(90,181,82,0.08),rgba(91,184,245,0.08))"}},
             e('div',{style:{fontWeight:"900",fontSize:"14px",color:TEXT,marginBottom:"6px"}},"💬 Claudeに相談する"),
