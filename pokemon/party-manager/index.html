@@ -360,29 +360,35 @@ function App(){
     const userMsg=chatIn.trim();setChatIn("");
     const filled=members.filter(Boolean);
     const partyCtx=filled.length>0?`\n\n【現在のパーティ】\n${filled.map(n=>{const et=getEnTypes(n)||[];const jt=et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);return`・${n}${jt.length?`（${jt.join("/")}）`:""}`;}).join("\n")}`:"";
+
+    // 会話履歴をGemini形式に変換（systemメッセージは最初のuserに統合）
+    const systemPrompt=`あなたはポケモンチャンピオンズの構築アドバイザーです。タイプ相性・環境メタ・役割分担を踏まえて日本語で簡潔にアドバイスしてください。${partyCtx}`;
+    const history=[...msgs,{role:"user",content:userMsg}];
+    // Gemini形式: [{role:"user",parts:[{text:"..."}]}, {role:"model",parts:[{text:"..."}]}]
+    const geminiContents=history.map((m,i)=>({
+      role:m.role==="user"?"user":"model",
+      parts:[{text: i===0&&m.role==="user" ? systemPrompt+"\n\n"+m.content : m.content}]
+    }));
+
     const newMsgs=[...msgs,{role:"user",content:userMsg}];
     setMsgs(newMsgs);setChatLoading(true);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "x-api-key": apiKey,
-          "anthropic-version":"2023-06-01",
-          "anthropic-dangerous-direct-browser-access":"true"
-        },
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1000,
-          system:`あなたはポケモンチャンピオンズの構築アドバイザーです。タイプ相性・環境メタ・役割分担を踏まえて日本語で簡潔にアドバイスしてください。${partyCtx}`,
-          messages:newMsgs.map(m=>({role:m.role,content:m.content}))
-        })
-      });
+      const res=await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            contents: geminiContents,
+            generationConfig:{maxOutputTokens:1000,temperature:0.7}
+          })
+        }
+      );
       if(!res.ok){
         const err=await res.json().catch(()=>({}));
         const msg=err?.error?.message||`HTTPエラー: ${res.status}`;
-        if(res.status===401){
-          setMsgs([...newMsgs,{role:"assistant",content:"⚠️ APIキーが無効です。キーを確認して再設定してください。"}]);
+        if(res.status===400||res.status===403){
+          setMsgs([...newMsgs,{role:"assistant",content:"⚠️ APIキーが無効です。Gemini APIキーを確認して再設定してください。"}]);
           setShowKeyModal(true);setKeyInput("");
         }else{
           setMsgs([...newMsgs,{role:"assistant",content:`⚠️ エラー: ${msg}`}]);
@@ -390,7 +396,8 @@ function App(){
         return;
       }
       const d=await res.json();
-      setMsgs([...newMsgs,{role:"assistant",content:d.content?.[0]?.text||"エラー"}]);
+      const text=d?.candidates?.[0]?.content?.parts?.[0]?.text||"応答を取得できませんでした";
+      setMsgs([...newMsgs,{role:"assistant",content:text}]);
     }catch(err){
       setMsgs([...newMsgs,{role:"assistant",content:`⚠️ 通信エラー: ${err.message||"不明なエラー"}`}]);
     }
@@ -630,14 +637,14 @@ function App(){
         // ── APIキー入力モーダル ──
         showKeyModal&&e('div',{style:{position:"fixed",inset:0,background:"rgba(91,184,245,0.2)",backdropFilter:"blur(10px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",maxWidth:"430px",margin:"0 auto"}},
           e('div',{style:{background:"rgba(255,255,255,0.98)",borderRadius:"20px",padding:"24px",width:"100%",boxShadow:"0 8px 40px rgba(50,120,180,0.2)",border:"2px solid rgba(255,255,255,0.95)"}},
-            e('div',{style:{fontWeight:"900",fontSize:"16px",color:TEXT,marginBottom:"6px"}},"🔑 APIキーの設定"),
+            e('div',{style:{fontWeight:"900",fontSize:"16px",color:TEXT,marginBottom:"6px"}},"🔑 Gemini APIキーの設定"),
             e('div',{style:{fontSize:"12px",color:MUTED,marginBottom:"16px",lineHeight:"1.6",fontWeight:"600"}},
-              "Anthropic Console（console.anthropic.com）で取得した\nAPIキーを入力してください。\nキーはこの端末のブラウザにのみ保存されます。"
+              "Google AI Studio（aistudio.google.com）で\n取得した無料のAPIキーを入力してください。\nキーはこの端末のブラウザにのみ保存されます。"
             ),
             e('input',{
               value:keyInput,
               onChange:ev=>setKeyInput(ev.target.value),
-              placeholder:"sk-ant-api03-xxxxxxxxxx...",
+              placeholder:"AIzaSy-xxxxxxxxxx...",
               autoFocus:true,
               style:{...inp,fontSize:"13px",fontFamily:"monospace",marginBottom:"12px",letterSpacing:"0.5px"}
             }),
