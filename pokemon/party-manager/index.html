@@ -266,7 +266,8 @@ function App(){
     setDetails(prev=>{const n=[...prev];const d={...n[i]};const mv=[...d.moves];mv[mi]=val;d.moves=mv;n[i]=d;return n;});
   };
   const setEv=(i,stat,val)=>{
-    const v=Math.max(0,Math.min(252,parseInt(val)||0));
+    const maxSingle=isChampions?32:252;
+    const v=Math.max(0,Math.min(maxSingle,parseInt(val)||0));
     setDetails(prev=>{const n=[...prev];const d={...n[i]};d.evs={...d.evs,[stat]:v};n[i]=d;return n;});
   };
 
@@ -379,7 +380,7 @@ function App(){
       const moves=d.moves.filter(Boolean);
       if(moves.length) lines.push(`  技: ${moves.join(" / ")}`);
       const evEntries=Object.entries(d.evs).filter(([,v])=>v>0);
-      if(evEntries.length) lines.push(`  努力値: ${evEntries.map(([k,v])=>`${EV_LABELS[k]}${v}`).join(" / ")}`);
+      if(evEntries.length) lines.push(`  努力値: ${evEntries.map(([k,v])=>`${EV_LABELS[k]}${v}`).join(" / ")}${isChampions?" (Champions上限: 各32/合計66)":""}`);
     });
     if(pNotes){lines.push(""); lines.push(`【構築メモ】\n${pNotes}`);}
     return lines.join("\n");
@@ -495,18 +496,29 @@ function App(){
                   ),
                   // 努力値
                   e('div',null,
-                    e('span',{style:{...lbl,fontSize:"10px"}},"努力値（各0〜252）"),
-                    e('div',{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"4px"}},
-                      [["hp","HP"],["atk","こうげき"],["def","ぼうぎょ"],["spa","とくこう"],["spd","とくぼう"],["spe","すばやさ"]].map(([key,label])=>
-                        e('div',{key:key},
-                          e('div',{style:{fontSize:"9px",color:MUTED,fontWeight:"700",marginBottom:"2px",textAlign:"center"}},label),
-                          e('input',{type:"number",min:0,max:252,style:{...inp,fontSize:"12px",padding:"4px 6px",textAlign:"center"},value:details[i].evs[key],onChange:ev=>setEv(i,key,ev.target.value)})
-                        )
-                      )
+                    e('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}},
+                      e('span',{style:{...lbl,fontSize:"10px",marginBottom:0}},isChampions?"努力値（各0〜32）":"努力値（各0〜252）"),
+                      e('span',{style:{fontSize:"9px",fontWeight:"700",padding:"1px 6px",borderRadius:"999px",background:isChampions?"rgba(227,53,13,0.08)":"rgba(91,184,245,0.1)",color:isChampions?RED:"#1a6fa8"}},isChampions?"Champions":"通常")
                     ),
-                    e('div',{style:{fontSize:"10px",color:details[i].evs.hp+details[i].evs.atk+details[i].evs.def+details[i].evs.spa+details[i].evs.spd+details[i].evs.spe>510?"#c03030":MUTED,textAlign:"right",marginTop:"3px",fontWeight:"700"}},
-                      `合計: ${details[i].evs.hp+details[i].evs.atk+details[i].evs.def+details[i].evs.spa+details[i].evs.spd+details[i].evs.spe}/510`
-                    )
+                    e('div',{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"4px"}},
+                      [["hp","HP"],["atk","こうげき"],["def","ぼうぎょ"],["spa","とくこう"],["spd","とくぼう"],["spe","すばやさ"]].map(([key,label])=>{
+                        const maxSingle=isChampions?32:252;
+                        const val=details[i].evs[key];
+                        const over=val>maxSingle;
+                        return e('div',{key:key},
+                          e('div',{style:{fontSize:"9px",color:MUTED,fontWeight:"700",marginBottom:"2px",textAlign:"center"}},label),
+                          e('input',{type:"number",min:0,max:maxSingle,style:{...inp,fontSize:"12px",padding:"4px 6px",textAlign:"center",borderColor:over?"#c03030":"#d4e8f5"},value:val,onChange:ev=>setEv(i,key,ev.target.value)})
+                        );
+                      })
+                    ),
+                    (()=>{
+                      const total=details[i].evs.hp+details[i].evs.atk+details[i].evs.def+details[i].evs.spa+details[i].evs.spd+details[i].evs.spe;
+                      const maxTotal=isChampions?66:510;
+                      const over=total>maxTotal;
+                      return e('div',{style:{fontSize:"10px",color:over?"#c03030":MUTED,textAlign:"right",marginTop:"4px",fontWeight:"700",background:over?"rgba(200,50,50,0.06)":"transparent",borderRadius:"6px",padding:"2px 6px"}},
+                        over?`⚠️ 合計: ${total}/${maxTotal} オーバー！`:`合計: ${total}/${maxTotal}`
+                      );
+                    })()
                   )
                 )
               ))
