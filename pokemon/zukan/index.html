@@ -1,653 +1,1046 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PokéChampions 構築マネージャー</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:'Nunito','Noto Sans JP',sans-serif;
-    color:#1a2a3a;min-height:100vh;
-    background:
-      radial-gradient(circle,rgba(255,255,255,0.35) 1px,transparent 1px),
-      linear-gradient(180deg,#5bb8f5 0%,#a8d8f0 55%,#c8eac0 75%,#5ab552 100%);
-    background-size:28px 28px,100% 100%;
-  }
-  body::before{content:'';position:fixed;top:-140px;right:-140px;width:380px;height:380px;border-radius:50%;border:42px solid rgba(255,255,255,0.18);pointer-events:none;z-index:0;}
-  body::after{content:'';position:fixed;top:48px;right:-140px;width:380px;height:24px;background:rgba(255,255,255,0.18);pointer-events:none;z-index:0;}
-  .cloud{position:fixed;border-radius:50px;background:rgba(255,255,255,0.55);pointer-events:none;z-index:0;animation:drift linear infinite;}
-  .cloud::before,.cloud::after{content:'';position:absolute;background:rgba(255,255,255,0.55);border-radius:50%;}
-  .cloud-1{width:100px;height:30px;top:6%;left:-120px;animation-duration:40s;animation-delay:-8s;}
-  .cloud-1::before{width:50px;height:44px;top:-22px;left:14px;}
-  .cloud-1::after{width:36px;height:36px;top:-16px;left:44px;}
-  .cloud-2{width:70px;height:22px;top:15%;left:-90px;animation-duration:55s;animation-delay:-25s;}
-  .cloud-2::before{width:36px;height:32px;top:-16px;left:10px;}
-  .cloud-2::after{width:28px;height:28px;top:-12px;left:32px;}
-  @keyframes drift{from{transform:translateX(0);}to{transform:translateX(calc(100vw + 200px));}}
-  input::placeholder,textarea::placeholder{color:#a0b8cc}
-  select option{background:#e8f4ff;color:#1a2a3a}
-  ::-webkit-scrollbar{width:4px}
-  ::-webkit-scrollbar-track{background:#f0f7ff;border-radius:4px}
-  ::-webkit-scrollbar-thumb{background:#a8d8f0;border-radius:4px}
-  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes popIn{from{opacity:0;transform:scale(0.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ポケモン図鑑</title>
+  <style>
+    :root {
+      --bg: #0a0c12;
+      --card: #0f1219;
+      --line: #1e2435;
+      --accent: #6c8cff;
+      --accent2: #ff6b9d;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --success: #4ade80;
+      --warning: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+    header { border-bottom: 1px solid var(--line); padding: 18px 0; }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header .small { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+    main { padding: 20px 0 60px; }
+    .back { color: var(--accent); text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 16px; }
+
+    .grid { display: grid; gap: 16px; }
+    @media(min-width: 800px) { .grid { grid-template-columns: 340px 1fr; } }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+    h2 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+    .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+
+    input, select {
+      width: 100%; background: #0a0c14; border: 1px solid var(--line);
+      border-radius: 8px; color: var(--text); padding: 9px 12px; font-size: 14px;
+      outline: none; transition: border-color .2s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--line); background: #1a1e2e; color: var(--text);
+      transition: all .15s;
+    }
+    button:hover { background: #232840; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.primary:hover { background: #5a7aee; }
+    button.secondary { background: transparent; border-color: var(--accent); color: var(--accent); }
+    button.secondary:hover { background: rgba(108,140,255,.1); }
+
+    .result-card { display: none; }
+    .result-card.show { display: block; }
+    .error-box { color: #fda4af; margin-top: 10px; font-size: 13px; }
+    .loading { color: var(--muted); margin-top: 10px; font-size: 13px; }
+    .section-gap { margin-top: 14px; }
+    .preline { white-space: pre-wrap; }
+
+    .result-card img { width: 180px; max-width: 100%; display: block; margin: 0 auto 14px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+    @media(min-width:700px){ .stat-grid { grid-template-columns: repeat(3,1fr); } }
+    .mini-card { background: #10131b; border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+    .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .badge {
+      display: inline-block; padding: 5px 10px; border: 1px solid var(--line);
+      border-radius: 999px; font-size: 12px; background: #0f1117;
+    }
+
+    /* ── Advanced Search Panel ── */
+    #advPanel { display: none; margin-top: 14px; }
+    #advPanel.open { display: block; }
+    .adv-toggle {
+      width: 100%; text-align: left; background: transparent; border: 1px dashed var(--line);
+      color: var(--muted); font-size: 13px; padding: 8px 12px; border-radius: 8px;
+      cursor: pointer; transition: all .2s; margin-top: 12px;
+    }
+    .adv-toggle:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,140,255,.05); }
+    .adv-toggle.active { border-color: var(--accent); color: var(--accent); }
+
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .stat-filter-item label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .stat-filter-item input { padding: 7px 10px; font-size: 13px; }
+
+    /* ── Search Results List ── */
+    #searchResultsCard { display: none; }
+    #searchResultsCard.show { display: block; }
+    .results-list { max-height: 460px; overflow-y: auto; margin-top: 10px; }
+    .results-list::-webkit-scrollbar { width: 4px; }
+    .results-list::-webkit-scrollbar-track { background: transparent; }
+    .results-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+    .poke-result-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+      border-radius: 10px; cursor: pointer; transition: background .15s;
+      border-bottom: 1px solid var(--line);
+    }
+    .poke-result-item:last-child { border-bottom: none; }
+    .poke-result-item:hover { background: rgba(108,140,255,.08); }
+    .poke-result-item img { width: 48px; height: 48px; object-fit: contain; }
+    .poke-result-item .poke-no { font-size: 11px; color: var(--muted); min-width: 36px; }
+    .poke-result-item .poke-name { font-size: 14px; font-weight: 600; }
+    .poke-result-item .poke-types { display: flex; gap: 4px; flex-wrap: wrap; }
+    .poke-result-item .type-chip {
+      font-size: 10px; padding: 2px 7px; border-radius: 999px;
+      border: 1px solid var(--line); background: #0f1117;
+    }
+    .results-count { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .results-loading { color: var(--muted); font-size: 13px; padding: 12px 0; text-align: center; }
+
+    .pager { display: flex; align-items: center; gap: 8px; margin-top: 10px; justify-content: center; }
+    .pager button { padding: 6px 12px; font-size: 12px; }
+    .pager .page-info { font-size: 12px; color: var(--muted); }
+
+    /* Type color chips */
+    .type-normal   { border-color: #a8a878 !important; color: #a8a878; }
+    .type-fire     { border-color: #f08030 !important; color: #f08030; }
+    .type-water    { border-color: #6890f0 !important; color: #6890f0; }
+    .type-electric { border-color: #f8d030 !important; color: #f8d030; }
+    .type-grass    { border-color: #78c850 !important; color: #78c850; }
+    .type-ice      { border-color: #98d8d8 !important; color: #98d8d8; }
+    .type-fighting { border-color: #c03028 !important; color: #c03028; }
+    .type-poison   { border-color: #a040a0 !important; color: #a040a0; }
+    .type-ground   { border-color: #e0c068 !important; color: #e0c068; }
+    .type-flying   { border-color: #a890f0 !important; color: #a890f0; }
+    .type-psychic  { border-color: #f85888 !important; color: #f85888; }
+    .type-bug      { border-color: #a8b820 !important; color: #a8b820; }
+    .type-rock     { border-color: #b8a038 !important; color: #b8a038; }
+    .type-ghost    { border-color: #705898 !important; color: #705898; }
+    .type-dragon   { border-color: #7038f8 !important; color: #7038f8; }
+    .type-dark     { border-color: #705848 !important; color: #705848; }
+    .type-steel    { border-color: #b8b8d0 !important; color: #b8b8d0; }
+    .type-fairy    { border-color: #ee99ac !important; color: #ee99ac; }
+  </style>
 </head>
 <body>
-<div class="cloud cloud-1"></div>
-<div class="cloud cloud-2"></div>
-<div id="root"></div>
-<script type="text/babel">
-const{useState,useRef,useEffect,useCallback}=React;
+  <header>
+    <div class="wrap">
+      <h1>ポケモン図鑑</h1>
+      <div class="small">API + 補完データ連携版</div>
+    </div>
+  </header>
 
-const TYPE_COLORS={ノーマル:"#A8A878",ほのお:"#F08030",みず:"#6890F0",でんき:"#F8D030",くさ:"#78C850",こおり:"#98D8D8",かくとう:"#C03028",どく:"#A040A0",じめん:"#E0C068",ひこう:"#A890F0",エスパー:"#F85888",むし:"#A8B820",いわ:"#B8A038",ゴースト:"#705898",ドラゴン:"#7038F8",あく:"#705848",はがね:"#B8B8D0",フェアリー:"#EE99AC"};
+  <main class="wrap">
+    <a class="back" href="../">← ポケモンへ戻る</a>
 
-const TYPE_CHART={normal:{weak:["fighting"],resist:[],immune:["ghost"]},fire:{weak:["water","ground","rock"],resist:["fire","grass","ice","bug","steel","fairy"],immune:[]},water:{weak:["electric","grass"],resist:["fire","water","ice","steel"],immune:[]},electric:{weak:["ground"],resist:["electric","flying","steel"],immune:[]},grass:{weak:["fire","ice","poison","flying","bug"],resist:["water","electric","grass","ground"],immune:[]},ice:{weak:["fire","fighting","rock","steel"],resist:["ice"],immune:[]},fighting:{weak:["flying","psychic","fairy"],resist:["bug","rock","dark"],immune:[]},poison:{weak:["ground","psychic"],resist:["grass","fighting","poison","bug","fairy"],immune:[]},ground:{weak:["water","grass","ice"],resist:["poison","rock"],immune:["electric"]},flying:{weak:["electric","ice","rock"],resist:["grass","fighting","bug"],immune:["ground"]},psychic:{weak:["bug","ghost","dark"],resist:["fighting","psychic"],immune:[]},bug:{weak:["fire","flying","rock"],resist:["grass","fighting","ground"],immune:[]},rock:{weak:["water","grass","fighting","ground","steel"],resist:["normal","fire","poison","flying"],immune:[]},ghost:{weak:["ghost","dark"],resist:["poison","bug"],immune:["normal","fighting"]},dragon:{weak:["ice","dragon","fairy"],resist:["fire","water","electric","grass"],immune:[]},dark:{weak:["fighting","bug","fairy"],resist:["ghost","dark"],immune:["psychic"]},steel:{weak:["fire","fighting","ground"],resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"],immune:["poison"]},fairy:{weak:["poison","steel"],resist:["fighting","bug","dark"],immune:["dragon"]}};
+    <div class="grid">
+      <!-- ── Left Column: Search Controls ── -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
 
-const TYPE_JA_TO_EN={ノーマル:"normal",ほのお:"fire",みず:"water",でんき:"electric",くさ:"grass",こおり:"ice",かくとう:"fighting",どく:"poison",じめん:"ground",ひこう:"flying",エスパー:"psychic",むし:"bug",いわ:"rock",ゴースト:"ghost",ドラゴン:"dragon",あく:"dark",はがね:"steel",フェアリー:"fairy"};
-const TYPE_EN_TO_JA=Object.fromEntries(Object.entries(TYPE_JA_TO_EN).map(([j,e])=>[e,j]));
+        <!-- Basic Search Card -->
+        <section class="card">
+          <h2>名前 / 図鑑番号で検索</h2>
+          <div class="label">ポケモン名 / 全国図鑑番号</div>
+          <input id="searchInput" type="text" placeholder="例：pikachu / ピカチュウ / 25">
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="searchBtn" type="button">検索</button>
+            <button id="clearBtn" type="button">クリア</button>
+          </div>
+          <div class="loading" id="loadingText"></div>
+          <div class="error-box" id="errorText"></div>
+        </section>
 
-const NAME_JA_TO_EN={
-// Gen 1
-"フシギダネ":"bulbasaur","フシギソウ":"ivysaur","フシギバナ":"venusaur","ヒトカゲ":"charmander","リザード":"charmeleon","リザードン":"charizard","ゼニガメ":"squirtle","カメール":"wartortle","カメックス":"blastoise","キャタピー":"caterpie","トランセル":"metapod","バタフリー":"butterfree","ビードル":"weedle","コクーン":"kakuna","スピアー":"beedrill","ポッポ":"pidgey","ピジョン":"pidgeotto","ピジョット":"pidgeot","コラッタ":"rattata","ラッタ":"raticate","オニスズメ":"spearow","オニドリル":"fearow","アーボ":"ekans","アーボック":"arbok","ピカチュウ":"pikachu","ライチュウ":"raichu","サンド":"sandshrew","サンドパン":"sandslash","ニドラン♀":"nidoran-f","ニドリーナ":"nidorina","ニドクイン":"nidoqueen","ニドラン♂":"nidoran-m","ニドリーノ":"nidorino","ニドキング":"nidoking","ピッピ":"clefairy","ピクシー":"clefable","ロコン":"vulpix","キュウコン":"ninetales","プリン":"jigglypuff","プクリン":"wigglytuff","ズバット":"zubat","ゴルバット":"golbat","ナゾノクサ":"oddish","クサイハナ":"gloom","ラフレシア":"vileplume","パラス":"paras","パラセクト":"parasect","コンパン":"venonat","モルフォン":"venomoth","ディグダ":"diglett","ダグトリオ":"dugtrio","ニャース":"meowth","ペルシアン":"persian","コダック":"psyduck","ゴルダック":"golduck","マンキー":"mankey","オコリザル":"primeape","ガーディ":"growlithe","ウインディ":"arcanine","ニョロモ":"poliwag","ニョロゾ":"poliwhirl","ニョロボン":"poliwrath","ケーシィ":"abra","ユンゲラー":"kadabra","フーディン":"alakazam","ワンリキー":"machop","ゴーリキー":"machoke","カイリキー":"machamp","マダツボミ":"bellsprout","ウツドン":"weepinbell","ウツボット":"victreebel","メノクラゲ":"tentacool","ドククラゲ":"tentacruel","イシツブテ":"geodude","ゴローン":"graveler","ゴローニャ":"golem","ポニータ":"ponyta","ギャロップ":"rapidash","ヤドン":"slowpoke","ヤドラン":"slowbro","コイル":"magnemite","レアコイル":"magneton","カモネギ":"farfetchd","ドードー":"doduo","ドードリオ":"dodrio","パウワウ":"seel","ジュゴン":"dewgong","ベトベター":"grimer","ベトベトン":"muk","シェルダー":"shellder","パルシェン":"cloyster","ゴース":"gastly","ゴースト":"haunter","ゲンガー":"gengar","イワーク":"onix","スリープ":"drowzee","スリーパー":"hypno","クラブ":"krabby","キングラー":"kingler","ビリリダマ":"voltorb","マルマイン":"electrode","タマタマ":"exeggcute","ナッシー":"exeggutor","カラカラ":"cubone","ガラガラ":"marowak","サワムラー":"hitmonlee","エビワラー":"hitmonchan","ベロリンガ":"lickitung","ドガース":"koffing","マタドガス":"weezing","サイホーン":"rhyhorn","サイドン":"rhydon","ラッキー":"chansey","タネボー":"tangela","カンガスカン":"kangaskhan","タッツー":"horsea","シードラ":"seadra","トサキント":"goldeen","アズマオウ":"seaking","ヒトデマン":"staryu","スターミー":"starmie","バリヤード":"mr-mime","ストライク":"scyther","ルージュラ":"jynx","エレブー":"electabuzz","ブーバー":"magmar","カイロス":"pinsir","ケンタロス":"tauros","コイキング":"magikarp","ギャラドス":"gyarados","ラプラス":"lapras","メタモン":"ditto","イーブイ":"eevee","シャワーズ":"vaporeon","サンダース":"jolteon","ブースター":"flareon","ポリゴン":"porygon","オムナイト":"omanyte","オムスター":"omastar","カブト":"kabuto","カブトプス":"kabutops","プテラ":"aerodactyl","カビゴン":"snorlax","フリーザー":"articuno","サンダー":"zapdos","ファイヤー":"moltres","ミニリュウ":"dratini","ハクリュー":"dragonair","カイリュー":"dragonite","ミュウツー":"mewtwo","ミュウ":"mew",
-// Gen 2
-"チコリータ":"chikorita","ベイリーフ":"bayleef","メガニウム":"meganium","ヒノアラシ":"cyndaquil","マグマラシ":"quilava","バクフーン":"typhlosion","ワニノコ":"totodile","アリゲイツ":"croconaw","オーダイル":"feraligatr","オタチ":"sentret","オオタチ":"furret","ホーホー":"hoothoot","ヨルノズク":"noctowl","レデイバ":"ledyba","レディアン":"ledian","イトマル":"spinarak","アリアドス":"ariados","クロバット":"crobat","チョンチー":"chinchou","ランターン":"lanturn","ピチュー":"pichu","ピィ":"cleffa","ブビィ":"igglybuff","トゲピー":"togepi","トゲチック":"togetic","ネイティ":"natu","ネイティオ":"xatu","メリープ":"mareep","モコシープ":"flaaffy","デンリュウ":"ampharos","キレイハナ":"bellossom","マリル":"marill","マリルリ":"azumarill","ウソッキー":"sudowoodo","ニョロトノ":"politoed","ハネッコ":"hoppip","スキップ":"skiploom","ワタッコ":"jumpluff","エイパム":"aipom","ヒマナッツ":"sunkern","キマワリ":"sunflora","ヤンヤンマ":"yanma","ウパー":"wooper","ヌオー":"quagsire","エーフィ":"espeon","ブラッキー":"umbreon","ヤミカラス":"murkrow","ヤドキング":"slowking","ムウマ":"misdreavus","アンノーン":"unown","ソーナンス":"wobbuffet","キリンリキ":"girafarig","クヌギダマ":"pineco","フォレトス":"forretress","ノコッチ":"dunsparce","グライガー":"gligar","ハガネール":"steelix","スナッブル":"snubbull","グランブル":"granbull","ハリーセン":"qwilfish","ハッサム":"scizor","ツボツボ":"shuckle","ヘラクロス":"heracross","ニューラ":"sneasel","クマシュン":"swinub","イノムー":"piloswine","サニーゴ":"corsola","テッポウオ":"remoraid","オクタン":"octillery","デリバード":"delibird","マンタイン":"mantine","エアームド":"skarmory","デルビル":"houndour","ヘルガー":"houndoom","キングドラ":"kingdra","ゴマゾウ":"phanpy","ドンファン":"donphan","ポリゴン2":"porygon2","オドシシ":"stantler","ドーブル":"smeargle","バルキー":"tyrogue","カポエラー":"hitmontop","ムチュール":"smoochum","エレキッド":"elekid","マグビー":"magby","ミルタンク":"miltank","ハピナス":"blissey","ライコウ":"raikou","エンテイ":"entei","スイクン":"suicune","ヨーギラス":"larvitar","サナギラス":"pupitar","バンギラス":"tyranitar","ルギア":"lugia","ホウオウ":"ho-oh","セレビィ":"celebi",
-// Gen 3
-"キモリ":"treecko","ジュプトル":"grovyle","ジュカイン":"sceptile","アチャモ":"torchic","ワカシャモ":"combusken","バシャーモ":"blaziken","ミズゴロウ":"mudkip","ヌマクロー":"marshtomp","ラグラージ":"swampert","ポチエナ":"poochyena","グラエナ":"mightyena","ジグザグマ":"zigzagoon","マッスグマ":"linoone","ケムッソ":"wurmple","カラサリス":"silcoon","アゲハント":"beautifly","マユルド":"cascoon","ドクケイル":"dustox","ハスボー":"lotad","ハスブレロ":"lombre","ルンパッパ":"ludicolo","タネキッス":"seedot","コノハナ":"nuzleaf","ダーテング":"shiftry","スバメ":"taillow","オオスバメ":"swellow","キャモメ":"wingull","ペリッパー":"pelipper","ラルトス":"ralts","キルリア":"kirlia","サーナイト":"gardevoir","アメタマ":"surskit","アメモース":"masquerain","キノコ":"shroomish","キノガッサ":"breloom","ツチニン":"nincada","テッカニン":"ninjask","ヌケニン":"shedinja","ゴニョニョ":"whismur","ドゴーム":"loudred","バクオング":"exploud","マクノシタ":"makuhita","ハリテヤマ":"hariyama","ルリリ":"azurill","ノズパス":"nosepass","エネコ":"skitty","エネコロロ":"delcatty","ヤミラミ":"sableye","マワイル":"mawile","アイアント":"aron","レアルダ":"lairon","ボスゴドラ":"aggron","アサナン":"meditite","チャーレム":"medicham","ラクライ":"electrike","ライボルト":"manectric","プラスル":"plusle","マイナン":"minun","バルビート":"volbeat","イルミーゼ":"illumise","ロゼリア":"roselia","ゴクリン":"gulpin","マルノーム":"swalot","キバニア":"carvanha","サメハダー":"sharpedo","ホエルコ":"wailmer","ホエルオー":"wailord","ドンメル":"numel","ボーバーン":"camerupt","コータス":"torkoal","バネブー":"spoink","ブーピッグ":"grumpig","パッチール":"spinda","ナックラー":"trapinch","ビブラーバ":"vibrava","フライゴン":"flygon","サボネア":"cacnea","ノクタス":"cacturne","チルタリス":"altaria","ザングース":"zangoose","ハブネーク":"seviper","ルナトーン":"lunatone","ソルロック":"solrock","ドジョッチ":"barboach","ナマズン":"whiscash","ヘイガニ":"corphish","シザリガー":"crawdaunt","ヤジロン":"baltoy","ネンドール":"claydol","リリーラ":"lileep","ユレイドル":"cradily","アノプス":"anorith","アーマルド":"armaldo","ヒンバス":"feebas","ミロカロス":"milotic","ポワルン":"castform","カクレオン":"kecleon","カゲボウズ":"shuppet","ジュペッタ":"banette","ヨマワル":"duskull","ドusclops":"dusclops","トロピウス":"tropius","ユキワラシ":"snorunt","オニゴーリ":"glalie","タマザラシ":"spheal","トドグラー":"sealeo","トドゼルガ":"walrein","パールル":"clamperl","ハンテール":"huntail","サクラビス":"gorebyss","ジーランス":"relicanth","ラブカス":"luvdisc","タツベイ":"bagon","シェルゴン":"shelgon","ボーマンダ":"salamence","ダンバル":"beldum","メタング":"metang","メタグロス":"metagross","レジロック":"regirock","レジアイス":"regice","レジスチル":"registeel","ラティアス":"latias","ラティオス":"latios","レックウザ":"rayquaza","ジラーチ":"jirachi","デオキシス":"deoxys",
-// Gen 4
-"ナエトル":"turtwig","ハヤシガメ":"grotle","ドダイトス":"torterra","ヒコザル":"chimchar","モウカザル":"monferno","ゴウカザル":"infernape","ポッチャマ":"piplup","ポッタイシ":"prinplup","エンペルト":"empoleon","ムックル":"starly","ムクバード":"staravia","ムクホーク":"staraptor","ビッパ":"bidoof","ビーダル":"bibarel","コロボーシ":"kricketot","コロトック":"kricketune","コリンク":"shinx","ルクシオ":"luxio","レントラー":"luxray","スボミー":"budew","ロズレイド":"roserade","ズガイドス":"cranidos","ラムパルド":"rampardos","タテトプス":"shieldon","トリデプス":"bastiodon","ミノムッチ":"burmy","ミノマダム":"wormadam","ガーメイル":"mothim","ミツハニー":"combee","ビークイン":"vespiquen","パチリス":"pachirisu","ブイゼル":"buizel","フローゼル":"floatzel","チェリンボ":"cherubi","チェリム":"cherrim","カラナクシ":"shellos","トリトドン":"gastrodon","エテボース":"ambipom","フワンテ":"drifloon","フワライド":"drifblim","ミミロル":"buneary","ミミロップ":"lopunny","ムウマージ":"mismagius","ドンカラス":"honchkrow","ニャルマー":"glameow","ブニャット":"purugly","リーシャン":"chingling","スカンプー":"stunky","スカタンク":"skuntank","ドーミラー":"bronzor","ドータクン":"bronzong","ウソハチ":"bonsly","マネネ":"mime-jr","ピンプク":"happiny","ペラップ":"chatot","ミカルゲ":"spiritomb","フカマル":"gible","ガバイト":"gabite","ガブリアス":"garchomp","ゴンベ":"munchlax","リオル":"riolu","ルカリオ":"lucario","ヒポポタス":"hippopotas","カバルドン":"hippowdon","スコルピ":"skorupi","ドラピオン":"drapion","グレッグル":"croagunk","ドクロッグ":"toxicroak","マスキッパ":"carnivine","ケイコウオ":"finneon","ネオラント":"lumineon","タマンタ":"mantyke","ユキカブリ":"snover","ユキノオー":"abomasnow","マニューラ":"weavile","ジバコイル":"magnezone","ベロベルト":"lickilicky","サイカイザー":"rhyperior","モジャンボ":"tangrowth","エレキブル":"electivire","ブーバーン":"magmortar","トゲキッス":"togekiss","メガヤンマ":"yanmega","リーフィア":"leafeon","グレイシア":"glaceon","グライオン":"gliscor","マンムー":"mamoswine","ポリゴンZ":"porygon-z","エルレイド":"gallade","ダイノーズ":"probopass","ヨノワール":"dusknoir","ユキメノコ":"froslass","ロトム":"rotom","ユクシー":"uxie","エムリット":"mesprit","アグノム":"azelf","ディアルガ":"dialga","パルキア":"palkia","ヒードラン":"heatran","レジギガス":"regigigas","ギラティナ":"giratina","クレセリア":"cresselia","フィオネ":"phione","マナフィ":"manaphy","ダークライ":"darkrai","シェイミ":"shaymin","アルセウス":"arceus",
-// Gen 5
-"ツタージャ":"snivy","ジャノビー":"servine","ジャローダ":"serperior","ポカブ":"tepig","チャオブー":"pignite","エンブオー":"emboar","ミジュマル":"oshawott","フタチマル":"dewott","ダイケンキ":"samurott","ミネズミ":"patrat","ミルホッグ":"watchog","ヨーテリー":"lillipup","ハーデリア":"herdier","ムーランド":"stoutland","チョロネコ":"purrloin","レパルダス":"liepard","ヤナップ":"pansage","ヤナッキー":"simisage","バオップ":"pansear","バオッキー":"simisear","ヒヤップ":"panpour","ヒヤッキー":"simipour","ムンナ":"munna","ムシャーナ":"musharna","マメパト":"pidove","ハトーボー":"tranquill","ケンホロウ":"unfezant","シマシマ":"blitzle","ゼブライカ":"zebstrika","ダンゴロ":"roggenrola","ガントル":"boldore","ギガイアス":"gigalith","コロモリ":"woobat","ソーナクル":"swoobat","モグリュー":"drilbur","ドリュウズ":"excadrill","タブンネ":"audino","ドッコラー":"timburr","ドテッコツ":"gurdurr","ローブシン":"conkeldurr","オタマロ":"tympole","ガマガル":"palpitoad","ガマゲロゲ":"seismitoad","ナゲキ":"throh","ダゲキ":"sawk","クルミル":"sewaddle","クルマユ":"swadloon","ハハコモリ":"leavanny","フシデ":"venipede","マルノーム":"whirlipede","ペンドラー":"scolipede","モンメン":"cottonee","エルフーン":"whimsicott","チュリネ":"petilil","ドレディア":"lilligant","バスラオ":"basculin","メグロコ":"sandile","ワルビル":"krokorok","ワルビアル":"krookodile","ダルマッカ":"darumaka","ヒヒダルマ":"darmanitan","マリラント":"maractus","イシズマイ":"dwebble","イワパレス":"crustle","ズルッグ":"scraggy","ズルズキン":"scrafty","シンボラー":"sigilyph","デスマス":"yamask","デスカーン":"cofagrigus","プロトーガ":"tirtouga","アバゴーラ":"carracosta","アーケン":"archen","アーケオス":"archeops","ヤブクロン":"trubbish","ダストダス":"garbodor","ゾロア":"zorua","ゾロアーク":"zoroark","チラーミィ":"minccino","チラチーノ":"cinccino","ゴチム":"gothita","ゴチミル":"gothorita","ゴチルゼル":"gothitelle","ユニラン":"solosis","ダブラン":"duosion","ランクルス":"reuniclus","コアルヒー":"ducklett","スワンナ":"swanna","バニプッチ":"vanillite","バニリッチ":"vanillish","バイバニラ":"vanilluxe","シキジカ":"deerling","メブキジカ":"sawsbuck","エモンガ":"emolga","カブルモ":"karrablast","シュバルゴ":"escavalier","タマゲタケ":"foongus","モロバレル":"amoonguss","プルリル":"frillish","ジェリセント":"jellicent","ママンボウ":"alomomola","シビシラス":"joltik","デンチュラ":"galvantula","テッシード":"ferroseed","ナットレイ":"ferrothorn","ギアル":"klink","ギギアル":"klang","ギギギアル":"klinklang","シビレゾタ":"tynamo","シビビール":"eelektrik","シビルドン":"eelektross","リグレー":"elgyem","オーベム":"beheeyem","ヒトモシ":"litwick","ランプラー":"lampent","シャンデラ":"chandelure","キバゴ":"axew","オノンド":"fraxure","オノノクス":"haxorus","クマシュン":"cubchoo","ツンベアー":"beartic","クリムガン":"deino","ジヘッド":"zweilous","サザンドラ":"hydreigon","メラルバ":"larvesta","ウルガモス":"volcarona","コバルオン":"cobalion","テラキオン":"terrakion","ビリジオン":"virizion","トルネロス":"tornadus","ボルトロス":"thundurus","レシラム":"reshiram","ゼクロム":"zekrom","ランドロス":"landorus-incarnate","キュレム":"kyurem","ケルディオ":"keldeo","メロエッタ":"meloetta","ゲノセクト":"genesect","ビクティニ":"victini",
-// Gen 6
-"ハリマロン":"chespin","ハリボーグ":"quilladin","ブリガロン":"chesnaught","フォッコ":"fennekin","テールナー":"braixen","マフォクシー":"delphox","ケロマツ":"froakie","ゲコガシラ":"frogadier","ゲッコウガ":"greninja","ヤヤコマ":"fletchling","ヒノアシ":"fletchinder","ファイアロー":"talonflame","ホルビー":"scatterbug","コフキムシ":"spewpa","ビビヨン":"vivillon","シシコ":"litleo","カエンジシ":"pyroar","フラベベ":"flabebe","フラエッテ":"floette","フラージェス":"florges","メェークル":"skiddo","ゴーゴート":"gogoat","ヤンチャム":"pancham","ゴロンダ":"pangoro","ニャスパー":"espurr","ニャオニクス":"meowstic","ニャオニクス(オス)":"meowstic","ニャオニクス(メス)":"meowstic-f","シュシュプ":"honedge","ギルガルド":"aegislash","エリキテル":"helioptile","エレザード":"heliolisk","チゴラス":"tyrunt","ガチゴラス":"tyrantrum","アマルス":"amaura","アマルルガ":"aurorus","ルチャブル":"hawlucha","デデンネ":"dedenne","メレシー":"carbink","ヌメラ":"goomy","ヌメイル":"sliggoo","ヌメルゴン":"goodra","クレッフィ":"klefki","ボクレー":"phantump","オーロット":"trevenant","バケッチャ":"pumpkaboo","パンプジン":"gourgeist","クズモー":"skrelp","ドラミドロ":"dragalge","クラッベ":"clauncher","カラマネロ":"inkay","マーイーカ":"malamar","ニンフィア":"sylveon","ゼルネアス":"xerneas","イベルタル":"yveltal","ジガルデ":"zygarde","ディアンシー":"diancie","フーパ":"hoopa","ボルケニオン":"volcanion",
-// Gen 7
-"モクロー":"rowlet","フクスロー":"dartrix","ジュナイパー":"decidueye","ニャビー":"litten","トラウマ":"torracat","ガオガエン":"incineroar","アシマリ":"popplio","オシャマリ":"brionne","アシレーヌ":"primarina","ピックル":"pikipek","ツツケラ":"trumbeak","ドデカバシ":"toucannon","アゴジムシ":"grubbin","ビビニョン":"charjabug","クワガノン":"vikavolt","ルガルガン":"lycanroc","バリコオル":"wishiwashi","ヒドイデ":"mareanie","ドヒドイデ":"toxapex","ハギギシリ":"bruxish","カプ・コケコ":"tapu-koko","カプ・テテフ":"tapu-lele","カプ・ブルル":"tapu-bulu","カプ・レヒレ":"tapu-fini","コスモッグ":"cosmog","コスモウム":"cosmoem","ソルガレオ":"solgaleo","ルナアーラ":"lunala","ネクロズマ":"necrozma","マギアナ":"magearna","マーシャドー":"marshadow","ゼラオラ":"zeraora","ミミッキュ":"mimikyu","ナゲツケサル":"passimian","ヤレユータン":"oranguru","アマカジ":"bounsweet","アマージョ":"tsareena","オドリドリ":"oricorio","コスモッグ":"cosmog","ハッカドラ":"drampa","ジジーロン":"togedemaru","ニャイキング":"perrserker",
-// Gen 8
-"サルノリ":"grookey","バチンキー":"thwackey","ゴリランダー":"rillaboom","ヒバニー":"scorbunny","ラビフット":"raboot","エースバーン":"cinderace","メッソン":"sobble","ジメレオン":"drizzile","インテレオン":"inteleon","ヒメンカ":"gossifleur","ワタシラガ":"eldegoss","ウールー":"wooloo","ダイウール":"dubwool","ホシガリス":"skwovet","ヨクバリス":"greedent","アオガラス":"rookidee","ルーキー":"corvisquire","アーマーガア":"corviknight","サッチムシ":"blipbug","レドームシ":"dottler","イオルブ":"orbeetle","カジリガメ":"chewtle","ドロバンコ":"mudbray","バリジャン":"mudsdale","ワンパチ":"yamper","パルスワン":"boltund","ザルード":"zarude","コオリッポ":"eiscue","ウオノラゴン":"dracovish","パッチラゴン":"dracozolt","ウオチルドン":"arctovish","パッチルドン":"arctozolt","サダイジャ":"sandaconda","テッポウサカナ":"cramorant","ジュラルドン":"duraludon","ドラパルト":"dragapult","ドロンチ":"drakloak","ドラメシヤ":"dreepy","モスノウ":"frosmoth","ストリンダー":"toxtricity","モルペコ":"morpeko","ザシアン":"zacian-crowned","ザマゼンタ":"zamazenta-crowned","ムゲンダイナ":"eternatus","ウーラオス":"urshifu","ブリムオン":"hatterene","タイレーツ":"falinks","サニゴーン":"cursola","バリコオル":"corsola-galar","ダクマ":"kubfu","バドレックス":"calyrex","レイスポス":"spectrier","ブリザポス":"glastrier",
-// Gen 9
-"ニャオハ":"sprigatito","ニャローテ":"floragato","マスカーニャ":"meowscarada","ホゲータ":"fuecoco","アチゲータ":"crocalor","スコヴィランド":"skeledirge","クワッス":"quaxly","クワマシ":"quaxwell","ウェーニバル":"quaquaval","パモ":"pawmi","パモット":"pawmo","パーモット":"pawmot","ウミディグダ":"wiglett","ウミトリオ":"wugtrio","カイデン":"wattrel","タイカイデン":"kilowattrel","ナミイルカ":"finizen","イルカマン":"palafin","カルボウ":"charcadet","ソウブレイズ":"ceruledge","アーマーガア":"armarouge","グルトン":"greavard","ハカドッグ":"houndstone","イキリンコ":"squawkabilly","カラミンゴ":"flamigo","コレクレー":"gimmighoul","ハラバリー":"bellibolt","サーフゴー":"gholdengo","ハバタクカミ":"flutter-mane","テツノブジン":"iron-valiant","チオンジェン":"chien-pao","パオジアン":"chien-pao","ディンルー":"ting-lu","イーユイ":"chi-yu","カイナ":"iron-hands","コライドン":"koraidon","ミライドン":"miraidon","セグレイブ":"baxcalibur","テツノカシラ":"iron-crown","テツノドクガ":"iron-moth","テツノイバラ":"iron-thorns","テツノワダチ":"iron-treads","チヲハウハネ":"wo-chien",
-// ★ 修正: バサギリ = iron-leaves (ID:1010)、テツノイサハ = ID:1009
-"バサギリ":"iron-leaves",
-"テツノイサハ":"1009",
-"クエスパトラ":"espathra"
-};
+        <!-- Advanced Search Card -->
+        <section class="card">
+          <h2>詳細検索</h2>
 
-const FALLBACK_TYPES={
-"フシギバナ":["grass","poison"],"リザードン":["fire","flying"],"カメックス":["water"],
-"ピカチュウ":["electric"],"ライチュウ":["electric"],
-"カイリュー":["dragon","flying"],"ガブリアス":["dragon","ground"],
-"ルカリオ":["fighting","steel"],"ゲンガー":["ghost","poison"],
-"ミミッキュ":["ghost","fairy"],"ハバタクカミ":["ghost","fairy"],
-"チオンジェン":["dark","ice"],"パオジアン":["dark","ice"],
-"コライドン":["fighting","dragon"],"ミライドン":["electric","dragon"],
-"イーユイ":["dark","fire"],"ディンルー":["ground","dark"],
-"サーフゴー":["steel","ghost"],"セグレイブ":["dragon","ice"],
-"カイナ":["electric","fighting"],"ドラパルト":["dragon","ghost"],
-"バンギラス":["rock","dark"],"メタグロス":["steel","psychic"],
-"ザシアン":["fairy","steel"],"ブリムオン":["psychic","fairy"],
-"トリデプス":["rock","steel"],"ユキメノコ":["ice","ghost"],
-"ボーマンダ":["dragon","flying"],"ジュカイン":["grass"],
-"バシャーモ":["fire","fighting"],"ラグラージ":["water","ground"],
-"ゲッコウガ":["water","dark"],"エースバーン":["fire"],
-"ゴウカザル":["fire","fighting"],"エンペルト":["water","steel"],
-"ドダイトス":["grass","ground"],"ムクホーク":["normal","flying"],
-"レントラー":["electric"],"ロズレイド":["grass","poison"],
-"ラムパルド":["rock"],"ドラピオン":["poison","dark"],
-"カバルドン":["ground"],"フローゼル":["water"],"トリトドン":["water","ground"],
-"ミミロップ":["normal"],"ドンカラス":["dark","flying"],
-"ブニャット":["normal"],"スカタンク":["poison","dark"],
-"ドータクン":["steel","psychic"],"ミカルゲ":["ghost","dark"],
-"マンムー":["ice","ground"],"トゲキッス":["fairy","flying"],
-"グライオン":["ground","flying"],"ポリゴンZ":["normal"],
-"エルレイド":["psychic","fighting"],"ダイノーズ":["rock","steel"],
-"ヨノワール":["ghost"],"マニューラ":["dark","ice"],
-"ジバコイル":["electric","steel"],"エレキブル":["electric"],
-"ブーバーン":["fire"],"メガヤンマ":["bug","flying"],
-"リーフィア":["grass"],"グレイシア":["ice"],
-"ウーラオス":["fighting"],"ムゲンダイナ":["poison","dragon"],
-"ディアルガ":["steel","dragon"],"パルキア":["water","dragon"],
-"ギラティナ":["ghost","dragon"],"ヒードラン":["fire","steel"],
-"クレセリア":["psychic"],"ダークライ":["dark"],"アルセウス":["normal"],
-"ソルガレオ":["psychic","steel"],"ルナアーラ":["psychic","ghost"],
-"ネクロズマ":["psychic"],"ザマゼンタ":["fairy","steel"],
-"レシラム":["dragon","fire"],"ゼクロム":["dragon","electric"],
-"ランドロス":["ground","flying"],"ウルガモス":["bug","fire"],
-"ドリュウズ":["ground","steel"],"ローブシン":["fighting"],
-"シャンデラ":["ghost","fire"],"オノノクス":["dragon"],
-"サザンドラ":["dark","dragon"],"ゾロアーク":["dark"],
-"ナットレイ":["grass","steel"],"ランクルス":["psychic"],
-"デンチュラ":["bug","electric"],"ゴチルゼル":["psychic"],
-"バイバニラ":["ice"],"ワルビアル":["ground","dark"],
-"ヒヒダルマ":["fire"],"ペンドラー":["bug","poison"],
-"エルフーン":["grass","fairy"],"ズルズキン":["dark","fighting"],
-"モロバレル":["grass","poison"],"ジェリセント":["water","ghost"],
-"ガマゲロゲ":["water","ground"],"シビルドン":["electric"],
-"アーケオス":["rock","flying"],"デスカーン":["ghost"],
-"ジュナイパー":["grass","ghost"],"ガオガエン":["fire","dark"],
-"アシレーヌ":["water","fairy"],"カプ・コケコ":["electric","fairy"],
-"カプ・テテフ":["psychic","fairy"],"カプ・ブルル":["grass","fairy"],
-"カプ・レヒレ":["water","fairy"],
-"ゴリランダー":["grass"],"インテレオン":["water"],
-"ドヒドイデ":["water","poison"],"マスカーニャ":["grass","dark"],
-"スコヴィランド":["fire","ghost"],"ウェーニバル":["water","fighting"],
-"テツノブジン":["fairy","fighting"],
-// ★ 修正: バサギリ = grass/psychic (Iron Leaves)
-"バサギリ":["grass","psychic"],
-"テツノイサハ":["rock","psychic"],
-"テツノコウベ":["psychic","steel"]
-};
+          <div class="filter-grid">
+            <div>
+              <div class="label">タイプ１</div>
+              <select id="typeFilter1">
+                <option value="">-- 指定なし --</option>
+                <option value="normal">ノーマル</option>
+                <option value="fire">ほのお</option>
+                <option value="water">みず</option>
+                <option value="electric">でんき</option>
+                <option value="grass">くさ</option>
+                <option value="ice">こおり</option>
+                <option value="fighting">かくとう</option>
+                <option value="poison">どく</option>
+                <option value="ground">じめん</option>
+                <option value="flying">ひこう</option>
+                <option value="psychic">エスパー</option>
+                <option value="bug">むし</option>
+                <option value="rock">いわ</option>
+                <option value="ghost">ゴースト</option>
+                <option value="dragon">ドラゴン</option>
+                <option value="dark">あく</option>
+                <option value="steel">はがね</option>
+                <option value="fairy">フェアリー</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">タイプ２</div>
+              <select id="typeFilter2">
+                <option value="">-- 指定なし --</option>
+                <option value="normal">ノーマル</option>
+                <option value="fire">ほのお</option>
+                <option value="water">みず</option>
+                <option value="electric">でんき</option>
+                <option value="grass">くさ</option>
+                <option value="ice">こおり</option>
+                <option value="fighting">かくとう</option>
+                <option value="poison">どく</option>
+                <option value="ground">じめん</option>
+                <option value="flying">ひこう</option>
+                <option value="psychic">エスパー</option>
+                <option value="bug">むし</option>
+                <option value="rock">いわ</option>
+                <option value="ghost">ゴースト</option>
+                <option value="dragon">ドラゴン</option>
+                <option value="dark">あく</option>
+                <option value="steel">はがね</option>
+                <option value="fairy">フェアリー</option>
+              </select>
+            </div>
+          </div>
 
-function calcMult(defTypes,atkType){let m=1;for(const t of defTypes){const c=TYPE_CHART[t];if(!c)continue;if(c.immune.includes(atkType))m*=0;else if(c.weak.includes(atkType))m*=2;else if(c.resist.includes(atkType))m*=0.5;}return m;}
+          <div style="margin-top:12px;">
+            <div class="label">世代</div>
+            <select id="genFilter">
+              <option value="">-- 指定なし --</option>
+              <option value="1">第1世代（カントー）</option>
+              <option value="2">第2世代（ジョウト）</option>
+              <option value="3">第3世代（ホウエン）</option>
+              <option value="4">第4世代（シンオウ）</option>
+              <option value="5">第5世代（イッシュ）</option>
+              <option value="6">第6世代（カロス）</option>
+              <option value="7">第7世代（アローラ）</option>
+              <option value="8">第8世代（ガラル）</option>
+              <option value="9">第9世代（パルデア）</option>
+            </select>
+          </div>
 
-const apiCache={};
-async function fetchPokemon(jaName){
-  if(apiCache[jaName])return apiCache[jaName];
-  const en=NAME_JA_TO_EN[jaName];if(!en)return null;
-  try{const r=await fetch(`https://pokeapi.co/api/v2/pokemon/${en}`);if(!r.ok)return null;const d=await r.json();const result={types:d.types.map(t=>t.type.name),sprite:d.sprites?.front_default||null};apiCache[jaName]=result;return result;}catch{return null;}
-}
+          <!-- Stat Min Filters (collapsible) -->
+          <button class="adv-toggle" id="statToggle" type="button">▸ 種族値フィルター</button>
+          <div id="statPanel" style="display:none;">
+            <div class="stat-filters">
+              <div class="stat-filter-item">
+                <label>HP 以上</label>
+                <input type="number" id="minHp" placeholder="0" min="0" max="255">
+              </div>
+              <div class="stat-filter-item">
+                <label>こうげき 以上</label>
+                <input type="number" id="minAtk" placeholder="0" min="0" max="255">
+              </div>
+              <div class="stat-filter-item">
+                <label>ぼうぎょ 以上</label>
+                <input type="number" id="minDef" placeholder="0" min="0" max="255">
+              </div>
+              <div class="stat-filter-item">
+                <label>とくこう 以上</label>
+                <input type="number" id="minSpAtk" placeholder="0" min="0" max="255">
+              </div>
+              <div class="stat-filter-item">
+                <label>とくぼう 以上</label>
+                <input type="number" id="minSpDef" placeholder="0" min="0" max="255">
+              </div>
+              <div class="stat-filter-item">
+                <label>すばやさ 以上</label>
+                <input type="number" id="minSpeed" placeholder="0" min="0" max="255">
+              </div>
+              <div class="stat-filter-item" style="grid-column:1/-1;">
+                <label>合計種族値 以上</label>
+                <input type="number" id="minBst" placeholder="0" min="0" max="1125">
+              </div>
+            </div>
+          </div>
 
-const GAMES=["ポケモンチャンピオンズ (M-A)","SV","剣盾","BDSP","PLA","SM/USUM","XY/ORAS","BW/BW2","DPt","HGSS","その他"];
+          <div class="row" style="margin-top:14px;">
+            <button class="primary" id="advSearchBtn" type="button">詳細検索を実行</button>
+            <button id="advClearBtn" type="button">リセット</button>
+          </div>
+          <div class="loading" id="advLoadingText"></div>
+          <div class="error-box" id="advErrorText"></div>
+        </section>
 
-const CHAMPIONS_MA=[
-// Gen1
-"ピカチュウ","ライチュウ","アローラライチュウ","フシギバナ","リザードン","カメックス",
-"スピアー","ピジョット","アーボック","ピクシー","キュウコン","アローラキュウコン",
-"プリン","プクリン","ニドクイン","ニドキング","ウインディ","ヒスイウインディ",
-"フーディン","カイリキー","ウツボット","ダグトリオ","アローラダグトリオ",
-"ペルシアン","アローラペルシアン","ゴルダック","オコリザル","ヤドラン","ガラルヤドラン",
-"レアコイル","ゴローニャ","アローラゴローニャ","ゲンガー","ガルーラ","スターミー",
-"カイロス","ケンタロス","パルデアケンタロス","パルデアケンタロス(炎)","パルデアケンタロス(水)",
-"ギャラドス","メタモン","シャワーズ","サンダース","ブースター","ポリゴン","プテラ","カビゴン","カイリュー",
-// Gen2
-"メガニウム","バクフーン","ヒスイバクフーン","オーダイル","オオタチ","ヨルノズク",
-"アリアドス","クロバット","デンリュウ","マリルリ","ニョロトノ","エーフィ","ブラッキー",
-"ヤドキング","ドンファン","ハッサム","ヘラクロス","マニューラ","ヘルガー",
-"ムウマージ","キングドラ","ハピナス","バンギラス","エアームド","グライガー",
-"ハガネール","ミルタンク","ヤミカラス","マンタイン","フォレトス","グランブル",
-// Gen3
-"ジュカイン","バシャーモ","ラグラージ","グラエナ","マッスグマ","ガラルマッスグマ",
-"ルンパッパ","ダーテング","オオスバメ","ペリッパー","サーナイト","アメモース",
-"キノガッサ","ハリテヤマ","マワイル","ボスゴドラ","チャーレム","ライボルト","マルノーム",
-"サメハダー","ボーバーン","フライゴン","ノクタス","チルタリス","ザングース","ハブネーク",
-"ルナトーン","ソルロック","ナマズン","シザリガー","ネンドール","ユレイドル","アーマルド",
-"ミロカロス","ジュペッタ","オニゴーリ","トドゼルガ","ボーマンダ","メタグロス","ヤミラミ",
-// Gen4
-"ドダイトス","ゴウカザル","エンペルト","ムクホーク","レントラー","ロズレイド",
-"ラムパルド","トリデプス","ビークイン","フローゼル","トリトドン","フワライド",
-"ミミロップ","メガミミロップ","ドンカラス","スカタンク","ドータクン","ミカルゲ",
-"ガブリアス","ルカリオ","カバルドン","ドラピオン","ドクロッグ","マニューラ",
-"ジバコイル","エレキブル","ブーバーン","トゲキッス","メガヤンマ","リーフィア",
-"グレイシア","グライオン","マンムー","ポリゴンZ","エルレイド","ヨノワール","ユキメノコ",
-"ロトム","ウォッシュロトム","ヒートロトム","フロストロトム","スピンロトム","カットロトム",
-// Gen5
-"ジャローダ","エンブオー","ダイケンキ","ムーランド","レパルダス","ゼブライカ",
-"ギガイアス","ドリュウズ","ローブシン","ガマゲロゲ","ハハコモリ","ペンドラー",
-"エルフーン","ドレディア","ワルビアル","ヒヒダルマ","ヒスイヒヒダルマ","ズルズキン",
-"デスカーン","アーケオス","ゾロアーク","チラチーノ","ゴチルゼル","ランクルス",
-"スワンナ","バイバニラ","シュバルゴ","モロバレル","ジェリセント","デンチュラ",
-"ナットレイ","シャンデラ","オノノクス","ツンベアー","サザンドラ","ウルガモス",
-// Gen6
-"ブリガロン","マフォクシー","ゲッコウガ","メガゲッコウガ","ファイアロー","ゴーゴート",
-"ゴロンダ","ギルガルド","ニャオニクス","エレザード","ガチゴラス","アマルルガ","ルチャブル","ニンフィア",
-"ヌメルゴン","パンプジン","パンプジン(S)","パンプジン(L)","パンプジン(XL)","オーロット",
-"ドラミドロ","フラージェス",
-// Gen7
-"ジュナイパー","ガオガエン","アシレーヌ","ドデカバシ","クワガノン","ルガルガン",
-"ルガルガン(真夜中)","ルガルガン(たそがれ)","ドヒドイデ","ミミッキュ","ナゲツケサル",
-"ヤレユータン","アマージョ","カプ・コケコ","カプ・テテフ","カプ・ブルル","カプ・レヒレ",
-"ハギギシリ","ツルギベルガ",
-// Gen8
-"ゴリランダー","エースバーン","インテレオン","アーマーガア","イオルブ","ドサイドン",
-"ドラパルト","ブリムオン","ニャイキング","パルスワン","サダイジャ","テッポウサカナ",
-"ストリンダー","モスノウ","コオリッポ","ジュラルドン","モルペコ",
-"ウオノラゴン","パッチラゴン","ウオチルドン","パッチルドン",
-// Gen9
-"マスカーニャ","スコヴィランド","ウェーニバル","ハラバリー","タイカイデン","イルカマン",
-"ハカドッグ","クエスパトラ","サーフゴー","セグレイブ",
-"ハバタクカミ","テツノブジン","チオンジェン","イーユイ","ディンルー","カイナ",
-"テツノカシラ","テツノドクガ","テツノイバラ","テツノワダチ","チヲハウハネ","バサギリ",
-];
+        <div class="small" style="color:var(--muted);font-size:12px;padding:0 4px;">
+          補完データ管理ページで入れた地方図鑑番号・作品別データ・補足メモも表示されます。
+        </div>
+      </div>
 
-const NATURE_LIST=["がんばりや","さみしがり","ゆうかん","いじっぱり","やんちゃ","ずぶとい","わんぱく","のうてんき","のんき","ひかえめ","おっとり","れいせい","うっかりや","おだやか","おとなしい","しんちょう","なまいき","おくびょう","せっかち","むじゃき","ようき","きまぐれ","てれや","ひねくれ","まじめ"];
-const emptyDetail=()=>({item:"",nature:"",ability:"",moves:["","","",""],evs:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0}});
+      <!-- ── Right Column: Results ── -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
 
-function TypeBadge({type,small}){
-  return React.createElement('span',{style:{background:TYPE_COLORS[type]||"#888",color:"#fff",fontSize:small?"10px":"11px",fontWeight:"700",padding:small?"1px 5px":"2px 7px",borderRadius:"4px",textShadow:"0 1px 2px rgba(0,0,0,0.4)",display:"inline-block",marginRight:"2px",marginBottom:"2px"}},type);
-}
+        <!-- Search Results List -->
+        <section class="card" id="searchResultsCard">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2 id="resultsTitle">検索結果</h2>
+            <button id="resultsCloseBtn" type="button" style="padding:4px 10px;font-size:12px;">✕ 閉じる</button>
+          </div>
+          <div class="results-count" id="resultsCount"></div>
+          <div class="results-list" id="resultsList"></div>
+          <div class="pager" id="pager"></div>
+        </section>
 
-function App(){
-  const[tab,setTab]=useState("party");
-  const[members,setMembers]=useState(["","","","","",""]);
-  const[details,setDetails]=useState(()=>Array(6).fill(null).map(emptyDetail));
-  const[expandedSlot,setExpandedSlot]=useState(null);
-  const[pName,setPName]=useState("");
-  const[pGame,setPGame]=useState("");
-  const[pTags,setPTags]=useState("");
-  const[pNotes,setPNotes]=useState("");
-  const[sprites,setSprites]=useState({});
-  const[apiTypes,setApiTypes]=useState({});
-  const[parties,setParties]=useState(()=>{try{return JSON.parse(localStorage.getItem("pkm_v2"))||[];}catch{return[];}});
-  const[editId,setEditId]=useState(null);
-  const[filterGame,setFilterGame]=useState("");
-  const[searchKw,setSearchKw]=useState("");
-  const[analysis,setAnalysis]=useState(null);
-  const[status,setStatus]=useState("");
-  const[copied,setCopied]=useState(false);
-  const[pickerSlot,setPickerSlot]=useState(null);
-  const[pickerSearch,setPickerSearch]=useState("");
-  const fileRef=useRef(null);
+        <!-- Pokemon Detail Card -->
+        <section class="card result-card" id="resultCard">
+          <h2 id="pokeTitle">検索結果</h2>
+          <img id="pokeImage" alt="pokemon image">
+          <div class="small preline" id="pokeFlavor"></div>
 
-  const isChampions=pGame==="ポケモンチャンピオンズ (M-A)";
+          <div class="section-gap">
+            <div class="label">タイプ</div>
+            <div class="badge-list" id="typeList"></div>
+          </div>
+          <div class="section-gap">
+            <div class="label">特性</div>
+            <div class="badge-list" id="abilityList"></div>
+          </div>
+          <div class="section-gap">
+            <div class="label">基本情報</div>
+            <div class="stat-grid">
+              <div class="mini-card"><strong>全国図鑑</strong><div id="nationalDex"></div></div>
+              <div class="mini-card"><strong>高さ</strong><div id="heightText"></div></div>
+              <div class="mini-card"><strong>重さ</strong><div id="weightText"></div></div>
+            </div>
+          </div>
+          <div class="section-gap">
+            <div class="label">種族値</div>
+            <div class="stat-grid" id="baseStats"></div>
+          </div>
+          <div class="section-gap">
+            <div class="label">地方図鑑番号</div>
+            <div class="badge-list" id="localDexList"></div>
+          </div>
+          <div class="section-gap">
+            <div class="label">進化系統</div>
+            <div id="evolutionBox" class="small"></div>
+          </div>
+          <div class="section-gap">
+            <div class="label">タイプ相性</div>
+            <div style="margin-top:8px;"><div class="small">弱点</div><div class="badge-list" id="weaknessList"></div></div>
+            <div style="margin-top:10px;"><div class="small">半減</div><div class="badge-list" id="resistList"></div></div>
+            <div style="margin-top:10px;"><div class="small">無効</div><div class="badge-list" id="immuneList"></div></div>
+          </div>
+          <div class="section-gap">
+            <div class="label">作品別データ</div>
+            <div id="gameDataBox" class="small"></div>
+          </div>
+          <div class="section-gap">
+            <div class="label">補足メモ</div>
+            <button class="primary" id="addToPartyBtn" type="button">パーティ管理へ追加</button>
+            <div class="small" id="partyAddStatus" style="margin-top:8px;"></div>
+            <div id="customMemoBox" class="small preline" style="margin-top:8px;"></div>
+          </div>
+        </section>
 
-  useEffect(()=>{localStorage.setItem("pkm_v2",JSON.stringify(parties));},[parties]);
+      </div>
+    </div>
+  </main>
 
-  const toast=(m)=>{setStatus(m);setTimeout(()=>setStatus(""),2500);};
-  const getEnTypes=(name)=>apiTypes[name]||FALLBACK_TYPES[name]||null;
+  <script>
+  (() => {
+    const API_BASE = "https://pokeapi.co/api/v2";
+    const CUSTOM_KEY = "pokemon_custom_data_v1";
+    const PARTY_CANDIDATE_KEY = "pokemon_party_candidates_v1";
 
-  const setDetail=(i,field,val)=>{
-    setDetails(prev=>{const n=[...prev];n[i]={...n[i],[field]:val};return n;});
-  };
-  const setMove=(i,mi,val)=>{
-    setDetails(prev=>{const n=[...prev];const d={...n[i]};const mv=[...d.moves];mv[mi]=val;d.moves=mv;n[i]=d;return n;});
-  };
-  const setEv=(i,stat,val)=>{
-    const maxSingle=isChampions?32:252;
-    const v=Math.max(0,Math.min(maxSingle,parseInt(val)||0));
-    setDetails(prev=>{const n=[...prev];const d={...n[i]};d.evs={...d.evs,[stat]:v};n[i]=d;return n;});
-  };
+    const el = id => document.getElementById(id);
 
-  const openPicker=(slotIdx)=>{
-    setPickerSlot(slotIdx);setPickerSearch("");
-    CHAMPIONS_MA.forEach(async n=>{
-      if(sprites[n]!==undefined)return;
-      const d=await fetchPokemon(n);
-      if(d) setSprites(p=>({...p,[n]:d.sprite}));
-      else setSprites(p=>({...p,[n]:null}));
-    });
-  };
-  const closePicker=()=>{setPickerSlot(null);setPickerSearch("");};
-  const pickPokemon=(name)=>{
-    const n=[...members]; n[pickerSlot]=name; setMembers(n);
-    closePicker();
-  };
-  const filteredPicker=CHAMPIONS_MA.filter(p=>p.includes(pickerSearch));
+    // ── DOM refs ──
+    const searchInput       = el("searchInput");
+    const searchBtn         = el("searchBtn");
+    const clearBtn          = el("clearBtn");
+    const loadingText       = el("loadingText");
+    const errorText         = el("errorText");
+    const resultCard        = el("resultCard");
+    const pokeTitle         = el("pokeTitle");
+    const pokeImage         = el("pokeImage");
+    const pokeFlavor        = el("pokeFlavor");
+    const typeList          = el("typeList");
+    const abilityList       = el("abilityList");
+    const nationalDex       = el("nationalDex");
+    const heightText        = el("heightText");
+    const weightText        = el("weightText");
+    const baseStats         = el("baseStats");
+    const localDexList      = el("localDexList");
+    const evolutionBox      = el("evolutionBox");
+    const weaknessList      = el("weaknessList");
+    const resistList        = el("resistList");
+    const immuneList        = el("immuneList");
+    const gameDataBox       = el("gameDataBox");
+    const customMemoBox     = el("customMemoBox");
+    const addToPartyBtn     = el("addToPartyBtn");
+    const partyAddStatus    = el("partyAddStatus");
 
-  useEffect(()=>{
-    members.filter(Boolean).forEach(async n=>{
-      if(sprites[n]!==undefined)return;
-      const d=await fetchPokemon(n);
-      if(d){setSprites(p=>({...p,[n]:d.sprite}));setApiTypes(p=>({...p,[n]:d.types}));}
-      else setSprites(p=>({...p,[n]:null}));
-    });
-  },[members]);
+    // Advanced search
+    const typeFilter1       = el("typeFilter1");
+    const typeFilter2       = el("typeFilter2");
+    const genFilter         = el("genFilter");
+    const statToggle        = el("statToggle");
+    const statPanel         = el("statPanel");
+    const advSearchBtn      = el("advSearchBtn");
+    const advClearBtn       = el("advClearBtn");
+    const advLoadingText    = el("advLoadingText");
+    const advErrorText      = el("advErrorText");
+    const searchResultsCard = el("searchResultsCard");
+    const resultsTitle      = el("resultsTitle");
+    const resultsCount      = el("resultsCount");
+    const resultsList       = el("resultsList");
+    const pager             = el("pager");
+    const resultsCloseBtn   = el("resultsCloseBtn");
 
-  const analyze=useCallback(()=>{
-    const filled=members.filter(Boolean);
-    if(!filled.length){setAnalysis(null);return;}
-    const weakCount={},quadNames={};
-    Object.keys(TYPE_JA_TO_EN).forEach(t=>{weakCount[t]=0;quadNames[t]=[];});
-    const unknown=[];
-    members.forEach(name=>{
-      if(!name)return;
-      const et=getEnTypes(name);
-      if(!et){unknown.push(name);return;}
-      Object.keys(TYPE_CHART).forEach(atkEn=>{
-        const m=calcMult(et,atkEn);const jaAtk=TYPE_EN_TO_JA[atkEn];if(!jaAtk)return;
-        if(m>=4){weakCount[jaAtk]++;quadNames[jaAtk].push(name);}
-        else if(m>1)weakCount[jaAtk]++;
+    // ── Constants ──
+    const GEN_RANGES = {
+      "1": [1,  151],  "2": [152, 251],  "3": [252, 386],
+      "4": [387, 493], "5": [494, 649],  "6": [650, 721],
+      "7": [722, 809], "8": [810, 905],  "9": [906, 1025]
+    };
+
+    const TYPE_JA = {
+      normal:"ノーマル", fire:"ほのお", water:"みず", electric:"でんき", grass:"くさ",
+      ice:"こおり", fighting:"かくとう", poison:"どく", ground:"じめん", flying:"ひこう",
+      psychic:"エスパー", bug:"むし", rock:"いわ", ghost:"ゴースト", dragon:"ドラゴン",
+      dark:"あく", steel:"はがね", fairy:"フェアリー"
+    };
+
+    const TYPE_CHART = {
+      normal:   { weak:["fighting"],                resist:[],                             immune:["ghost"] },
+      fire:     { weak:["water","ground","rock"],    resist:["fire","grass","ice","bug","steel","fairy"], immune:[] },
+      water:    { weak:["electric","grass"],         resist:["fire","water","ice","steel"], immune:[] },
+      electric: { weak:["ground"],                  resist:["electric","flying","steel"],  immune:[] },
+      grass:    { weak:["fire","ice","poison","flying","bug"], resist:["water","electric","grass","ground"], immune:[] },
+      ice:      { weak:["fire","fighting","rock","steel"], resist:["ice"],                 immune:[] },
+      fighting: { weak:["flying","psychic","fairy"], resist:["bug","rock","dark"],         immune:[] },
+      poison:   { weak:["ground","psychic"],         resist:["grass","fighting","poison","bug","fairy"], immune:[] },
+      ground:   { weak:["water","grass","ice"],      resist:["poison","rock"],              immune:["electric"] },
+      flying:   { weak:["electric","ice","rock"],    resist:["grass","fighting","bug"],    immune:["ground"] },
+      psychic:  { weak:["bug","ghost","dark"],       resist:["fighting","psychic"],        immune:[] },
+      bug:      { weak:["fire","flying","rock"],     resist:["grass","fighting","ground"], immune:[] },
+      rock:     { weak:["water","grass","fighting","ground","steel"], resist:["normal","fire","poison","flying"], immune:[] },
+      ghost:    { weak:["ghost","dark"],             resist:["poison","bug"],              immune:["normal","fighting"] },
+      dragon:   { weak:["ice","dragon","fairy"],     resist:["fire","water","electric","grass"], immune:[] },
+      dark:     { weak:["fighting","bug","fairy"],   resist:["ghost","dark"],              immune:["psychic"] },
+      steel:    { weak:["fire","fighting","ground"], resist:["normal","grass","ice","flying","psychic","bug","rock","dragon","steel","fairy"], immune:["poison"] },
+      fairy:    { weak:["poison","steel"],           resist:["fighting","bug","dark"],     immune:["dragon"] }
+    };
+
+    const STAT_JA = {
+      hp:"HP", attack:"こうげき", defense:"ぼうぎょ",
+      "special-attack":"とくこう", "special-defense":"とくぼう", speed:"すばやさ"
+    };
+
+    const POKEDEXES = [
+      { key:"kanto", label:"カントー" }, { key:"original-johto", label:"ジョウト" },
+      { key:"hoenn", label:"ホウエン" }, { key:"original-sinnoh", label:"シンオウ" },
+      { key:"updated-unova", label:"イッシュ" }, { key:"kalos-central", label:"カロス中央" },
+      { key:"kalos-coastal", label:"カロス海岸" }, { key:"kalos-mountain", label:"カロス山" },
+      { key:"original-alola", label:"アローラ" }, { key:"galar", label:"ガラル" },
+      { key:"hisui", label:"ヒスイ" }, { key:"paldea", label:"パルデア" },
+      { key:"kitakami", label:"キタカミ" }, { key:"blueberry", label:"ブルーベリー" }
+    ];
+
+    const JA_TO_EN = {
+      "フシギダネ":"bulbasaur","ヒトカゲ":"charmander","ゼニガメ":"squirtle",
+      "ピカチュウ":"pikachu","イーブイ":"eevee","カビゴン":"snorlax",
+      "ミュウツー":"mewtwo","カイリュー":"dragonite","バンギラス":"tyranitar",
+      "サーナイト":"gardevoir","メタグロス":"metagross","ルカリオ":"lucario",
+      "ガブリアス":"garchomp","ゲッコウガ":"greninja","ミミッキュ":"mimikyu",
+      "ドラパルト":"dragapult","ニャオハ":"sprigatito","ホゲータ":"fuecoco",
+      "クワッス":"quaxly","コライドン":"koraidon","ミライドン":"miraidon"
+    };
+
+    // ── Caches ──
+    const fetchCache = {};
+    const dexCache   = {};
+    let   jaNameMap  = null;
+    let   currentPokemonData = null;
+
+    // ── Pagination state ──
+    const PAGE_SIZE = 20;
+    let advResults  = [];
+    let currentPage = 1;
+
+    // ── Utilities ──
+    function escapeHtml(t) {
+      return String(t ?? "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    async function cachedFetchJson(url) {
+      if (fetchCache[url]) return fetchCache[url];
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("fetch_failed: " + url);
+      const data = await res.json();
+      fetchCache[url] = data;
+      return data;
+    }
+
+    async function buildJaNameMap() {
+      if (jaNameMap) return jaNameMap;
+      jaNameMap = {};
+      const listData = await cachedFetchJson(`${API_BASE}/pokemon-species?limit=2000`);
+      for (const item of listData.results || []) {
+        try {
+          const s = await cachedFetchJson(item.url);
+          const ja = s.names?.find(n => n.language.name === "ja-Hrkt")?.name
+                  || s.names?.find(n => n.language.name === "ja")?.name;
+          if (ja) jaNameMap[ja] = s.name;
+        } catch (_) {}
+      }
+      return jaNameMap;
+    }
+
+    async function normalizeQuery(value) {
+      const raw = value.trim();
+      if (!raw) return "";
+      if (/^\d+$/.test(raw)) return raw;
+      if (JA_TO_EN[raw]) return JA_TO_EN[raw];
+      const map = await buildJaNameMap();
+      if (map[raw]) return map[raw];
+      return raw.toLowerCase().replaceAll("♀","-f").replaceAll("♂","-m")
+                .replaceAll("　"," ").replaceAll(" ","-");
+    }
+
+    function loadCustomData() {
+      try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]"); }
+      catch { return []; }
+    }
+
+    function findCustomRecord(nameJa, nationalNo) {
+      return loadCustomData().find(r =>
+        (r.name||"").trim() === (nameJa||"").trim() ||
+        String(r.nationalDex||"").trim() === String(nationalNo||"").trim()
+      ) || null;
+    }
+
+    function getJapaneseName(species) {
+      return species.names?.find(n => n.language.name === "ja-Hrkt")?.name
+          || species.names?.find(n => n.language.name === "ja")?.name
+          || species.name;
+    }
+
+    function getJapaneseFlavor(species) {
+      const e = (species.flavor_text_entries||[]).find(x=>x.language?.name==="ja-Hrkt")
+             || (species.flavor_text_entries||[]).find(x=>x.language?.name==="ja");
+      return e ? e.flavor_text.replace(/\f|\n|\r/g," ") : "";
+    }
+
+    function renderBadgeList(container, texts) {
+      container.innerHTML = "";
+      const list = texts.length ? texts : ["データなし"];
+      list.forEach(t => {
+        const s = document.createElement("span");
+        s.className = "badge";
+        s.textContent = t;
+        container.appendChild(s);
       });
+    }
+
+    function renderTypes(types) {
+      renderBadgeList(typeList,
+        types.sort((a,b)=>a.slot-b.slot).map(t=>TYPE_JA[t.type.name]||t.type.name)
+      );
+    }
+
+    async function renderAbilities(abilities) {
+      abilityList.innerHTML = "";
+      for (const a of abilities.sort((a,b)=>a.slot-b.slot)) {
+        let name = a.ability.name;
+        try {
+          const d = await cachedFetchJson(a.ability.url);
+          const ja = d.names.find(n=>n.language.name==="ja"||n.language.name==="ja-Hrkt");
+          if (ja) name = ja.name;
+        } catch(_) {}
+        const s = document.createElement("span");
+        s.className = "badge";
+        s.textContent = a.is_hidden ? `${name}（隠れ特性）` : name;
+        abilityList.appendChild(s);
+      }
+    }
+
+    function renderStats(stats) {
+      baseStats.innerHTML = "";
+      stats.forEach(s => {
+        const box = document.createElement("div");
+        box.className = "mini-card";
+        box.innerHTML = `<strong>${escapeHtml(STAT_JA[s.stat.name]||s.stat.name)}</strong><div>${s.base_stat}</div>`;
+        baseStats.appendChild(box);
+      });
+    }
+
+    function calculateTypeEffectiveness(typeNames) {
+      return Object.keys(TYPE_CHART).map(atk => {
+        let m = 1;
+        for (const def of typeNames) {
+          const c = TYPE_CHART[def]; if (!c) continue;
+          if (c.immune.includes(atk)) m *= 0;
+          else if (c.weak.includes(atk)) m *= 2;
+          else if (c.resist.includes(atk)) m *= 0.5;
+        }
+        return { type: atk, multiplier: m };
+      });
+    }
+
+    function renderTypeEffectiveness(typeNames) {
+      const data = calculateTypeEffectiveness(typeNames);
+      renderBadgeList(weaknessList, data.filter(x=>x.multiplier>1).map(x=>`${TYPE_JA[x.type]||x.type} x${x.multiplier}`));
+      renderBadgeList(resistList,   data.filter(x=>x.multiplier>0&&x.multiplier<1).map(x=>`${TYPE_JA[x.type]||x.type} x${x.multiplier}`));
+      renderBadgeList(immuneList,   data.filter(x=>x.multiplier===0).map(x=>TYPE_JA[x.type]||x.type));
+    }
+
+    async function fetchPokedexEntry(key, speciesName) {
+      if (!dexCache[key]) dexCache[key] = cachedFetchJson(`${API_BASE}/pokedex/${key}`);
+      const d = await dexCache[key];
+      const e = (d.pokemon_entries||[]).find(e=>e.pokemon_species?.name===speciesName);
+      return e ? e.entry_number : null;
+    }
+
+    async function getLocalDexNumbers(speciesName) {
+      const results = [];
+      for (const dex of POKEDEXES) {
+        try {
+          const num = await fetchPokedexEntry(dex.key, speciesName);
+          if (num !== null) results.push({ label: dex.label, number: num, source: "api" });
+        } catch (_) {}
+      }
+      return results;
+    }
+
+    function mergeLocalDex(apiEntries, customRecord) {
+      const merged = [...apiEntries];
+      const existing = new Set(apiEntries.map(x=>x.label));
+      (customRecord?.localDex||[]).forEach(item => {
+        if (!existing.has(item.key)) merged.push({ label:item.key, number:item.value, source:"custom" });
+      });
+      return merged;
+    }
+
+    function renderLocalDex(entries) {
+      localDexList.innerHTML = "";
+      if (!entries.length) {
+        const s = document.createElement("span"); s.className="badge"; s.textContent="地方図鑑番号なし / 未取得";
+        localDexList.appendChild(s); return;
+      }
+      entries.forEach(e => {
+        const s = document.createElement("span"); s.className="badge";
+        s.textContent = e.source==="custom" ? `${e.label}: ${e.number}（補完）` : `${e.label}: ${e.number}`;
+        localDexList.appendChild(s);
+      });
+    }
+
+    async function fetchEvolutionNames(species) {
+      if (!species.evolution_chain?.url) return [];
+      const chain = await cachedFetchJson(species.evolution_chain.url);
+      const names = [];
+      function walk(node) {
+        if (!node) return;
+        if (node.species?.name) names.push(node.species.name);
+        (node.evolves_to||[]).forEach(walk);
+      }
+      walk(chain.chain);
+      const jaNames = [];
+      for (const en of names) {
+        try {
+          const s = await cachedFetchJson(`${API_BASE}/pokemon-species/${en}`);
+          jaNames.push(s.names?.find(n=>n.language.name==="ja-Hrkt")?.name
+                    || s.names?.find(n=>n.language.name==="ja")?.name || en);
+        } catch(_) { jaNames.push(en); }
+      }
+      return jaNames;
+    }
+
+    function renderGameData(cr) {
+      const list = cr?.gameData || [];
+      gameDataBox.innerHTML = list.length
+        ? list.map(i=>`<div style="margin-top:6px;"><strong>${escapeHtml(i.key)}</strong>：${escapeHtml(i.value)}</div>`).join("")
+        : "補完データなし";
+    }
+
+    function renderCustomMemo(cr) { customMemoBox.textContent = cr?.memo || "補完メモなし"; }
+
+    function savePartyCandidate(data) {
+      try {
+        const raw = localStorage.getItem(PARTY_CANDIDATE_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        list.unshift({ id:"candidate_"+Date.now(), ...data, addedAt: new Date().toISOString() });
+        localStorage.setItem(PARTY_CANDIDATE_KEY, JSON.stringify(list));
+        partyAddStatus.textContent = "パーティ候補に追加しました";
+        setTimeout(() => { partyAddStatus.textContent = ""; }, 2500);
+      } catch(_) { partyAddStatus.textContent = "保存に失敗しました"; }
+    }
+
+    // ── Main Pokémon Loader ──
+    async function fetchPokemon(query) {
+      const pokemon  = await cachedFetchJson(`${API_BASE}/pokemon/${query}`);
+      const species  = await cachedFetchJson(pokemon.species.url);
+      return { pokemon, species };
+    }
+
+    async function loadPokemonDetail(query) {
+      errorText.textContent = "";
+      loadingText.textContent = "取得中...";
+      resultCard.classList.remove("show");
+      try {
+        const { pokemon, species } = await fetchPokemon(query);
+        const nameJa       = getJapaneseName(species);
+        const customRecord = findCustomRecord(nameJa, species.id);
+        const apiLocalDex  = await getLocalDexNumbers(species.name);
+        const mergedDex    = mergeLocalDex(apiLocalDex, customRecord);
+        const evoNames     = await fetchEvolutionNames(species);
+
+        pokeTitle.textContent = `No.${species.id} ${nameJa}`;
+        pokeImage.src = pokemon.sprites?.other?.["official-artwork"]?.front_default
+                     || pokemon.sprites?.front_default || "";
+        pokeImage.alt = pokeTitle.textContent;
+        pokeFlavor.textContent = getJapaneseFlavor(species) || "図鑑説明は未取得です。";
+        nationalDex.textContent = customRecord?.nationalDex || species.id;
+        heightText.textContent  = `${pokemon.height / 10} m`;
+        weightText.textContent  = `${pokemon.weight / 10} kg`;
+
+        renderTypes(pokemon.types || []);
+        await renderAbilities(pokemon.abilities || []);
+        renderStats(pokemon.stats || []);
+        renderTypeEffectiveness((pokemon.types||[]).map(t=>t.type.name));
+        renderLocalDex(mergedDex);
+        evolutionBox.textContent = evoNames.length ? evoNames.join(" → ") : "進化系統データなし";
+        renderGameData(customRecord);
+        renderCustomMemo(customRecord);
+
+        currentPokemonData = {
+          name: nameJa,
+          types: (pokemon.types||[]).map(t=>TYPE_JA[t.type.name]||t.type.name),
+          abilities: Array.from(abilityList.querySelectorAll(".badge")).map(x=>x.textContent),
+          memo: [`全国図鑑: ${customRecord?.nationalDex||species.id}`, customRecord?.memo ? `補完メモ: ${customRecord.memo}` : ""].filter(Boolean).join("\n")
+        };
+
+        resultCard.classList.add("show");
+        loadingText.textContent = "";
+        resultCard.scrollIntoView({ behavior:"smooth", block:"start" });
+      } catch(_) {
+        loadingText.textContent = "";
+        errorText.textContent = "データが見つかりませんでした。英語名または全国図鑑番号でも試してください。";
+      }
+    }
+
+    async function searchPokemon() {
+      const query = await normalizeQuery(searchInput.value);
+      if (!query) { errorText.textContent = "ポケモン名か図鑑番号を入れてください。"; return; }
+      await loadPokemonDetail(query);
+    }
+
+    function clearResult() {
+      searchInput.value = "";
+      errorText.textContent = "";
+      loadingText.textContent = "";
+      evolutionBox.textContent = "";
+      weaknessList.innerHTML = ""; resistList.innerHTML = ""; immuneList.innerHTML = "";
+      currentPokemonData = null; partyAddStatus.textContent = "";
+      resultCard.classList.remove("show");
+    }
+
+    // ════════════════════════════════════════
+    //  Advanced Search Logic
+    // ════════════════════════════════════════
+
+    // Returns set of pokemon species names for a type
+    async function fetchPokemonByType(typeName) {
+      const data = await cachedFetchJson(`${API_BASE}/type/${typeName}`);
+      // includes both pokemon.pokemon.name (form names) — use species instead if available
+      return new Set(
+        (data.pokemon || []).map(p => {
+          // strip form suffixes to get base name for matching
+          return p.pokemon.name;
+        })
+      );
+    }
+
+    // Returns all pokemon names in a generation (by national dex range)
+    async function fetchPokemonByGen(genNum) {
+      const [min, max] = GEN_RANGES[genNum];
+      // fetch species list and filter by id
+      const data = await cachedFetchJson(`${API_BASE}/pokemon?limit=2000&offset=0`);
+      // pokemon endpoint doesn't give id directly, but names follow pattern
+      // More reliably: fetch generation endpoint
+      const genData = await cachedFetchJson(`${API_BASE}/generation/${genNum}`);
+      return new Set((genData.pokemon_species||[]).map(s=>s.name));
+    }
+
+    // Fetch lightweight pokemon data for list display
+    async function fetchPokemonSummary(name) {
+      const p = await cachedFetchJson(`${API_BASE}/pokemon/${name}`);
+      return {
+        id:      p.id,
+        name:    p.name,
+        sprite:  p.sprites?.front_default || "",
+        types:   (p.types||[]).map(t=>t.type.name),
+        stats:   p.stats || []
+      };
+    }
+
+    function meetsStatFilters(stats) {
+      const getVal = key => (stats.find(s=>s.stat.name===key)?.base_stat ?? 0);
+      const checks = [
+        [el("minHp"),     "hp"],
+        [el("minAtk"),    "attack"],
+        [el("minDef"),    "defense"],
+        [el("minSpAtk"),  "special-attack"],
+        [el("minSpDef"),  "special-defense"],
+        [el("minSpeed"),  "speed"]
+      ];
+      for (const [input, key] of checks) {
+        const min = parseInt(input.value);
+        if (!isNaN(min) && min > 0 && getVal(key) < min) return false;
+      }
+      const minBst = parseInt(el("minBst").value);
+      if (!isNaN(minBst) && minBst > 0) {
+        const bst = stats.reduce((sum, s) => sum + s.base_stat, 0);
+        if (bst < minBst) return false;
+      }
+      return true;
+    }
+
+    function hasStatFilters() {
+      const ids = ["minHp","minAtk","minDef","minSpAtk","minSpDef","minSpeed","minBst"];
+      return ids.some(id => { const v = parseInt(el(id).value); return !isNaN(v) && v > 0; });
+    }
+
+    async function runAdvancedSearch() {
+      advErrorText.textContent = "";
+      const t1  = typeFilter1.value;
+      const t2  = typeFilter2.value;
+      const gen = genFilter.value;
+
+      if (!t1 && !t2 && !gen) {
+        advErrorText.textContent = "タイプまたは世代を1つ以上選択してください。";
+        return;
+      }
+      if (t1 && t2 && t1 === t2) {
+        advErrorText.textContent = "タイプ１とタイプ２に同じタイプは選択できません。";
+        return;
+      }
+
+      advLoadingText.textContent = "検索中...";
+      searchResultsCard.classList.remove("show");
+
+      try {
+        let candidateNames = null; // null = no restriction yet
+
+        // ── Type filter ──
+        if (t1) {
+          const s1 = await fetchPokemonByType(t1);
+          candidateNames = candidateNames ? new Set([...candidateNames].filter(n=>s1.has(n))) : s1;
+        }
+        if (t2) {
+          const s2 = await fetchPokemonByType(t2);
+          candidateNames = candidateNames ? new Set([...candidateNames].filter(n=>s2.has(n))) : s2;
+        }
+
+        // ── Generation filter ──
+        if (gen) {
+          const genSet = await fetchPokemonByGen(gen);
+          // genSet contains species names; candidateNames contains pokemon form names
+          // Map: species name → all forms. For simplicity, filter by matching base name.
+          if (candidateNames === null) {
+            // Build from gen set — fetch all pokemon in range
+            const [min, max] = GEN_RANGES[gen];
+            const ids = [];
+            for (let i = min; i <= max; i++) ids.push(String(i));
+            candidateNames = new Set(ids);
+          } else {
+            // Filter existing set: keep if the species name matches
+            // Pokemon names often match species names (base forms)
+            const genData = await cachedFetchJson(`${API_BASE}/generation/${gen}`);
+            const genSpecies = new Set((genData.pokemon_species||[]).map(s=>s.name));
+            candidateNames = new Set([...candidateNames].filter(n => {
+              // strip form suffix
+              const base = n.replace(/-(?:mega|alola|galar|hisui|paldea|attack|defense|speed|plant|sandy|trash|heat|wash|frost|fan|mow|origin|altered|land|sky|red-striped|blue-striped|normal|zen|standard|incarnate|therian|white|black|resolute|ordinary|pirouette|aria|star|unbound|complete|midday|midnight|dusk|dusk-mane|dawn-wings|ultra|school|solo|disguised|busted|original|hangry|ice|noice|crowned|eternamax|single-strike|rapid-strike|ice-rider|shadow-rider|hero|teal-mask|wellspring-mask|hearthflame-mask|cornerstone-mask|combat-breed|blaze-breed|aqua-breed)$/,"").replace(/-\d+$/,"");
+              return genSpecies.has(n) || genSpecies.has(base);
+            }));
+          }
+        }
+
+        if (!candidateNames || candidateNames.size === 0) {
+          advLoadingText.textContent = "";
+          advErrorText.textContent = "条件に合うポケモンが見つかりませんでした。";
+          return;
+        }
+
+        const nameList = [...candidateNames];
+
+        // ── Stat filter (requires fetching each pokemon) ──
+        const needStats = hasStatFilters();
+        let filtered = [];
+
+        if (needStats) {
+          advLoadingText.textContent = `フィルター適用中 (0/${nameList.length})...`;
+          let done = 0;
+          // Fetch in small batches to avoid flooding
+          const BATCH = 10;
+          for (let i = 0; i < nameList.length; i += BATCH) {
+            const batch = nameList.slice(i, i + BATCH);
+            const results = await Promise.allSettled(batch.map(n => fetchPokemonSummary(n)));
+            for (const r of results) {
+              if (r.status === "fulfilled" && meetsStatFilters(r.value.stats)) {
+                filtered.push(r.value);
+              }
+            }
+            done += batch.length;
+            advLoadingText.textContent = `フィルター適用中 (${Math.min(done, nameList.length)}/${nameList.length})...`;
+          }
+        } else {
+          // Just get basic info
+          advLoadingText.textContent = `リスト取得中 (0/${nameList.length})...`;
+          const BATCH = 20;
+          let done = 0;
+          for (let i = 0; i < nameList.length; i += BATCH) {
+            const batch = nameList.slice(i, i + BATCH);
+            const results = await Promise.allSettled(batch.map(n => fetchPokemonSummary(n)));
+            for (const r of results) {
+              if (r.status === "fulfilled") filtered.push(r.value);
+            }
+            done += batch.length;
+            advLoadingText.textContent = `リスト取得中 (${Math.min(done, nameList.length)}/${nameList.length})...`;
+          }
+        }
+
+        // Sort by id
+        filtered.sort((a,b) => a.id - b.id);
+
+        // Apply strict dual-type filter (both types must exactly match)
+        if (t1 && t2) {
+          filtered = filtered.filter(p => p.types.includes(t1) && p.types.includes(t2));
+        } else if (t1) {
+          filtered = filtered.filter(p => p.types.includes(t1));
+        } else if (t2) {
+          filtered = filtered.filter(p => p.types.includes(t2));
+        }
+
+        advLoadingText.textContent = "";
+
+        if (!filtered.length) {
+          advErrorText.textContent = "条件に合うポケモンが見つかりませんでした。";
+          return;
+        }
+
+        advResults  = filtered;
+        currentPage = 1;
+        renderResultsPage();
+
+      } catch(e) {
+        advLoadingText.textContent = "";
+        advErrorText.textContent = "検索中にエラーが発生しました。しばらく待ってから再試行してください。";
+        console.error(e);
+      }
+    }
+
+    function renderResultsPage() {
+      const total = advResults.length;
+      const pages = Math.ceil(total / PAGE_SIZE);
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const slice = advResults.slice(start, start + PAGE_SIZE);
+
+      let label = "";
+      const t1 = typeFilter1.value, t2 = typeFilter2.value, gen = genFilter.value;
+      const parts = [];
+      if (t1) parts.push(TYPE_JA[t1] || t1);
+      if (t2) parts.push(TYPE_JA[t2] || t2);
+      if (gen) parts.push(`第${gen}世代`);
+      label = parts.join(" / ");
+
+      resultsTitle.textContent = `${label} の検索結果`;
+      resultsCount.textContent = `${total} 件 (${currentPage}/${pages} ページ)`;
+
+      resultsList.innerHTML = "";
+      slice.forEach(p => {
+        const item = document.createElement("div");
+        item.className = "poke-result-item";
+        item.innerHTML = `
+          <img src="${escapeHtml(p.sprite)}" alt="${escapeHtml(p.name)}" loading="lazy">
+          <span class="poke-no">No.${p.id}</span>
+          <div>
+            <div class="poke-name">${escapeHtml(p.name)}</div>
+            <div class="poke-types">
+              ${p.types.map(t=>`<span class="type-chip type-${t}">${TYPE_JA[t]||t}</span>`).join("")}
+            </div>
+          </div>
+        `;
+        item.addEventListener("click", () => {
+          searchInput.value = p.name;
+          loadPokemonDetail(p.name);
+        });
+        resultsList.appendChild(item);
+      });
+
+      // Pager
+      pager.innerHTML = "";
+      if (pages > 1) {
+        const prev = document.createElement("button");
+        prev.textContent = "◀ 前";
+        prev.disabled = currentPage === 1;
+        prev.addEventListener("click", () => { currentPage--; renderResultsPage(); });
+        const info = document.createElement("span");
+        info.className = "page-info";
+        info.textContent = `${currentPage} / ${pages}`;
+        const next = document.createElement("button");
+        next.textContent = "次 ▶";
+        next.disabled = currentPage === pages;
+        next.addEventListener("click", () => { currentPage++; renderResultsPage(); });
+        pager.append(prev, info, next);
+      }
+
+      searchResultsCard.classList.add("show");
+      searchResultsCard.scrollIntoView({ behavior:"smooth", block:"start" });
+    }
+
+    function resetAdvanced() {
+      typeFilter1.value = "";
+      typeFilter2.value = "";
+      genFilter.value   = "";
+      ["minHp","minAtk","minDef","minSpAtk","minSpDef","minSpeed","minBst"].forEach(id => el(id).value = "");
+      advLoadingText.textContent = "";
+      advErrorText.textContent   = "";
+      advResults  = [];
+      searchResultsCard.classList.remove("show");
+    }
+
+    // ── Event Listeners ──
+    searchBtn.addEventListener("click",  searchPokemon);
+    clearBtn.addEventListener("click",   clearResult);
+    searchInput.addEventListener("keydown", e => { if (e.key === "Enter") searchPokemon(); });
+
+    advSearchBtn.addEventListener("click", runAdvancedSearch);
+    advClearBtn.addEventListener("click",  resetAdvanced);
+    resultsCloseBtn.addEventListener("click", () => searchResultsCard.classList.remove("show"));
+
+    statToggle.addEventListener("click", () => {
+      const open = statPanel.style.display === "block";
+      statPanel.style.display = open ? "none" : "block";
+      statToggle.textContent = open ? "▸ 種族値フィルター" : "▾ 種族値フィルター";
+      statToggle.classList.toggle("active", !open);
     });
-    const sorted=Object.entries(weakCount).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]);
-    const quads=Object.entries(quadNames).filter(([,n])=>n.length>0);
-    const coverage=[...new Set(filled.flatMap(n=>{const et=getEnTypes(n)||[];return et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);}))];
-    setAnalysis({sorted,quads,coverage,unknown});
-  },[members,apiTypes]);
 
-  useEffect(()=>{if(tab==="analyze")analyze();},[tab,analyze]);
-
-  const saveParty=()=>{
-    if(!pName.trim()){toast("⚠️ パーティ名を入力してください");return;}
-    const filledMembers=members.filter(Boolean);
-    const filledDetails=details.filter((_,i)=>members[i]);
-    const entry={id:editId||"p_"+Date.now(),name:pName.trim(),game:pGame,members:filledMembers,details:filledDetails,tags:pTags.split(",").map(t=>t.trim()).filter(Boolean),notes:pNotes.trim(),updatedAt:new Date().toISOString()};
-    setParties(prev=>{const i=prev.findIndex(p=>p.id===entry.id);if(i>=0){const n=[...prev];n[i]=entry;return n;}return[entry,...prev];});
-    setEditId(entry.id);toast(editId?"✅ 更新しました":"✅ 保存しました");
-  };
-
-  const loadParty=(p)=>{
-    setEditId(p.id);setPName(p.name||"");setPGame(p.game||"");
-    const m=[...(p.members||[]),...["","","","","",""]].slice(0,6);
-    setMembers(m);
-    const d=[...(p.details||[]),...Array(6).fill(null).map(emptyDetail)].slice(0,6).map(x=>x||emptyDetail());
-    setDetails(d);
-    setPTags((p.tags||[]).join(", "));setPNotes(p.notes||"");
-    setSprites({});setApiTypes({});setTab("party");setExpandedSlot(null);toast("📋 読み込みました");
-  };
-
-  const deleteParty=(id,name)=>{
-    if(!confirm(`「${name||"このパーティ"}」を削除しますか？`))return;
-    setParties(prev=>prev.filter(p=>p.id!==id));
-    if(editId===id)clearForm();toast("🗑️ 削除しました");
-  };
-
-  const clearForm=()=>{setEditId(null);setPName("");setPGame("");setMembers(["","","","","",""]);setDetails(Array(6).fill(null).map(emptyDetail));setPTags("");setPNotes("");setSprites({});setApiTypes({});setExpandedSlot(null);};
-
-  const exportData=()=>{
-    const blob=new Blob([JSON.stringify(parties,null,2)],{type:"application/json"});
-    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`pkm_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
-  };
-
-  const importData=(file)=>{
-    const r=new FileReader();r.onload=e=>{try{const data=JSON.parse(e.target.result);if(!Array.isArray(data))throw 0;const ids=new Set(parties.map(p=>p.id));const add=data.filter(p=>!ids.has(p.id));setParties(prev=>[...add,...prev]);toast(`✅ ${add.length}件インポート`);}catch{toast("❌ 読み込み失敗");}};r.readAsText(file);
-  };
-
-  const generatePrompt=()=>{
-    const filled=members.filter(Boolean);
-    if(!filled.length) return "まずパーティにポケモンを追加してください。";
-    const EV_LABELS={hp:"HP",atk:"こうげき",def:"ぼうぎょ",spa:"とくこう",spd:"とくぼう",spe:"すばやさ"};
-    const lines=[];
-    lines.push("以下のポケモンチャンピオンズのパーティを評価して、改善点をアドバイスしてください。");
-    lines.push("");
-    if(pName) lines.push(`【パーティ名】${pName}`);
-    if(pGame) lines.push(`【作品】${pGame}`);
-    lines.push("");
-    lines.push("【メンバー】");
-    members.forEach((name,i)=>{
-      if(!name) return;
-      const d=details[i];
-      const et=getEnTypes(name)||[];
-      const jt=et.map(e=>TYPE_EN_TO_JA[e]).filter(Boolean);
-      lines.push(`\n■ ${name}${jt.length?` (${jt.join("/")})`:""}`);
-      if(d.nature) lines.push(`  性格: ${d.nature}`);
-      if(d.ability) lines.push(`  特性: ${d.ability}`);
-      if(d.item) lines.push(`  持ち物: ${d.item}`);
-      const moves=d.moves.filter(Boolean);
-      if(moves.length) lines.push(`  技: ${moves.join(" / ")}`);
-      const evEntries=Object.entries(d.evs).filter(([,v])=>v>0);
-      if(evEntries.length) lines.push(`  努力値: ${evEntries.map(([k,v])=>`${EV_LABELS[k]}${v}`).join(" / ")}${isChampions?" (Champions上限: 各32/合計66)":""}`);
+    addToPartyBtn.addEventListener("click", () => {
+      if (!currentPokemonData) { partyAddStatus.textContent = "先にポケモンを検索してください"; return; }
+      savePartyCandidate(currentPokemonData);
     });
-    if(pNotes){lines.push(""); lines.push(`【構築メモ】\n${pNotes}`);}
-    return lines.join("\n");
-  };
-
-  const filtered=parties.filter(p=>{
-    if(filterGame&&p.game!==filterGame)return false;
-    if(searchKw){const kw=searchKw.toLowerCase();return[p.name,p.game,...(p.members||[]),...(p.tags||[]),p.notes].join(" ").toLowerCase().includes(kw);}
-    return true;
-  });
-
-  const filled=members.filter(Boolean);
-
-  const SKY="#5bb8f5", RED="#e3350d", TEXT="#1a2a3a", MUTED="#6b8fa8";
-  const BG={minHeight:"100vh",position:"relative",zIndex:1};
-  const WRAP={maxWidth:"430px",margin:"0 auto",display:"flex",flexDirection:"column",minHeight:"100vh",position:"relative",zIndex:1};
-  const inp={width:"100%",background:"#f0f7ff",border:"2px solid #d4e8f5",borderRadius:"10px",color:TEXT,padding:"9px 12px",fontSize:"14px",outline:"none",boxSizing:"border-box",fontFamily:"'Nunito',sans-serif"};
-  const card={background:"rgba(255,255,255,0.92)",border:"2px solid rgba(255,255,255,0.95)",borderRadius:"16px",padding:"14px",boxShadow:"0 4px 20px rgba(50,120,180,0.1)"};
-  const lbl={fontSize:"11px",color:MUTED,fontWeight:"700",marginBottom:"5px",letterSpacing:"0.5px",display:"block",textTransform:"uppercase"};
-  const btn=(v="d")=>({padding:"9px 16px",borderRadius:"10px",border:"none",fontWeight:"700",fontSize:"13px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",
-    background:v==="p"?"linear-gradient(135deg,#e3350d,#c0280a)":v==="g"?"linear-gradient(135deg,#5ab552,#3a8530)":v==="r"?"rgba(220,50,50,0.08)":"#f0f7ff",
-    color:v==="p"?"#fff":v==="g"?"#fff":v==="r"?"#c03030":MUTED,
-    border:v==="r"?"2px solid rgba(200,50,50,0.2)":v==="d"?"2px solid #d4e8f5":"none",
-    boxShadow:v==="p"?"0 3px 10px rgba(180,30,0,0.25)":v==="g"?"0 3px 10px rgba(40,140,40,0.25)":"none"
-  });
-
-  const e=React.createElement;
-
-  return e('div',{style:BG},
-    e('div',{className:"cloud cloud-1"}),
-    e('div',{className:"cloud cloud-2"}),
-    e('div',{style:WRAP},
-      e('div',{style:{padding:"14px 16px 10px",background:"linear-gradient(135deg,#e3350d,#c0280a)",flexShrink:0,position:"sticky",top:0,zIndex:10,boxShadow:"0 4px 16px rgba(180,30,0,0.3)",overflow:"hidden"}},
-        e('div',{style:{position:"absolute",top:"-30px",right:"-30px",width:"100px",height:"100px",borderRadius:"50%",border:"16px solid rgba(255,255,255,0.12)",pointerEvents:"none"}}),
-        e('div',{style:{position:"absolute",top:"18px",right:"-30px",width:"100px",height:"8px",background:"rgba(255,255,255,0.12)",pointerEvents:"none"}}),
-        e('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"10px",position:"relative"}},
-          e('a',{href:"../",style:{display:"flex",alignItems:"center",justifyContent:"center",width:"30px",height:"30px",borderRadius:"50%",background:"rgba(255,255,255,0.2)",color:"#fff",textDecoration:"none",fontSize:"16px",flexShrink:0,fontWeight:"700",lineHeight:1}},"‹"),
-          e('div',{style:{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(180deg,#fff 50%,#333 50%)",border:"2px solid #333",flexShrink:0,position:"relative",boxShadow:"0 2px 6px rgba(0,0,0,0.3)"}},
-            e('div',{style:{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"9px",height:"9px",borderRadius:"50%",background:"#fff",border:"2px solid #333"}})
-          ),
-          e('div',null,
-            e('div',{style:{fontSize:"15px",fontWeight:"900",color:"#fff",textShadow:"0 1px 4px rgba(0,0,0,0.2)"}},"PokéChampions"),
-            e('div',{style:{fontSize:"10px",color:"rgba(255,255,255,0.75)",fontWeight:"600"}},"構築マネージャー")
-          ),
-          e('div',{style:{marginLeft:"auto",fontSize:"11px",fontWeight:"700",color:"rgba(255,255,255,0.8)",background:"rgba(255,255,255,0.15)",borderRadius:"999px",padding:"2px 10px"}},`${filled.length}/6`)
-        ),
-        e('div',{style:{display:"flex",gap:"5px",position:"relative"}},
-          [["party","🛡️ 構築"],["analyze","🔬 分析"],["saved","📁 保存"],["ask","💬 相談"]].map(([k,l])=>
-            e('button',{key:k,onClick:()=>setTab(k),style:{flex:1,padding:"7px 2px",background:tab===k?"rgba(255,255,255,0.95)":"rgba(255,255,255,0.15)",border:"none",borderRadius:"9px",color:tab===k?RED:"rgba(255,255,255,0.85)",fontWeight:"700",fontSize:"11px",cursor:"pointer",fontFamily:"'Nunito',sans-serif",boxShadow:tab===k?"0 2px 6px rgba(0,0,0,0.15)":"none"}},l)
-          )
-        )
-      ),
-
-      e('div',{style:{flex:1,overflow:"auto",padding:"14px",paddingBottom:"14px"}},
-
-        tab==="party"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
-          status&&e('div',{style:{background:"rgba(90,181,82,0.12)",border:"2px solid rgba(90,181,82,0.3)",borderRadius:"10px",padding:"8px 12px",fontSize:"13px",color:"#2a7a20",textAlign:"center",animation:"fadeIn 0.2s",fontWeight:"700"}},status),
-          e('div',{style:card},
-            e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}},
-              e('div',null,e('span',{style:lbl},"パーティ名"),e('input',{style:inp,value:pName,onChange:ev=>setPName(ev.target.value),placeholder:"例：チャンピオンズ用"})),
-              e('div',null,e('span',{style:lbl},"作品"),e('select',{style:{...inp,appearance:"none"},value:pGame,onChange:ev=>setPGame(ev.target.value)},e('option',{value:""},"未設定"),...GAMES.map(g=>e('option',{key:g,value:g},g))))
-            )
-          ),
-          e('div',{style:{...card,borderColor:isChampions?"rgba(227,53,13,0.25)":"rgba(255,255,255,0.95)"}},
-            e('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}},
-              e('span',{style:lbl},"メンバー（日本語名で入力）"),
-              isChampions&&e('span',{style:{fontSize:"10px",background:"rgba(227,53,13,0.1)",border:"1px solid rgba(227,53,13,0.3)",borderRadius:"6px",padding:"2px 7px",color:RED,fontWeight:"700"}},"M-A対応")
-            ),
-            isChampions&&e('p',{style:{fontSize:"11px",color:MUTED,marginBottom:"8px"}},"🎯 スロットをタップしてM-A使用可能ポケモンから選択できます"),
-            e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},
-              members.map((m,i)=>e('div',{key:i},
-                e('div',{style:{position:"relative",display:"flex",gap:"4px",alignItems:"center"}},
-                  isChampions
-                    ? e('div',{style:{display:"flex",gap:"4px",flex:1}},
-                        sprites[m]&&e('img',{src:sprites[m],alt:m,style:{width:"36px",height:"36px",imageRendering:"pixelated",flexShrink:0,alignSelf:"center"}}),
-                        e('button',{onClick:()=>openPicker(i),style:{flex:1,background:m?"rgba(227,53,13,0.06)":"#f0f7ff",border:`2px solid ${m?"rgba(227,53,13,0.3)":"#d4e8f5"}`,borderRadius:"10px",color:m?RED:MUTED,padding:"9px 8px",fontSize:"13px",fontWeight:m?"700":"600",cursor:"pointer",textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"'Nunito',sans-serif"}},m||`${i+1}体目を選ぶ`)
-                      )
-                    : e('div',{style:{position:"relative",flex:1}},
-                        e('input',{style:{...inp,paddingLeft:sprites[m]?"38px":"12px"},value:m,onChange:ev=>{const n=[...members];n[i]=ev.target.value;setMembers(n);},placeholder:`${i+1}体目`}),
-                        sprites[m]&&e('img',{src:sprites[m],alt:m,style:{position:"absolute",left:"2px",top:"50%",transform:"translateY(-50%)",width:"32px",height:"32px",imageRendering:"pixelated",pointerEvents:"none"}})
-                      ),
-                  m&&e('button',{onClick:()=>setExpandedSlot(expandedSlot===i?null:i),style:{width:"28px",height:"36px",flexShrink:0,background:expandedSlot===i?"rgba(227,53,13,0.1)":"#f0f7ff",border:`2px solid ${expandedSlot===i?"rgba(227,53,13,0.3)":"#d4e8f5"}`,borderRadius:"8px",cursor:"pointer",fontSize:"12px",color:expandedSlot===i?RED:MUTED,fontWeight:"700"}},expandedSlot===i?"▲":"▼")
-                ),
-                m&&expandedSlot===i&&e('div',{style:{background:"#f8fcff",border:"2px solid #d4e8f5",borderRadius:"12px",padding:"10px",marginTop:"6px",display:"flex",flexDirection:"column",gap:"8px"}},
-                  e('div',null,
-                    e('span',{style:{...lbl,fontSize:"10px"}},"持ち物"),
-                    e('input',{style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].item,onChange:ev=>setDetail(i,"item",ev.target.value),placeholder:"例：こだわりスカーフ"})
-                  ),
-                  e('div',null,
-                    e('span',{style:{...lbl,fontSize:"10px"}},"特性"),
-                    e('input',{style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].ability,onChange:ev=>setDetail(i,"ability",ev.target.value),placeholder:"例：がんじょう、ふゆう"})
-                  ),
-                  e('div',null,
-                    e('span',{style:{...lbl,fontSize:"10px"}},"性格"),
-                    e('select',{style:{...inp,fontSize:"12px",padding:"6px 10px",appearance:"none"},value:details[i].nature,onChange:ev=>setDetail(i,"nature",ev.target.value)},
-                      e('option',{value:""},"-- 選択 --"),
-                      ...NATURE_LIST.map(n=>e('option',{key:n,value:n},n))
-                    )
-                  ),
-                  e('div',null,
-                    e('span',{style:{...lbl,fontSize:"10px"}},"技（1〜4）"),
-                    e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}},
-                      [0,1,2,3].map(mi=>e('input',{key:mi,style:{...inp,fontSize:"12px",padding:"6px 10px"},value:details[i].moves[mi],onChange:ev=>setMove(i,mi,ev.target.value),placeholder:`技${mi+1}`}))
-                    )
-                  ),
-                  e('div',null,
-                    e('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}},
-                      e('span',{style:{...lbl,fontSize:"10px",marginBottom:0}},isChampions?"努力値（各0〜32）":"努力値（各0〜252）"),
-                      e('span',{style:{fontSize:"9px",fontWeight:"700",padding:"1px 6px",borderRadius:"999px",background:isChampions?"rgba(227,53,13,0.08)":"rgba(91,184,245,0.1)",color:isChampions?RED:"#1a6fa8"}},isChampions?"Champions":"通常")
-                    ),
-                    e('div',{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"4px"}},
-                      [["hp","HP"],["atk","こうげき"],["def","ぼうぎょ"],["spa","とくこう"],["spd","とくぼう"],["spe","すばやさ"]].map(([key,label])=>{
-                        const maxSingle=isChampions?32:252;
-                        const val=details[i].evs[key];
-                        const over=val>maxSingle;
-                        return e('div',{key:key},
-                          e('div',{style:{fontSize:"9px",color:MUTED,fontWeight:"700",marginBottom:"2px",textAlign:"center"}},label),
-                          e('input',{type:"number",min:0,max:maxSingle,style:{...inp,fontSize:"12px",padding:"4px 6px",textAlign:"center",borderColor:over?"#c03030":"#d4e8f5"},value:val,onChange:ev=>setEv(i,key,ev.target.value)})
-                        );
-                      })
-                    ),
-                    (()=>{
-                      const total=details[i].evs.hp+details[i].evs.atk+details[i].evs.def+details[i].evs.spa+details[i].evs.spd+details[i].evs.spe;
-                      const maxTotal=isChampions?66:510;
-                      const over=total>maxTotal;
-                      return e('div',{style:{fontSize:"10px",color:over?"#c03030":MUTED,textAlign:"right",marginTop:"4px",fontWeight:"700",background:over?"rgba(200,50,50,0.06)":"transparent",borderRadius:"6px",padding:"2px 6px"}},
-                        over?`⚠️ 合計: ${total}/${maxTotal} オーバー！`:`合計: ${total}/${maxTotal}`
-                      );
-                    })()
-                  )
-                )
-              ))
-            ),
-            filled.length>0&&e('div',{style:{marginTop:"10px",display:"flex",flexWrap:"wrap",gap:"2px"}},
-              [...new Set(filled.flatMap(n=>{const et=getEnTypes(n)||[];return et.map(e2=>TYPE_EN_TO_JA[e2]).filter(Boolean);}))].map(t=>e(TypeBadge,{key:t,type:t,small:true}))
-            )
-          ),
-          e('div',{style:card},
-            e('span',{style:lbl},"タグ（カンマ区切り）"),
-            e('input',{style:inp,value:pTags,onChange:ev=>setPTags(ev.target.value),placeholder:"例：ランクマ, 雨パ, 受けループ"}),
-            e('span',{style:{...lbl,marginTop:"10px"}},"構築メモ"),
-            e('textarea',{style:{...inp,minHeight:"70px",resize:"vertical",lineHeight:"1.5"},value:pNotes,onChange:ev=>setPNotes(ev.target.value),placeholder:"役割・技・持ち物・育成メモなど"})
-          ),
-          e('div',{style:{display:"flex",gap:"8px"}},
-            e('button',{style:{...btn("p"),flex:1},onClick:saveParty},"💾 保存"),
-            e('button',{style:btn(),onClick:clearForm},"クリア"),
-            editId&&e('button',{style:btn("r"),onClick:()=>deleteParty(editId,pName)},"削除")
-          ),
-          e('button',{style:{...btn(),padding:"10px",width:"100%",color:"#1a6fa8",border:"2px solid rgba(26,111,168,0.35)",background:"rgba(91,184,245,0.12)",fontWeight:"800"},onClick:()=>{setTab("analyze");analyze();}},"🔬 弱点を分析する"),
-          e('button',{style:{...btn(),padding:"10px",width:"100%",color:"#1e6b18",border:"2px solid rgba(30,107,24,0.35)",background:"rgba(90,181,82,0.12)",fontWeight:"800"},onClick:()=>setTab("ask")},"💬 Claudeに相談するプロンプトを作る"),
-
-          pickerSlot!==null&&e('div',{style:{position:"fixed",inset:0,background:"rgba(91,184,245,0.15)",backdropFilter:"blur(12px)",zIndex:200,display:"flex",flexDirection:"column",maxWidth:"430px",margin:"0 auto"}},
-            e('div',{style:{padding:"16px 16px 10px",borderBottom:"2px solid #d4e8f5",background:"rgba(255,255,255,0.95)"}},
-              e('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}},
-                e('div',null,
-                  e('div',{style:{fontWeight:"900",fontSize:"15px",color:TEXT}},"スロット"+(pickerSlot+1)+"のポケモンを選ぶ"),
-                  e('div',{style:{fontSize:"10px",color:RED,marginTop:"2px",fontWeight:"700"}},"レギュレーションM-A 使用可能ポケモン")
-                ),
-                e('button',{onClick:closePicker,style:{background:"#f0f7ff",border:"2px solid #d4e8f5",borderRadius:"8px",color:TEXT,width:"32px",height:"32px",cursor:"pointer",fontSize:"16px",fontFamily:"'Nunito',sans-serif"}},"✕")
-              ),
-              e('input',{value:pickerSearch,onChange:ev=>setPickerSearch(ev.target.value),autoFocus:true,placeholder:"ポケモン名で検索...",style:{...inp,fontSize:"14px"}})
-            ),
-            e('div',{style:{flex:1,overflow:"auto",padding:"10px 12px",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px",background:"rgba(255,255,255,0.85)"}},
-              filteredPicker.map(name=>{
-                const sp=sprites[name];
-                const sel=members[pickerSlot]===name;
-                return e('button',{
-                  key:name,
-                  onClick:()=>pickPokemon(name),
-                  style:{background:sel?"rgba(227,53,13,0.1)":"rgba(255,255,255,0.9)",border:`2px solid ${sel?"rgba(227,53,13,0.4)":"#d4e8f5"}`,borderRadius:"10px",padding:"8px 4px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",color:sel?RED:TEXT,fontSize:"11px",fontWeight:sel?"800":"600",fontFamily:"'Nunito',sans-serif",boxShadow:sel?"0 2px 8px rgba(227,53,13,0.15)":"none"}
-                },
-                  sp?e('img',{src:sp,alt:name,style:{width:"44px",height:"44px",imageRendering:"pixelated"}}):e('div',{style:{width:"44px",height:"44px",background:"#f0f7ff",borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px"}},"?"),
-                  name
-                );
-              })
-            )
-          )
-        ),
-
-        tab==="analyze"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
-          e('button',{style:{...btn("p"),padding:"11px"},onClick:analyze},"🔄 分析を更新"),
-          !analysis?e('div',{style:{...card,textAlign:"center",color:MUTED,padding:"30px",fontSize:"14px"}},"「構築」タブでメンバーを入力してください"):
-          e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
-            filled.length>0&&e('div',{style:card},
-              e('span',{style:lbl},"スプライト"),
-              e('div',{style:{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"4px"}},
-                filled.map(name=>e('div',{key:name,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}},
-                  sprites[name]?e('img',{src:sprites[name],alt:name,style:{width:"56px",height:"56px",imageRendering:"pixelated"}}):e('div',{style:{width:"56px",height:"56px",background:"#f0f7ff",borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px"}},"❓"),
-                  e('span',{style:{fontSize:"9px",color:MUTED,fontWeight:"700"}},name)
-                ))
-              )
-            ),
-            e('div',{style:card},
-              e('span',{style:lbl},"タイプカバレッジ"),
-              e('div',{style:{display:"flex",flexWrap:"wrap",gap:"2px",marginTop:"4px"}},
-                analysis.coverage.length?analysis.coverage.map(t=>e(TypeBadge,{key:t,type:t})):e('span',{style:{fontSize:"12px",color:MUTED}},"データなし")
-              )
-            ),
-            analysis.quads.length>0&&e('div',{style:{background:"#fff5f5",border:"2px solid rgba(200,50,50,0.3)",borderRadius:"12px",padding:"12px",borderLeft:"4px solid #c03030"}},
-              e('div',{style:{fontSize:"13px",fontWeight:"900",color:"#c03030",marginBottom:"8px"}},"⚠️ 4倍弱点あり！"),
-              ...analysis.quads.map(([t,names])=>e('div',{key:t,style:{display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px",fontSize:"12px",color:"#8b1a1a",fontWeight:"700"}},
-                e(TypeBadge,{type:t,small:true}),e('span',null,"→ "+names.join("、"))
-              ))
-            ),
-            e('div',{style:card},
-              e('span',{style:lbl},"弱点まとめ（多い順）"),
-              e('div',{style:{display:"flex",flexWrap:"wrap",gap:"5px",marginTop:"6px"}},
-                analysis.sorted.length===0?e('span',{style:{fontSize:"12px",color:MUTED,fontWeight:"700"}},"大きな弱点なし 🎉"):
-                analysis.sorted.map(([t,c])=>{
-                  const isQ=analysis.quads.some(([qt])=>qt===t);
-                  return e('span',{key:t,style:{background:isQ?"rgba(200,50,50,0.1)":c>=3?"rgba(230,120,30,0.1)":"#f0f7ff",border:`2px solid ${isQ?"rgba(200,50,50,0.3)":c>=3?"rgba(230,120,30,0.3)":"#d4e8f5"}`,borderRadius:"8px",padding:"4px 8px",fontSize:"12px",fontWeight:"700",color:isQ?"#c03030":c>=3?"#b06020":"#6b8fa8"}},t," ",e('span',{style:{opacity:0.7}},c+"体"));
-                })
-              )
-            ),
-            analysis.unknown.length>0&&e('div',{style:{fontSize:"11px",color:MUTED,fontWeight:"600",textAlign:"center"}},"タイプ未取得: "+analysis.unknown.join("、"))
-          )
-        ),
-
-        tab==="saved"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
-          e('div',{style:card},
-            e('span',{style:lbl},"バックアップ"),
-            e('div',{style:{display:"flex",gap:"8px",marginTop:"6px"}},
-              e('button',{style:{...btn(),flex:1,fontSize:"12px"},onClick:exportData},"📤 エクスポート"),
-              e('button',{style:{...btn(),flex:1,fontSize:"12px"},onClick:()=>fileRef.current.click()},"📥 インポート"),
-              e('input',{ref:fileRef,type:"file",accept:".json",style:{display:"none"},onChange:ev=>{if(ev.target.files[0]){importData(ev.target.files[0]);ev.target.value="";}}})
-            )
-          ),
-          e('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},
-            e('div',null,e('span',{style:lbl},"作品で絞り込み"),e('select',{style:{...inp,appearance:"none",fontSize:"12px"},value:filterGame,onChange:ev=>setFilterGame(ev.target.value)},e('option',{value:""},"すべて"),...GAMES.map(g=>e('option',{key:g,value:g},g)))),
-            e('div',null,e('span',{style:lbl},"検索"),e('input',{style:{...inp,fontSize:"12px"},value:searchKw,onChange:ev=>setSearchKw(ev.target.value),placeholder:"名前・タグ・メンバー"}))
-          ),
-          status&&e('div',{style:{background:"rgba(90,181,82,0.12)",border:"2px solid rgba(90,181,82,0.3)",borderRadius:"10px",padding:"8px 12px",fontSize:"12px",color:"#2a7a20",textAlign:"center",fontWeight:"700"}},status),
-          filtered.length===0?e('div',{style:{...card,textAlign:"center",color:MUTED,padding:"30px",fontSize:"14px"}},"パーティがありません"):
-          filtered.map(p=>e('div',{key:p.id,style:{...card,borderColor:editId===p.id?"rgba(227,53,13,0.3)":"rgba(255,255,255,0.95)",animation:"fadeIn 0.2s"}},
-            e('div',{style:{fontWeight:"800",fontSize:"14px",marginBottom:"3px",color:TEXT}},p.name||"無名パーティ"),
-            e('div',{style:{fontSize:"11px",color:MUTED,marginBottom:"6px",fontWeight:"700"}},p.game||"未設定"),
-            e('div',{style:{fontSize:"12px",color:TEXT,marginBottom:"6px",fontWeight:"600"}},(p.members||[]).join(" / ")||"メンバー未入力"),
-            p.tags?.length>0&&e('div',{style:{display:"flex",flexWrap:"wrap",gap:"4px",marginBottom:"6px"}},...p.tags.map(t=>e('span',{key:t,style:{background:"rgba(91,184,245,0.1)",border:"1px solid rgba(91,184,245,0.3)",borderRadius:"6px",padding:"2px 7px",fontSize:"10px",color:SKY,fontWeight:"700"}},t))),
-            p.notes&&e('div',{style:{fontSize:"11px",color:MUTED,whiteSpace:"pre-wrap",marginBottom:"8px",fontWeight:"600"}},p.notes.slice(0,80)+(p.notes.length>80?"…":"")),
-            e('div',{style:{display:"flex",gap:"8px"}},
-              e('button',{style:{...btn("p"),flex:1,fontSize:"12px",padding:"7px"},onClick:()=>loadParty(p)},"✏️ 編集"),
-              e('button',{style:{...btn("r"),fontSize:"12px",padding:"7px 12px"},onClick:()=>deleteParty(p.id,p.name)},"削除")
-            )
-          ))
-        ),
-
-        tab==="ask"&&e('div',{style:{display:"flex",flexDirection:"column",gap:"12px"}},
-          e('div',{style:{...card,background:"linear-gradient(135deg,rgba(90,181,82,0.08),rgba(91,184,245,0.08))"}},
-            e('div',{style:{fontWeight:"900",fontSize:"14px",color:TEXT,marginBottom:"6px"}},"💬 Claudeに相談する"),
-            e('div',{style:{fontSize:"12px",color:MUTED,lineHeight:"1.7",fontWeight:"600"}},
-              "① 下のテキストをコピーする\n② Claudeアプリを開く\n③ 貼り付けて送信する"
-            )
-          ),
-          filled.length===0
-            ? e('div',{style:{...card,textAlign:"center",color:MUTED,padding:"30px",fontSize:"14px"}},"先に「構築」タブでメンバーを入力してください")
-            : e('div',{style:{display:"flex",flexDirection:"column",gap:"10px"}},
-                e('textarea',{
-                  readOnly:true,
-                  value:generatePrompt(),
-                  style:{...inp,minHeight:"280px",resize:"none",fontSize:"12px",lineHeight:"1.7",fontFamily:"monospace",cursor:"text"}
-                }),
-                e('button',{
-                  onClick:()=>{
-                    navigator.clipboard.writeText(generatePrompt()).then(()=>{
-                      setCopied(true);setTimeout(()=>setCopied(false),2000);
-                    }).catch(()=>{});
-                  },
-                  style:{...btn("p"),padding:"12px",fontSize:"14px",width:"100%",boxShadow:"0 4px 14px rgba(180,30,0,0.3)"}
-                },copied?"✅ コピーしました！":"📋 テキストをコピー")
-              )
-        )
-      )
-    )
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
-</script>
+  })();
+  </script>
 </body>
 </html>
