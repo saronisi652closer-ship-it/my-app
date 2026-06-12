@@ -450,35 +450,40 @@ function DamageCalc({champions}){
             res.tm!==1&&e('span',{style:{fontSize:"10px",fontWeight:"900",color:tmCol,flexShrink:0}},` ×${res.tm}`),
             res.stab&&e('span',{style:{fontSize:"9px",fontWeight:"800",color:"#d06000",background:"rgba(240,128,48,0.12)",borderRadius:"4px",padding:"0 4px",flexShrink:0}},"一致")
           ),
-          // HPバー（左=残HP、右から減っていく）
+          // HPバー（yakkun風：左=残HP、右=ダメージ、最大/最小マーカー）
           (() => {
-            const remaining = Math.max(0, defHP - res.max);
-            const remainMinHP = Math.max(0, defHP - res.min);
-            const remainPct = (remaining / defHP * 100);
-            const remainMinPct = (remainMinHP / defHP * 100);
-            const barColor = remaining === 0 ? "#e3350d" : remainPct < 25 ? "#f08030" : remainPct < 50 ? "#f8d030" : "#5bb8f5";
+            const remMax = Math.max(0, defHP - res.max); // 最大ダメージ後の残HP
+            const remMin = Math.max(0, defHP - res.min); // 最小ダメージ後の残HP
+            const remMaxPct = (remMax / defHP * 100);
+            const remMinPct = (remMin / defHP * 100);
+            const barColor = remMaxPct < 25 ? "#e3350d" : remMaxPct < 50 ? "#f08030" : "#e87020";
+            const rangeLabel = remMax === remMin ? String(remMax) : `${remMax}〜${remMin}`;
             return e('div',{style:{display:"flex",alignItems:"center",gap:"6px",marginBottom:"5px"}},
-              e('div',{style:{textAlign:"left",flexShrink:0,minWidth:"40px"}},
+              e('div',{style:{textAlign:"left",flexShrink:0,minWidth:"44px"}},
                 e('div',{style:{fontSize:"8px",color:MUTED,fontWeight:"700"}},"残HP"),
-                e('div',{style:{fontSize:"12px",fontWeight:"900",color:remaining===0?RED:TEXT}},remaining)
+                e('div',{style:{fontSize:"11px",fontWeight:"900",color:remMax===0?RED:TEXT,lineHeight:1.1}},rangeLabel)
               ),
-              e('div',{style:{flex:1,position:"relative",paddingTop:"12px"}},
-                e('div',{style:{fontSize:"8px",color:MUTED,fontWeight:"700",
-                  position:"absolute",top:0,
-                  left:`${Math.min(remainPct,96).toFixed(0)}%`,
-                  transform:"translateX(-50%)",whiteSpace:"nowrap"}},`↓最大`),
+              e('div',{style:{flex:1,position:"relative",paddingTop:"13px"}},
+                // 最大マーカー
+                e('div',{style:{position:"absolute",top:0,
+                  left:`${Math.max(1,Math.min(remMaxPct,94)).toFixed(0)}%`,
+                  transform:"translateX(-50%)",fontSize:"7px",color:"#c03030",fontWeight:"800",whiteSpace:"nowrap"}},"最大"),
+                // 最小マーカー（最大と離れている場合のみ）
+                remMinPct - remMaxPct > 3 && e('div',{style:{position:"absolute",top:0,
+                  left:`${Math.min(remMinPct,97).toFixed(0)}%`,
+                  transform:"translateX(-50%)",fontSize:"7px",color:MUTED,fontWeight:"800",whiteSpace:"nowrap"}},"最小"),
                 e('div',{style:{background:"#e8f4ff",borderRadius:"4px",height:"10px",overflow:"hidden",position:"relative"}},
-                  // 残HP（ミン〜マックスのダメージ範囲をグラデーションで表現）
-                  e('div',{style:{
+                  // 残HP確定部分（最大ダメージ後も残る）
+                  remMax > 0 && e('div',{style:{
                     position:"absolute",left:0,top:0,
-                    width:`${Math.min(remainMinPct,100).toFixed(1)}%`,
-                    height:"100%",background:barColor,borderRadius:"4px"}}),
-                  // ダメージ幅（最小〜最大ダメージの範囲をオレンジで）
-                  remainMinPct > remainPct && e('div',{style:{
+                    width:`${Math.min(remMaxPct,100).toFixed(1)}%`,
+                    height:"100%",background:barColor}}),
+                  // ダメージ幅（最小〜最大ダメージの不確定ゾーン）
+                  remMinPct > remMaxPct && e('div',{style:{
                     position:"absolute",top:0,
-                    left:`${Math.min(remainPct,100).toFixed(1)}%`,
-                    width:`${Math.min(remainMinPct - remainPct, 100 - remainPct).toFixed(1)}%`,
-                    height:"100%",background:"rgba(240,128,48,0.55)"}})
+                    left:`${Math.min(remMaxPct,100).toFixed(1)}%`,
+                    width:`${Math.min(remMinPct - remMaxPct, 100 - remMaxPct).toFixed(1)}%`,
+                    height:"100%",background:"#f8d030",opacity:0.85}})
                 )
               ),
               e('div',{style:{textAlign:"right",flexShrink:0,minWidth:"44px"}},
