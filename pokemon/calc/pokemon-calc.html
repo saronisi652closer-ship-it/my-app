@@ -450,17 +450,43 @@ function DamageCalc({champions}){
             res.tm!==1&&e('span',{style:{fontSize:"10px",fontWeight:"900",color:tmCol,flexShrink:0}},` ×${res.tm}`),
             res.stab&&e('span',{style:{fontSize:"9px",fontWeight:"800",color:"#d06000",background:"rgba(240,128,48,0.12)",borderRadius:"4px",padding:"0 4px",flexShrink:0}},"一致")
           ),
-          // HPバー
-          e('div',{style:{display:"flex",alignItems:"center",gap:"6px",marginBottom:"5px"}},
-            e('span',{style:{fontSize:"9px",color:MUTED,fontWeight:"700",flexShrink:0,minWidth:"32px"}},`残HP`),
-            e('div',{style:{flex:1,position:"relative"}},
-              e('div',{style:{background:"#e8f4ff",borderRadius:"4px",height:"10px",overflow:"hidden"}},
-                e('div',{style:{width:`${Math.min(pct,100).toFixed(1)}%`,height:"100%",borderRadius:"4px",background:pct>=100?"linear-gradient(90deg,#e3350d,#f08030)":pct>=50?"linear-gradient(90deg,#f08030,#f8d030)":"linear-gradient(90deg,#5bb8f5,#a8d8f0)",transition:"width 0.2s"}})
+          // HPバー（左=残HP、右から減っていく）
+          (() => {
+            const remaining = Math.max(0, defHP - res.max);
+            const remainMinHP = Math.max(0, defHP - res.min);
+            const remainPct = (remaining / defHP * 100);
+            const remainMinPct = (remainMinHP / defHP * 100);
+            const barColor = remaining === 0 ? "#e3350d" : remainPct < 25 ? "#f08030" : remainPct < 50 ? "#f8d030" : "#5bb8f5";
+            return e('div',{style:{display:"flex",alignItems:"center",gap:"6px",marginBottom:"5px"}},
+              e('div',{style:{textAlign:"left",flexShrink:0,minWidth:"40px"}},
+                e('div',{style:{fontSize:"8px",color:MUTED,fontWeight:"700"}},"残HP"),
+                e('div',{style:{fontSize:"12px",fontWeight:"900",color:remaining===0?RED:TEXT}},remaining)
               ),
-              e('div',{style:{position:"absolute",top:"-13px",left:`${Math.min(pct,98).toFixed(0)}%`,fontSize:"8px",color:MUTED,fontWeight:"700",transform:"translateX(-50%)",whiteSpace:"nowrap"}},"最大")
-            ),
-            e('span',{style:{fontSize:"9px",fontWeight:"700",color:TEXT,flexShrink:0,minWidth:"36px",textAlign:"right"}},`HP${defHP}`)
-          ),
+              e('div',{style:{flex:1,position:"relative",paddingTop:"12px"}},
+                e('div',{style:{fontSize:"8px",color:MUTED,fontWeight:"700",
+                  position:"absolute",top:0,
+                  left:`${Math.min(remainPct,96).toFixed(0)}%`,
+                  transform:"translateX(-50%)",whiteSpace:"nowrap"}},`↓最大`),
+                e('div',{style:{background:"#e8f4ff",borderRadius:"4px",height:"10px",overflow:"hidden",position:"relative"}},
+                  // 残HP（ミン〜マックスのダメージ範囲をグラデーションで表現）
+                  e('div',{style:{
+                    position:"absolute",left:0,top:0,
+                    width:`${Math.min(remainMinPct,100).toFixed(1)}%`,
+                    height:"100%",background:barColor,borderRadius:"4px"}}),
+                  // ダメージ幅（最小〜最大ダメージの範囲をオレンジで）
+                  remainMinPct > remainPct && e('div',{style:{
+                    position:"absolute",top:0,
+                    left:`${Math.min(remainPct,100).toFixed(1)}%`,
+                    width:`${Math.min(remainMinPct - remainPct, 100 - remainPct).toFixed(1)}%`,
+                    height:"100%",background:"rgba(240,128,48,0.55)"}})
+                )
+              ),
+              e('div',{style:{textAlign:"right",flexShrink:0,minWidth:"44px"}},
+                e('div',{style:{fontSize:"8px",color:MUTED,fontWeight:"700"}},"初期HP"),
+                e('div',{style:{fontSize:"12px",fontWeight:"900",color:TEXT}},defHP)
+              )
+            );
+          })()
           // ダメージ行
           e('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"2px"}},
             e('span',{style:{fontSize:"10px",color:MUTED,fontWeight:"700",flexShrink:0,width:"40px"}},"ダメージ"),
